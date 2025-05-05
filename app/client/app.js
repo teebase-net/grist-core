@@ -50,3 +50,27 @@ $(function() {
   window.loadScript = (name) =>
     window.exposeModulesForTests().then(() => window.exposedModules.loadScript.loadScript(name));
 });
+
+/*
+===============================================================================
+[Custom Patch] Load custom UI enhancements
+-------------------------------------------------------------------------------
+📄 File: app/client/app.js
+🔧 Added: May 2025, custom-iu branch
+👤 Author: You
+
+Purpose:
+This line loads custom JavaScript logic after the Grist application has fully
+initialized. It allows custom UI behaviors (e.g., hiding buttons, modifying access)
+to be added without modifying core app logic.
+
+It imports: `app/client/custom/index.js`, which serves as the entry point
+for all custom scripts under `app/client/custom/`.
+
+Note:
+- This must be the final line of app.js.
+- Safe to include as long as `custom/index.js` exists.
+
+===============================================================================
+*/
+require('./custom');

@@ -51,7 +51,40 @@ export class CodeEditorPanel extends DisposableWithEvents {
     try {
       const schema = await this._gristDoc.docComm.fetchTableSchema();
       if (!this.isDisposed()) {
+
+        // 🔧 Custom Patch: Alphabetical sorting of @grist.UserTable blocks in schema view.
+        // 📅 Applied: 2025-05-05
+        // This improves readability by grouping schema definitions and sorting them alphabetically
+        // by the class name line within each block.
+        // Version: v0.3
+
+        /*
+        // 💤 Original line (now replaced):
         this._schema.set(schema);
+        */
+
+        // 🔧 [Custom Patch] Sort @grist.UserTable blocks alphabetically by class name (v0.3)
+        const lines = schema.split("\n");
+        const blocks: string[][] = [];
+        let current: string[] = [];
+        for (let line of lines) {
+          if (line.startsWith("@grist.UserTable")) {
+            if (current.length) blocks.push(current);
+            current = [line];
+          } else {
+            current.push(line);
+          }
+        }
+        if (current.length) blocks.push(current);
+        const sorted = blocks.sort((a, b) => {
+          const nameA = a.find(l => l.trim().startsWith("class")) ?? "";
+          const nameB = b.find(l => l.trim().startsWith("class")) ?? "";
+          return nameA.localeCompare(nameB);
+        });
+        const pretty = sorted.map(b => b.join("\n")).join("\n\n");
+        console.log("[Custom] CodeEditorPanel.ts 🔤 Sorted @grist.UserTable blocks by class name (v0.3)");
+        this._schema.set(pretty);
+
         this._denied.set(false);
       }
     } catch (err) {

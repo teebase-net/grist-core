@@ -14,6 +14,8 @@ import {isNonNullish} from 'app/common/gutil';
 import {Computed, Disposable, dom, IDisposable, IDisposableOwner,
         makeTestId, obsArray, Observable, styled} from 'grainjs';
 import isEqual from 'lodash/isEqual';
+// ChatGPT to me to add this line - 5/5/25
+import { ViewSectionRec } from 'app/client/models/DocModel';
 
 const testId = makeTestId('test-layoutTray-');
 
@@ -1187,7 +1189,6 @@ const cssVirtualZone = styled('div', `
   inset: 0;
 `);
 
-
 const cssFloaterWrapper = styled('div', `
   height: 40px;
   width: 140px;
@@ -1203,35 +1204,9 @@ const cssFloaterWrapper = styled('div', `
   }
 `);
 
-const cssCollapsedTray = styled('div.collapsed_layout', `
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transition: height 0.2s;
-  position: relative;
-  margin: calc(-1 * var(--view-content-page-padding, 12px));
-  margin-bottom: 0;
-  user-select: none;
-  background-color: ${theme.pageBg};
-  border-bottom: 1px solid ${theme.pagePanelsBorder};
-  outline-offset: -1px;
+// GhatGPT told me to comment out this line 5/5/25 - const cssRow = styled('div', `display: flex`);
 
-  &-is-active {
-    outline: 2px dashed ${theme.widgetBorder};
-  }
-  &-is-target {
-    outline: 2px dashed #7B8CEA;
-    background: rgba(123, 140, 234, 0.1);
-  }
-  @media print {
-    & {
-      display: none;
-    }
-  }
-`
-);
 
-const cssRow = styled('div', `display: flex`);
 /**
  * MOD DMH: Reduced padding on collapsed section layout for tighter spacing.
  */

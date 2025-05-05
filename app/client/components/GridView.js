@@ -72,7 +72,19 @@ const SHORT_CLICK_IN_MS = 500;
 // size of the plus width ()
 const PLUS_WIDTH = 40;
 // size of the row number field (we assume 4rem, 1rem = 13px in grist)
-const ROW_NUMBER_WIDTH = 52;
+// =====================================================================
+// 🔧 CONFIGURATION: Row Number Column Width
+// This constant defines the width of the row number column in the GridView.
+// It must match the visual width defined in GridView.css for consistency.
+// ⚠️ If you change this value, also update all references in GridView.css
+//     - .gridview_corner_spacer
+//     - .gridview_data_row_num
+//     - .gridview_data_corner_overlay
+//     - .scroll_shadow_left / .frozen_line / others
+//     - All `calc(52px + ...)` expressions should use the updated value
+// 🔄 Modified from 52px → 30px to reduce UI column width
+// =====================================================================
+const ROW_NUMBER_WIDTH = 30;
 
 
 /**

@@ -12,10 +12,10 @@
   ✅ Loaded when Grist finishes loading the UI.
   ✅ Uses DOM observer to catch dynamically rendered buttons.
 
-  Version: v0.2
+  Version: v0.3
 ===================================================================================*/
 
-console.log("[Custom JS] index.js loaded ✅ v0.2");
+console.log("[Custom JS] index.js loaded ✅ v0.3");
 
 (function () {
   // Utility: Get the current document ID
@@ -24,11 +24,17 @@ console.log("[Custom JS] index.js loaded ✅ v0.2");
   // Fetch current user's profile and SysUsers data, then check access
   async function hasUnlockStructure() {
     try {
-      const [profile, data] = await Promise.all([
-        fetch('/api/profile/user', { credentials: 'include' }).then(r => r.json()),
-        fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: 'include' }).then(r => r.json())
-      ]);
+      const profile = await fetch('/api/profile/user', { credentials: 'include' }).then(r => r.json());
 
+      // Try to fetch SysUsers data — handle 404 gracefully
+      const response = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: 'include' });
+
+      if (response.status === 404) {
+        console.warn("🔒 SysUsers table not found — skipping Unlock_Structure check.");
+        return false;
+      }
+
+      const data = await response.json();
       const rowCount = data?.id?.length;
       if (!rowCount) return false;
 

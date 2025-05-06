@@ -134,3 +134,24 @@
   --grist-control-border
   --grist-toast-bg
 */
+
+/*===================================================================================
+  🔧 Custom Patch: Narrow “Add Column” button in Table widget
+  📄 File: custom.css
+  📅 Applied: 2025-05-05
+  📝 Purpose:
+    Reduces the width of the “Add Column” (+) column in table widgets for a cleaner,
+    more compact look. Also centers the "+" icon.
+
+  ✅ Applied via custom-iu branch. This CSS is copied to /static/custom.css and loaded at runtime.
+===================================================================================*/
+
+/* Target the "Add Column" button more specifically */
+.column_name.mod-add-column.field,
+.column_name.mod-add-column.field .mod-add-column-button {
+  width: 20px !important;
+  min-width: 20px !important;
+  max-width: 20px !important;
+  padding: 0 !important;
+  justify-content: center; /* Center the "+" icon */
+}

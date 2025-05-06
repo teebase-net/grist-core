@@ -3,15 +3,15 @@
 /*===================================================================================
   Custom Patch: Conditional visibility of “Add Column” button
   File: custom/index.js
-  Applied: 2025-05-05
+  Applied: 2025-05-06
   Purpose:
     Hides the “+” Add Column button unless the logged-in user has `Unlock_Structure = true`
-    in the SysUsers table. If table or field missing, the entire logic is skipped.
+    in the SysUsers table. If table or fields are missing, skips all logic entirely.
 
-  Version: v0.4
+  Version: v0.5 (corrected)
 ===================================================================================*/
 
-console.log("[Custom JS] index.js loaded ✅ v0.4");
+console.log("[Custom JS] index.js loaded ✅ v0.5");
 
 (function () {
   const docId = window.gristDoc?.docId || window.location.pathname.split('/')[1];
@@ -19,31 +19,24 @@ console.log("[Custom JS] index.js loaded ✅ v0.4");
   async function hasUnlockStructure() {
     try {
       const profile = await fetch('/api/profile/user', { credentials: 'include' }).then(r => r.json());
-
       const res = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: 'include' });
 
       if (!res.ok) {
-        console.warn("SysUsers table missing or inaccessible — skipping control logic.");
+        console.warn("SysUsers table missing — skipping control logic.");
         return null;
       }
 
       const data = await res.json();
-      const rowCount = data?.id?.length;
-      if (!rowCount || !data?.Unlock_Structure || !data?.Email) {
-        console.warn("Unlock_Structure or Email column missing — skipping control logic.");
+      if (!data?.id?.length || !data?.Email || !data?.Unlock_Structure) {
+        console.warn("Required fields missing — skipping control logic.");
         return null;
       }
 
-      const records = Array.from({ length: rowCount }, (_, i) => {
-        const row = {};
-        for (const field in data) {
-          row[field] = data[field][i];
-        }
-        return row;
-      });
-
-      const user = records.find(
-        u => u.Email?.trim().toLowerCase() === profile.email?.trim().toLowerCase()
+      const user = Array.from({ length: data.id.length }, (_, i) => ({
+        Email: data.Email[i],
+        Unlock_Structure: data.Unlock_Structure[i]
+      })).find(u =>
+        u.Email?.trim().toLowerCase() === profile.email?.trim().toLowerCase()
       );
 
       return user?.Unlock_Structure === true;
@@ -55,23 +48,18 @@ console.log("[Custom JS] index.js loaded ✅ v0.4");
 
   async function controlAddColumnButtons() {
     const allowed = await hasUnlockStructure();
+    if (allowed === null) return; // Skip everything if check not valid
 
-    // Explicitly skip logic if table or field not found
-    if (allowed === null) return;
-
-    const observer = new MutationObserver(() => {
+    const toggle = () => {
       document.querySelectorAll('.mod-add-column').forEach(el => {
         el.style.display = allowed ? '' : 'none';
       });
-    });
+    };
 
-    observer.observe(document.body, { childList: true, subtree: true });
+    new MutationObserver(toggle).observe(document.body, { childList: true, subtree: true });
+    toggle();
 
-    document.querySelectorAll('.mod-add-column').forEach(el => {
-      el.style.display = allowed ? '' : 'none';
-    });
-
-    console.log(`[Custom JS] Unlock_Structure = ${allowed}`);
+    console.log(`[Custom JS] Unlock_Structure = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
   }
 
   window.addEventListener('load', () => {

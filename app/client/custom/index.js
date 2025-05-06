@@ -1,42 +1,38 @@
 "use strict";
 
 /*===================================================================================
-  🔧 Custom Patch: Conditional visibility of “Add Column” button
-  📄 File: custom/index.js
-  📅 Applied: 2025-05-05
-  📝 Purpose:
+  Custom Patch: Conditional visibility of “Add Column” button
+  File: custom/index.js
+  Applied: 2025-05-05
+  Purpose:
     Hides the “+” Add Column button unless the logged-in user has `Unlock_Structure = true`
-    in the SysUsers table. Used for permission-based structure editing.
-    Injected at runtime via a <script> tag in index.ejs or similar.
+    in the SysUsers table. If table or field missing, the entire logic is skipped.
 
-  ✅ Loaded when Grist finishes loading the UI.
-  ✅ Uses DOM observer to catch dynamically rendered buttons.
-
-  Version: v0.3
+  Version: v0.4
 ===================================================================================*/
 
-console.log("[Custom JS] index.js loaded ✅ v0.3");
+console.log("[Custom JS] index.js loaded ✅ v0.4");
 
 (function () {
-  // Utility: Get the current document ID
   const docId = window.gristDoc?.docId || window.location.pathname.split('/')[1];
 
-  // Fetch current user's profile and SysUsers data, then check access
   async function hasUnlockStructure() {
     try {
       const profile = await fetch('/api/profile/user', { credentials: 'include' }).then(r => r.json());
 
-      // Try to fetch SysUsers data — handle 404 gracefully
-      const response = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: 'include' });
+      const res = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: 'include' });
 
-      if (response.status === 404) {
-        console.warn("🔒 SysUsers table not found — skipping Unlock_Structure check.");
-        return false;
+      if (!res.ok) {
+        console.warn("SysUsers table missing or inaccessible — skipping control logic.");
+        return null;
       }
 
-      const data = await response.json();
+      const data = await res.json();
       const rowCount = data?.id?.length;
-      if (!rowCount) return false;
+      if (!rowCount || !data?.Unlock_Structure || !data?.Email) {
+        console.warn("Unlock_Structure or Email column missing — skipping control logic.");
+        return null;
+      }
 
       const records = Array.from({ length: rowCount }, (_, i) => {
         const row = {};
@@ -52,14 +48,16 @@ console.log("[Custom JS] index.js loaded ✅ v0.3");
 
       return user?.Unlock_Structure === true;
     } catch (err) {
-      console.warn("🔒 Unlock check failed:", err);
-      return false;
+      console.warn("Unlock_Structure check failed — skipping control logic.", err);
+      return null;
     }
   }
 
-  // Hide or show .mod-add-column buttons based on permission
   async function controlAddColumnButtons() {
     const allowed = await hasUnlockStructure();
+
+    // Explicitly skip logic if table or field not found
+    if (allowed === null) return;
 
     const observer = new MutationObserver(() => {
       document.querySelectorAll('.mod-add-column').forEach(el => {
@@ -69,24 +67,14 @@ console.log("[Custom JS] index.js loaded ✅ v0.3");
 
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // Run immediately once
     document.querySelectorAll('.mod-add-column').forEach(el => {
       el.style.display = allowed ? '' : 'none';
     });
 
-    console.log(`[Custom JS] Unlock_Structure = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
+    console.log(`[Custom JS] Unlock_Structure = ${allowed}`);
   }
 
-  // Wait until Grist is ready
   window.addEventListener('load', () => {
     setTimeout(controlAddColumnButtons, 1500);
   });
 })();
-
-/*
-   ╔════════════════════════════════════════════════════════════════════════════════╗
-   ║                                                                                ║
-   ║                  CODE BELOW THIS LINE STILL IN DEVELOPMENT                     ║
-   ║                                                                                ║
-   ╚════════════════════════════════════════════════════════════════════════════════╝
-*/

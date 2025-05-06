@@ -1,3 +1,4 @@
+
 .detail_menu_bottom {
   border-top: 1px solid lightgrey;
 }
@@ -205,9 +206,19 @@
   background-color: var(--grist-theme-card-compact-widget-bg, var(--grist-color-medium-grey));
 }
 
+/* 
+ * 🔧 Custom Patch: Reduced padding for single record in compact view.
+ * 📅 Applied: 2025-05-05
+ * This reduces vertical and horizontal space around a card-style record,
+ * creating a tighter layout in Detail (Card) View.
+ * 
+ * Original: padding: 8px;
+ * Patched:  padding: 0px;
+ */
 .detail_theme_record_compact.detailview_record_single {
-  padding: 8px;
+  padding: 0px;
 }
+
 
 .detail_theme_record_compact > .detail_row_num {
   padding: 0px;

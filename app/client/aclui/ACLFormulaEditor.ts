@@ -45,7 +45,20 @@ export function aclFormulaEditor(options: ACLFormulaOptions) {
   const session = editor.getSession();
   session.setMode('ace/mode/python');
   session.setTabSize(2);
-  session.setUseWrapMode(false);
+  /**
+ * 🆕 Patch: Enable word-wrap in ACLFormulaEditor
+ *
+ * The default ACE editor setting disables wrapping, which can cause long formulas
+ * to scroll horizontally. This patch enables word-wrap for better UX, especially
+ * on smaller screens or with complex expressions.
+ *
+ * Change:
+ *   session.setUseWrapMode(false);  →  session.setUseWrapMode(true);
+ */
+// ✅ Word-wrap enabled for better readability in the ACL editor.
+// Original: session.setUseWrapMode(false);
+session.setUseWrapMode(true);
+
 
   // Implement placeholder text since the version of ACE we use doesn't support one.
   const showPlaceholder = Observable.create(null, !options.initialValue.length);

@@ -58,6 +58,7 @@ export function aclFormulaEditor(options: ACLFormulaOptions) {
 // ✅ Word-wrap enabled for better readability in the ACL editor.
 // Original: session.setUseWrapMode(false);
 session.setUseWrapMode(true);
+console.log("✅ [Patch] Word-wrap enabled in ACLFormulaEditor");
 
 
   // Implement placeholder text since the version of ACE we use doesn't support one.

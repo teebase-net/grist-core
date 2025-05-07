@@ -22,6 +22,10 @@
     - Ensure new styles don't interfere with dynamic layout behavior.
 ==============================================================================*/
 
+html::before {
+  content: "[Custom Patch] ✅ GrisdView.css loaded (from /opt/grist/dev/app/client/components/)";
+  display: none; /* Or block to visibly show it */
+}
 
 :root {
   --rownum-col-width: 30px; /* 🛠️ [Custom Patch: May 2025] Standardized row number column width (was 52px) */

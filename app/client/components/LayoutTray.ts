@@ -1,52 +1,94 @@
 import BaseView from 'app/client/components/BaseView';
-import { buildCollapsedSectionDom, buildViewSectionDom } from 'app/client/components/buildViewSectionDom';
+import {buildCollapsedSectionDom, buildViewSectionDom} from 'app/client/components/buildViewSectionDom';
 import * as commands from 'app/client/components/commands';
-import { ContentBox } from 'app/client/components/Layout';
-import type { ViewLayout } from 'app/client/components/ViewLayout';
-import { get as getBrowserGlobals } from 'app/client/lib/browserGlobals';
-import { detachNode } from 'app/client/lib/dom';
-import { Signal } from 'app/client/lib/Signal';
-import { urlState } from 'app/client/models/gristUrlState';
-import { TransitionWatcher } from 'app/client/ui/transitions';
-import { theme } from 'app/client/ui2018/cssVars';
-import { DisposableWithEvents } from 'app/common/DisposableWithEvents';
-import { isNonNullish } from 'app/common/gutil';
-import { Computed, Disposable, dom, IDisposable, IDisposableOwner, makeTestId, obsArray, Observable, styled } from 'grainjs';
+import {ContentBox} from 'app/client/components/Layout';
+import type {ViewLayout} from 'app/client/components/ViewLayout';
+import {get as getBrowserGlobals} from 'app/client/lib/browserGlobals';
+import {detachNode} from 'app/client/lib/dom';
+import {Signal} from 'app/client/lib/Signal';
+import {urlState} from 'app/client/models/gristUrlState';
+import {TransitionWatcher} from 'app/client/ui/transitions';
+import {theme} from 'app/client/ui2018/cssVars';
+import {DisposableWithEvents} from 'app/common/DisposableWithEvents';
+import {isNonNullish} from 'app/common/gutil';
+import {Computed, Disposable, dom, IDisposable, IDisposableOwner,
+        makeTestId, obsArray, Observable, styled} from 'grainjs';
 import isEqual from 'lodash/isEqual';
 
-import { styled } from 'grainjs';
-
 const testId = makeTestId('test-layoutTray-');
+
 const G = getBrowserGlobals('document', 'window', '$');
+
 
 /**
  * Adds a tray for minimizing and restoring sections. It is built as a plugin for the ViewLayout component.
  */
 export class LayoutTray extends DisposableWithEvents {
+  // We and LayoutEditor will emit this event with the box that is being dragged. When the
+  // drag is over there will be another event with null.
   public drag = Signal.create<Dropped|null>(this, null);
+  // Event for dropping, contains a dropped element.
   public drop = Signal.create<Dropped|null>(this, null);
+  // Monitor if the cursor is over the our tray.
   public hovering = Signal.create(this, false);
+  // If the drag is active and the mouse is over the tray make a signal..
   public over = Signal.compute(this, on => Boolean(on(this.drag) && on(this.hovering)));
+  // Mouse events during dragging (without a state).
   public dragging = Signal.create<MouseEvent|null>(this, null);
+  // Create a layout to actually render the collapsed sections.
   public layout = CollapsedLayout.create(this, this);
+  // Whether we are active (have a dotted border, that indicates we are ready to receive a drop)
   public active = Signal.create(this, false);
+
   private _rootElement: HTMLElement;
 
   constructor(public viewLayout: ViewLayout) {
     super();
+    // Create a proxy for the LayoutEditor. It will mimic the same interface as CollapsedLeaf.
     const externalLeaf = ExternalLeaf.create(this, this);
+
+    // Build layout using saved settings.
     this.layout.buildLayout(this.viewLayout.viewModel.collapsedSections.peek());
+
     this._registerCommands();
 
-    let topPoint = 48;
+    // Override the drop event, to detect if we are dropped on the tray, and no one else
+    // gets the value.
+    this.drop.before((value, emit) => {
+      // Emit the value, if someone else will handle it, he should grab the state from it.
+      emit(value);
+      // See if the state is still there.
+      if (value && this.drop.state.get()) {
+        // No one took it, so we should handle it if we are over the tray.
+        if (this.over.state.get()) {
+          const leafId = value.leafId();
+          // Add it as a last element.
+          this.layout.addBox(leafId);
+          // Ask it to remove itself from the target.
+          value.removeFromLayout();
+        }
+      }
+      // Clear the state, any other listener will get null.
+      this.drop.state.set(null);
+    });
+
+    // Now wire up active state.
+
+    // When a drag is started, get the top point of the tray, over which we will activate.
+    let topPoint = 48; // By default it is 48 pixels.
     this.autoDispose(externalLeaf.drag.listen(d => {
       if (!d) { return; }
       topPoint = (this._rootElement.parentElement?.getBoundingClientRect().top ?? 61) - 13;
     }));
 
+    // First we can be activated when a drag has started and we have some boxes.
     this.drag.map(drag => drag && this.layout.count.get() > 0)
-      .flag().filter(Boolean).pipe(this.active);
+             .flag() // Map to a boolean, and emit only when the value changes.
+             .filter(Boolean) // Only emit when it is set to true
+             .pipe(this.active);
 
+    // Second, we can be activated when the drag has started by the main layout, and we don't have any boxes yet, but
+    // mouse pointer is relatively high on the screen.
     Signal.compute(this, on => {
       const drag = on(externalLeaf.drag);
       if (!drag) { return false; }
@@ -55,6 +97,7 @@ export class LayoutTray extends DisposableWithEvents {
       return !!over;
     }).flag().filter(Boolean).pipe(this.active);
 
+    // If a drag has ended, we should deactivate.
     this.drag.flag().filter(d => !d).pipe(this.active);
   }
 
@@ -70,23 +113,52 @@ export class LayoutTray extends DisposableWithEvents {
     };
   }
 
-  public buildDom() {
-    return this._rootElement = cssVFull(
-      dom.maybe(use => use(this.layout.count) > 0, () =>
-        cssCollapsedTrayWrapper(
-          dom.cls('collapsed-tray-wrapper'),
-          cssCollapsedTray(
-            testId('editor'),
-            cssCollapsedTray.cls('-is-active', this.active.state),
-            cssCollapsedTray.cls('-is-target', this.over.state),
-            syncHover(this.hovering),
-            dom.create(CollapsedDropZone, this),
-            this.layout.buildDom(),
-          )
+  /**
+   * Builds a popup for a maximized section.
+   */
+  public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, close: () => void) {
+    const section = Observable.create<number|null>(owner, null);
+    owner.autoDispose(selected.addListener((cur, prev) => {
+      if (prev) {
+        this.layout.getBox(prev)?.attach();
+      }
+      if (cur) {
+        this.layout.getBox(cur)?.detach();
+      }
+      section.set(cur);
+    }));
+    return dom.domComputed(section, (id) => {
+      if (!id) { return null; }
+      return dom.update(
+        buildViewSectionDom({
+          gristDoc: this.viewLayout.gristDoc,
+          sectionRowId: id,
+          draggable: false,
+          focusable: false,
+        })
+      );
+    });
+  }
+
+public buildDom() {
+  // Creating the root element for the tray layout
+  return this._rootElement = cssVFull(
+    dom.maybe(use => use(this.layout.count) > 0, () =>
+      cssCollapsedTrayWrapper(
+        dom.cls('collapsed-tray-wrapper'),  // Required for hover effect to work
+        cssCollapsedTray(
+          testId('editor'),
+          cssCollapsedTray.cls('-is-active', this.active.state),  // Show the dotted outline when active
+          cssCollapsedTray.cls('-is-target', this.over.state),   // Show target styling when hovering
+          syncHover(this.hovering),  // Sync hover state with the element
+          dom.create(CollapsedDropZone, this),  // Create the drop zone for collapsed sections
+          this.layout.buildDom(),   // Render the collapsed section layout content
         )
       )
-    );
-  }
+    )
+  );
+}
+
 
   public buildContentDom(id: string|number) {
     return buildCollapsedSectionDom({
@@ -95,22 +167,39 @@ export class LayoutTray extends DisposableWithEvents {
     });
   }
 
+
+
   private _registerCommands() {
     const viewLayout = this.viewLayout;
+    // Add custom commands for options in the menu.
     const commandGroup = {
+      // Collapse visible section.
       collapseSection: () => {
         const leafId = viewLayout.viewModel.activeSectionId();
         if (!leafId) { return; }
+
+        // Find the box for this section in the layout.
         const box = viewLayout.layoutEditor.getBox(leafId);
         if (!box) { return; }
+
+        // Change the active section now. This is important as this will destroy the view before we
+        // remove the box from the dom. Charts are very sensitive for this.
         viewLayout.viewModel.activeSectionId(
+          // We can't collapse last section, so the main layout will always have at least one section.
           viewLayout.layoutEditor.layout.getAllLeafIds().filter(x => x !== leafId)[0]
         );
+
+        // Add the box to our collapsed editor (it will transfer the viewInstance).
         this.layout.addBox(leafId);
+
+        // Remove it from the main layout.
         box.dispose();
+
+        // And ask the viewLayout to save the specs.
         viewLayout.saveLayoutSpec().catch(reportError);
       },
       restoreSection: () => {
+        // Get the section that is collapsed and clicked (we are setting this value).
         const leafId = viewLayout.viewModel.activeCollapsedSectionId();
         if (!leafId) { return; }
         viewLayout.viewModel.activeCollapsedSectionId(0);
@@ -120,13 +209,19 @@ export class LayoutTray extends DisposableWithEvents {
         viewLayout.viewModel.activeSectionId(leafId);
         viewLayout.saveLayoutSpec().catch(reportError);
       },
+      // Delete collapsed section.
       deleteCollapsedSection: async () => {
+        // This section is still in the view (but not in the layout). So we can just remove it.
         const leafId = viewLayout.viewModel.activeCollapsedSectionId();
         if (!leafId) { return; }
+
         viewLayout.docModel.docData.bundleActions('removing section', async () => {
           if (!await this.viewLayout.removeViewSection(leafId)) {
             return;
           }
+          // We need to manually update the layout. Main layout editor doesn't care about missing sections.
+          // but we can't afford that. Without removing it, user can add another section that will be collapsed
+          // from the start, as the id will be the same as the one we just removed.
           const currentSpec = viewLayout.viewModel.layoutSpecObj();
           const validSections = new Set(viewLayout.viewModel.viewSections.peek().peek().map(vs => vs.id.peek()));
           validSections.delete(leafId);
@@ -1063,56 +1158,44 @@ class VRect {
   }
 }
 
-const cssCollapsedTrayWrapper = styled('div', `
-  position: relative;
-  height: 14px; /* 4px green bar + 10px hover */
-  z-index: 100;
-`);
-
-const cssCollapsedTray = styled('div', `
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  height: 3px;
-  background-color: #16b378;
-  transition: height 0.3s ease;
+const cssVirtualZone = styled('div', `
   position: absolute;
-  z-index: 101;
-  top: 0;
-  left: 0;
-  right: 0;
-  margin-left: auto;
-  margin-right: auto;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  pointer-events: none;
+  inset: 0;
+`);
 
-  &:hover, &:focus-within {
-    pointer-events: auto;
-    height: 45px;
-    background-color: #f7f7f7;
-    padding-left: 20px;
-    padding-right: 20px;
-  }
 
-  &-is-active {
-    outline: 2px dashed ${theme.widgetBorder};
-  }
-
-  &-is-target {
-    outline: 2px dashed #7B8CEA;
-    background: rgba(123, 140, 234, 0.1);
-  }
-
-  @media print {
-    display: none;
+const cssFloaterWrapper = styled('div', `
+  height: 40px;
+  width: 140px;
+  max-width: 140px;
+  background: ${theme.tableBodyBg};
+  border: 1px solid ${theme.widgetBorder};
+  border-radius: 4px;
+  -webkit-transform: rotate(5deg) scale(0.8) translate(-10px, 0px);
+  transform: rotate(5deg) scale(0.8) translate(-10px, 0px);
+  & .mini_section_container {
+    overflow: hidden;
+    white-space: nowrap;
   }
 `);
 
-const cssVFull = styled('div', `
+
+const cssRow = styled('div', `display: flex`);
+const cssLayout = styled(cssRow, `
+  padding: 8px 24px;
+  column-gap: 16px;
+  row-gap: 8px;
+  flex-wrap: wrap;
   position: relative;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+`);
+
+const cssBox = styled('div', `
+  border: 1px solid ${theme.widgetBorder};
+  border-radius: 3px;
+  background: ${theme.widgetBg};
+  min-width: 120px;
+  min-height: 34px;
+  cursor: pointer;
 `);
 
 const cssEmptyBox = styled('div', `
@@ -1126,20 +1209,16 @@ const cssEmptyBox = styled('div', `
   padding: 8px;
   width: 120px;
   min-height: 34px;
-
   &-can-accept {
     border: 2px dashed #7B8CEA;
     background: rgba(123, 140, 234, 0.1);
   }
 `);
 
-const cssBox = styled('div', `
-  border: 1px solid ${theme.widgetBorder};
-  border-radius: 3px;
-  background: ${theme.widgetBg};
-  min-width: 120px;
-  min-height: 34px;
-  cursor: pointer;
+const cssProbe = styled('div', `
+  min-width: 0px;
+  padding: 0px;
+  transition: width 0.2s ease-out;
 `);
 
 const cssMiniFloater = styled(cssBox, `
@@ -1148,23 +1227,9 @@ const cssMiniFloater = styled(cssBox, `
   overflow: hidden;
   pointer-events: none;
   z-index: 10;
+  -webkit-transform: rotate(5deg) scale(0.8);
   transform: rotate(5deg) scale(0.8);
   transform-origin: top left;
-`);
-
-const cssFloaterWrapper = styled('div', `
-  height: 40px;
-  width: 140px;
-  max-width: 140px;
-  background: ${theme.tableBodyBg};
-  border: 1px solid ${theme.widgetBorder};
-  border-radius: 4px;
-  transform: rotate(5deg) scale(0.8) translate(-10px, 0px);
-  
-  & .mini_section_container {
-    overflow: hidden;
-    white-space: nowrap;
-  }
 `);
 
 const cssVirtualPart = styled('div', `
@@ -1174,23 +1239,41 @@ const cssVirtualPart = styled('div', `
   background: rgba(0, 0, 0, 0.1);
 `);
 
-const cssRow = styled('div', `
-  display: flex;
+const cssHidden = styled('div', `display: none;`);
+
+const cssCollapsedTrayWrapper = styled('div', `
+  .collapsed-tray-wrapper {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: 3px;   /* Tray collapsed height */
+    transition: height 0.3s ease;
+    background-color: #16b378;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    pointer-events: none; /* Disable pointer events by default */
+
+    /* Hover effect */
+    &:hover {
+      pointer-events: auto;   /* Enable pointer events on hover */
+      height: 45px;            /* Expand the height when hovered */
+      background-color: #f7f7f7;  /* Change background color */
+    }
+  }
 `);
 
-const cssLayout = styled(cssRow, `
-  padding: 8px 24px;
-  column-gap: 16px;
-  row-gap: 8px;
-  flex-wrap: wrap;
-  position: relative;
+const cssCollapsedTray = styled('div', `
+  /* Style the tray when it is active or a valid drop target */
+  &.collapsed-tray-wrapper.-is-active {
+    outline: 2px dashed ${theme.widgetBorder}; /* Dotted border when active */
+  }
+
+  &.collapsed-tray-wrapper.-is-target {
+    outline: 2px dashed #7B8CEA;
+    background: rgba(123, 140, 234, 0.1);  /* Highlight color when target */
+  }
 `);
 
-const cssHidden = styled('div', `
-  display: none;
-`);
-
-const cssVirtualZone = styled('div', `
-  position: absolute;
-  inset: 0;
-`);

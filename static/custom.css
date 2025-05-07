@@ -1,3 +1,9 @@
+html::before {
+  content: "[Custom Patch] ✅ custom.css loaded (from /opt/grist/dev/static/custom.css)";
+  display: none; /* Or block to visibly show it */
+}
+
+
 /*
   Are you getting a console warning about deprecated usage? Please see the migration guide at the end of this file.
 

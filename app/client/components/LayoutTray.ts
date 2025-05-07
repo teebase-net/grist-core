@@ -1226,7 +1226,7 @@ const cssLayout = styled('div', `
   position: relative;
 `);
 
-// end MOD DMH
+
 
 const cssBox = styled('div', `
   border: 1px solid ${theme.widgetBorder};
@@ -1257,6 +1257,8 @@ const cssEmptyBox = styled('div', `
     background: rgba(123, 140, 234, 0.1);
   }
 `);
+// end MOD DMH
+
 
 const cssProbe = styled('div', `
   min-width: 0px;

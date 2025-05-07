@@ -1296,9 +1296,16 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   }
 `);
 
-.collapsed-tray-wrapper:hover {
-  border: 2px solid red;  /* Temporarily highlight hover */
-}
+const cssCollapsedTrayWrapper = styled('div', `
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  z-index: 10;
+  &:hover {
+    border: 2px solid red; /* Temporarily highlight hover */
+  }
+`);
 
 const cssMainLayout = styled('div', `
   display: flex;

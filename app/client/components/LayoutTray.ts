@@ -21,7 +21,7 @@ const testId = makeTestId('test-layoutTray-');
 
 const G = getBrowserGlobals('document', 'window', '$');
 
-console.log("✅ [Custom Patch] Collapsible Tray - LayoutTray.js loaded.");  // ✅ Patch confirmation
+console.log("✅ [Custom Patch] Collapsible Tray - LayoutTray.js v0.1");  // ✅ Patch confirmation
 
 /**
  * Adds a tray for minimizing and restoring sections. It is built as a plugin for the ViewLayout component.
@@ -170,23 +170,25 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
  * ✅ Patch: Added console log for verification of successful tray rendering.
  */
 public buildDom() {
+  const isEmpty = this.layout.all().length === 0;
+  console.log("📦 Tray is empty?", isEmpty);
+
   return this._rootElement = cssVFull(
-    dom.maybe(use => use(this.layout.count) > 0, () =>
-      cssCollapsedTrayWrapper(
-        dom.cls('collapsed-tray-wrapper'),
-        cssCollapsedTray(
-          testId('editor'),
-          cssCollapsedTray.cls('-is-active', this.active.state),
-          cssCollapsedTray.cls('-is-target', this.over.state),
-          syncHover(this.hovering),
-          dom.create(CollapsedDropZone, this),
-          this.layout.buildDom() || dom('div')
-        )
+    !isEmpty ? cssCollapsedTrayWrapper(
+      dom.cls('collapsed-tray-wrapper'),
+      cssCollapsedTray(
+        testId('editor'),
+        cssCollapsedTray.cls('-is-active', this.active.state),
+        cssCollapsedTray.cls('-is-target', this.over.state),
+        syncHover(this.hovering),
+        dom.create(CollapsedDropZone, this),
+        this.layout.buildDom() || dom('div')
       )
-    ),
+    ) : null,
     this.viewLayout.layout.buildDom()
   );
 }
+
 
 
 // end MOD DMH

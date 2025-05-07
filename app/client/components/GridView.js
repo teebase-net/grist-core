@@ -85,6 +85,7 @@ const PLUS_WIDTH = 40;
 // 🔄 Modified from 52px → 30px to reduce UI column width
 // =====================================================================
 const ROW_NUMBER_WIDTH = 30;
+console.log("[Patch] ✅ Set Row Number width");  // MOD DMH
 
 
 /**

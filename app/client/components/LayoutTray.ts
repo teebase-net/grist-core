@@ -186,7 +186,7 @@ public buildDom() {
 
 return this._rootElement = cssVFull(
   tray,
-  this.viewLayout.layoutEditor.buildDom()  // ✅ Add main layout back
+  this.viewLayout.layout.buildDom()  // ✅ Add main layout back
 );
 
   

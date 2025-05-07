@@ -140,30 +140,32 @@ export class LayoutTray extends DisposableWithEvents {
     });
   }
 
-  public buildDom() {
+ public buildDom() {
   // Wrap the tray content and sections below the tray
-  return this._rootElement = cssCollapsedTray(
-    testId('editor'),
-    // When drag is active, we show a dotted border around the tray.
-    cssCollapsedTray.cls('-is-active', this.active.state),
-    // If the element is over the tray, indicate that we are ready by changing color.
-    cssCollapsedTray.cls('-is-target', this.over.state),
-    // Synchronize the hovering state with the event.
-    syncHover(this.hovering),
-    // Create a drop zone (below actual sections)
-    dom.create(CollapsedDropZone, this),
-    // Build the tray layout content (collapsed or expanded)
-    this.layout.buildDom(),
-    // Show only if there are any sections in the tray or it can accept a drop.
-    dom.show(use => use(this.layout.count) > 0 || use(this.active.state)),
+  return this._rootElement = dom.create('div', { className: 'collapsed-tray-wrapper' }, 
+    cssCollapsedTray(
+      testId('editor'),
+      // When drag is active, we show a dotted border around the tray.
+      cssCollapsedTray.cls('-is-active', this.active.state),
+      // If the element is over the tray, indicate that we are ready by changing color.
+      cssCollapsedTray.cls('-is-target', this.over.state),
+      // Synchronize the hovering state with the event.
+      syncHover(this.hovering),
+      // Create a drop zone (below actual sections)
+      dom.create(CollapsedDropZone, this),
+      // Build the tray layout content (collapsed or expanded)
+      this.layout.buildDom(),
+      // Show only if there are any sections in the tray or it can accept a drop.
+      dom.show(use => use(this.layout.count) > 0 || use(this.active.state)),
 
-    // Now, add sections below the tray.
-    dom.maybe(use => use(this.layout.count) > 0, () =>
-      cssMainLayout(
-        // Show the sections only when the tray is expanded or when content exists.
-        dom.show(use => use(this.active.state)),
-        // Render the sections below the tray.
-        dom.forEach(this.layout.all(), box => box.buildDom())
+      // Now, add sections below the tray.
+      dom.maybe(use => use(this.layout.count) > 0, () =>
+        cssMainLayout(
+          // Show the sections only when the tray is expanded or when content exists.
+          dom.show(use => use(this.active.state)),
+          // Render the sections below the tray.
+          dom.forEach(this.layout.all(), box => box.buildDom())
+        )
       )
     )
   );
@@ -1306,3 +1308,22 @@ const cssMainLayout = styled('div', `
   z-index: 1;
 `);
 
+const cssCollapsedTrayWrapper = styled('div.collapsed-tray-wrapper', `
+  position: relative;  /* Ensure proper positioning for hover */
+  pointer-events: none;  /* Initially disable pointer events */
+  transition: height 0.3s ease;  /* Smooth transition for height */
+
+  /* Allow hover interaction */
+  &:hover {
+    pointer-events: auto;  /* Enable pointer events on hover */
+  }
+
+  .collapsed_layout {
+    transition: height 0.3s ease;  /* Smooth transition for collapsed_layout */
+  }
+
+  &:hover .collapsed_layout {
+    height: 45px;  /* Expanded height */
+    background-color: #f7f7f7;  /* Light background color change */
+  }
+`);

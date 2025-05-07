@@ -1256,18 +1256,20 @@ const cssHidden = styled('div', `display: none;`);
 const cssCollapsedTrayWrapper = styled('div', `
   position: relative;
   display: flex;
-  flex-direction: column;  /* Allow child elements to stack vertically */
-  height: auto;            /* Ensure the wrapper expands based on its content */
+  flex-direction: column;
+  height: auto;
   z-index: 10;
+  margin-top: 0;  /* Ensure the tray doesn't add unintended spacing */
 `);
+
 
 const cssCollapsedTray = styled('div.collapsed_layout', `
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  height: 3px;
+  height: 3px; /* Start collapsed height */
   background-color: #16b378;
-  transition: height 0.3s ease;
+  transition: height 0.3s ease; /* Smooth transition for collapsing/expanding */
   position: absolute;
   z-index: 101;
   top: 0;
@@ -1281,7 +1283,7 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   .collapsed-tray-wrapper:hover &,
   .collapsed-tray-wrapper:focus-within & {
     pointer-events: auto;
-    height: 45px;
+    height: 45px; /* Height when expanded */
     background-color: #f7f7f7;
     padding-left: 20px;
     padding-right: 20px;
@@ -1302,14 +1304,17 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
     display: none;
   }
 `);
+
 // end MOD DMH
 
 const cssMainLayout = styled('div', `
   display: flex;
   flex-direction: column;
-  flex-grow: 1;            /* Make it fill the available vertical space */
-  overflow: visible;      /* Prevent content clipping */
+  flex-grow: 1;
+  overflow: visible;
   position: relative;
-  z-index: 1;             /* Ensure it is on top of the collapsed tray */
+  z-index: 1;
+  margin-top: 0;  /* Remove any margin that might push content down */
 `);
+
 

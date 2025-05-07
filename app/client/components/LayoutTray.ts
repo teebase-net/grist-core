@@ -142,28 +142,30 @@ export class LayoutTray extends DisposableWithEvents {
 
 // MOD DMH
 public buildDom() {
-  const trayDom = dom.maybe(use => use(this.layout.count) > 0, () =>
-    cssCollapsedTrayWrapper(
-      dom.cls('collapsed-tray-wrapper'),
-      cssCollapsedTray(
-        testId('editor'),
+  // Wrap the main layout content with the updated wrapper that uses flexbox
+  const trayDom = dom.maybe(
+    use => use(this.layout.count) > 0, () =>
+      cssCollapsedTrayWrapper(
+        dom.cls('collapsed-tray-wrapper'),
         cssCollapsedTray.cls('-is-active', this.active.state),
         cssCollapsedTray.cls('-is-target', this.over.state),
         syncHover(this.hovering),
         dom.create(CollapsedDropZone, this),
-        this.layout.buildDom(),
+        this.layout.buildDom(), // Collapsed tray content
       )
-    )
   );
 
-  // Instead of returning the tray alone, just inject it into the DOM manually in replaceLayout()
-  // or wherever it's expected. But for safety, return only the tray DOM here to not break assumptions.
-
-  return this._rootElement = cssVFull(
-  trayDom ?? dom('div')
-);
-
+  // Wrap everything below the tray content in the main layout container
+  return this._rootElement = cssMainLayout(
+    trayDom || dom('div'),  // Ensure something is returned in case of null
+    dom.maybe(use => use(this.layout.count) > 0, () => 
+      cssMainLayout(         // Add this wrapper for the section below the tray
+        dom.forEach(this.layout.all(), box => box.buildDom())  // Add all widgets/content below the tray
+      )
+    ),
+  );
 }
+
 
 
 //end MOD DMH
@@ -1258,8 +1260,10 @@ const cssVFull = styled('div', `
 
 const cssCollapsedTrayWrapper = styled('div', `
   position: relative;
-  height: 14px; /* 4px green bar + 10px hover */
-  z-index: 100;
+  display: flex;
+  flex-direction: column;  /* Allow child elements to stack vertically */
+  height: auto;            /* Ensure the wrapper expands based on its content */
+  z-index: 10;
 `);
 
 const cssCollapsedTray = styled('div.collapsed_layout', `
@@ -1304,3 +1308,25 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   }
 `);
 // end MOD DMH
+
+const cssMainLayout = styled('div', `
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;            /* Make it fill the available vertical space */
+  overflow: visible;      /* Prevent content clipping */
+  position: relative;
+  z-index: 1;             /* Ensure it is on top of the collapsed tray */
+`);
+
+const cssGridViewContainer = styled('div', `
+  flex-grow: 1;
+  min-height: 200px;    /* Make sure the grid or content has a minimum height */
+  overflow: auto;       /* Allow scrolling if content exceeds the available space */
+`);
+
+const cssLayoutBelowTray = styled('div', `
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: visible;   /* Ensure no clipping of content */
+`);

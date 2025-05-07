@@ -82,7 +82,7 @@ export class CodeEditorPanel extends DisposableWithEvents {
           return nameA.localeCompare(nameB);
         });
         const pretty = sorted.map(b => b.join("\n")).join("\n\n");
-        console.log("[Custom] CodeEditorPanel.ts 🔤 Sorted @grist.UserTable blocks by class name (v0.3)");
+        console.log("[Custom Patch] CodeEditorPanel.ts ✅ Sorted @grist.UserTable blocks by class name (v0.3)");
         this._schema.set(pretty);
 
         this._denied.set(false);

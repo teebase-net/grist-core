@@ -14,14 +14,11 @@ import {isNonNullish} from 'app/common/gutil';
 import {Computed, Disposable, dom, IDisposable, IDisposableOwner,
         makeTestId, obsArray, Observable, styled} from 'grainjs';
 import isEqual from 'lodash/isEqual';
-// ChatGPT to me to add this line - 5/5/25
-import { ViewSectionRec } from 'app/client/models/DocModel';
 
 const testId = makeTestId('test-layoutTray-');
 
 const G = getBrowserGlobals('document', 'window', '$');
 
-console.log("✅ [Custom Patch] Collapsible Tray - LayoutTray.js v0.2");  // ✅ Patch confirmation
 
 /**
  * Adds a tray for minimizing and restoring sections. It is built as a plugin for the ViewLayout component.
@@ -119,71 +116,49 @@ export class LayoutTray extends DisposableWithEvents {
   /**
    * Builds a popup for a maximized section.
    */
-/**
- * MOD DMH: Automatically focus search input when restoring "🔍 SEARCH" section from tray.
- */
-public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, close: () => void) {
-  const section = Observable.create<number|null>(owner, null);
+  public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, close: () => void) {
+    const section = Observable.create<number|null>(owner, null);
+    owner.autoDispose(selected.addListener((cur, prev) => {
+      if (prev) {
+        this.layout.getBox(prev)?.attach();
+      }
+      if (cur) {
+        this.layout.getBox(cur)?.detach();
+      }
+      section.set(cur);
+    }));
+    return dom.domComputed(section, (id) => {
+      if (!id) { return null; }
+      return dom.update(
+        buildViewSectionDom({
+          gristDoc: this.viewLayout.gristDoc,
+          sectionRowId: id,
+          draggable: false,
+          focusable: false,
+        })
+      );
+    });
+  }
 
-  owner.autoDispose(selected.addListener((cur, prev) => {
-    if (prev) this.layout.getBox(prev)?.attach();
-    if (cur) this.layout.getBox(cur)?.detach();
-    section.set(cur);
-  }));
-
-  return dom.domComputed(section, (id) => {
-    if (!id) return null;
-
-    const viewSections = this.viewLayout.viewModel.viewSections.peek();
-    const vs = viewSections.all().find((s: ViewSectionRec) => s.getRowId() === id);
-    const title = vs?.title.peek()?.trim().toUpperCase();
-
-    if (title === "🔍 SEARCH") {
-      setTimeout(() => {
-        const input = document.querySelector('input[placeholder="Search in document"]') as HTMLInputElement | null;
-        if (input) {
-          input.focus();
-          input.select();
-          console.log("✅ [Patch] Focused search input for 🔍 SEARCH popup.");
-        } else {
-          console.warn("⚠️ [Patch] Search input not found.");
-        }
-      }, 300);
-    }
-
-    return dom.update(
-      buildViewSectionDom({
-        gristDoc: this.viewLayout.gristDoc,
-        sectionRowId: id,
-        draggable: false,
-        focusable: false,
-      })
-    );
-  });
-}
-// end MOD DMH
-
-
-/**
- * MOD DMH: Wrap the collapsed tray with hover-sensitive container for expand-on-hover behavior.
- * ✅ Patch: Added fallback DOM element in case layout.buildDom() returns null, to avoid blank screen.
- * ✅ Patch: Added console log for verification of successful tray rendering.
- */
+// MOD DMH
 public buildDom() {
-  return this._rootElement = cssCollapsedTray(
-    testId('editor'),
-    cssCollapsedTray.cls('-is-active', this.active.state),
-    cssCollapsedTray.cls('-is-target', this.over.state),
-    cssCollapsedTray.cls('-collapsed', use => use(this.layout.count) > 0),
-    syncHover(this.hovering),
-    dom.create(CollapsedDropZone, this),
-    this.layout.buildDom(),
-    dom.style('display', 'block'),  // ✅ Always show so green line renders
+  return this._rootElement = cssVFull(
+    dom.maybe(use => use(this.layout.count) > 0, () =>
+      cssCollapsedTrayWrapper(
+        dom.cls('collapsed-tray-wrapper'),
+        cssCollapsedTray(
+          testId('editor'),
+          cssCollapsedTray.cls('-is-active', this.active.state),
+          cssCollapsedTray.cls('-is-target', this.over.state),
+          syncHover(this.hovering),
+          dom.create(CollapsedDropZone, this),
+          this.layout.buildDom(),
+        )
+      )
+    )
   );
 }
-
-// end MOD DMH
-
+//end MOD DMH
 
   public buildContentDom(id: string|number) {
     return buildCollapsedSectionDom({
@@ -191,6 +166,8 @@ public buildDom() {
       sectionRowId: id,
     });
   }
+
+
 
   private _registerCommands() {
     const viewLayout = this.viewLayout;
@@ -316,16 +293,16 @@ class CollapsedDropZone extends Disposable {
           // If we found something, insert a drop target.
           if (underMouse !== -1) {
             this._insertDropTarget(underMouse)
-              .catch((err) => console.error(Failed to insert zone:, err)); // This should not happen.
+              .catch((err) => console.error(`Failed to insert zone:`, err)); // This should not happen.
             return;
           }
           // We haven't found anything, remove the last drop target.
-          this._removeDropZone().catch((err) => console.error(Failed to remove zone:, err));// This should not happen.
+          this._removeDropZone().catch((err) => console.error(`Failed to remove zone:`, err));// This should not happen.
         };
         G.window.addEventListener('mousemove', listener);
         // When mouse leaves, we need to remove the last drop target.
         owner.onDispose(() => {
-          this._removeDropZone().catch((err) => console.error(Failed to remove zone:, err));// This should not happen.
+          this._removeDropZone().catch((err) => console.error(`Failed to remove zone:`, err));// This should not happen.
         });
         owner.onDispose(() => G.window.removeEventListener('mousemove', listener));
         // For debugging, we can show the virtual zones.
@@ -333,7 +310,7 @@ class CollapsedDropZone extends Disposable {
         return !show ? null : dom.domComputed(
           obsRects,
           rects => rects.filter(isNonNullish).map((rect: VRect) => cssVirtualPart(
-            {style: left: ${rect.left}px; width: ${rect.width}px; top: ${rect.top}px; height: ${rect.height}px;}
+            {style: `left: ${rect.left}px; width: ${rect.width}px; top: ${rect.top}px; height: ${rect.height}px;`}
         )));
       })
     ));
@@ -802,8 +779,8 @@ class MiniFloater extends Disposable {
 
   public onMove(ev: MouseEvent) {
     if (this.content.get()) {
-      this.rootElement.style.left = ${ev.clientX}px;
-      this.rootElement.style.top = ${ev.clientY}px;
+      this.rootElement.style.left = `${ev.clientX}px`;
+      this.rootElement.style.top = `${ev.clientY}px`;
     }
   }
 }
@@ -1181,12 +1158,13 @@ class VRect {
   }
 }
 
-const cssVirtualZone = styled('div', 
+const cssVirtualZone = styled('div', `
   position: absolute;
   inset: 0;
-);
+`);
 
-const cssFloaterWrapper = styled('div', 
+
+const cssFloaterWrapper = styled('div', `
   height: 40px;
   width: 140px;
   max-width: 140px;
@@ -1199,40 +1177,55 @@ const cssFloaterWrapper = styled('div',
     overflow: hidden;
     white-space: nowrap;
   }
-);
+`);
 
-// GhatGPT told me to comment out this line 5/5/25 - const cssRow = styled('div', display: flex);
-
-
-/**
- * MOD DMH: Reduced padding on collapsed section layout for tighter spacing.
- */
-const cssLayout = styled('div', 
+const cssCollapsedTray = styled('div.collapsed_layout', `
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  padding: 8px 24px;
+  flex-direction: column;
+  overflow: hidden;
+  transition: height 0.2s;
   position: relative;
+  margin: calc(-1 * var(--view-content-page-padding, 12px));
+  margin-bottom: 0;
+  user-select: none;
+  background-color: ${theme.pageBg};
+  border-bottom: 1px solid ${theme.pagePanelsBorder};
+  outline-offset: -1px;
+
+  &-is-active {
+    outline: 2px dashed ${theme.widgetBorder};
+  }
+  &-is-target {
+    outline: 2px dashed #7B8CEA;
+    background: rgba(123, 140, 234, 0.1);
+  }
+  @media print {
+    & {
+      display: none;
+    }
+  }
+`
 );
 
-const cssBox = styled('div', 
+const cssRow = styled('div', `display: flex`);
+const cssLayout = styled(cssRow, `
+  padding: 8px 24px;
+  column-gap: 16px;
+  row-gap: 8px;
+  flex-wrap: wrap;
+  position: relative;
+`);
+
+const cssBox = styled('div', `
   border: 1px solid ${theme.widgetBorder};
   border-radius: 3px;
   background: ${theme.widgetBg};
   min-width: 120px;
   min-height: 34px;
-  height: 34px;
-  max-width: 140px;
-  padding: 0 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-);
+`);
 
-const cssEmptyBox = styled('div', 
+const cssEmptyBox = styled('div', `
   text-align: center;
   text-transform: uppercase;
   color: ${theme.widgetBorder};
@@ -1247,17 +1240,15 @@ const cssEmptyBox = styled('div',
     border: 2px dashed #7B8CEA;
     background: rgba(123, 140, 234, 0.1);
   }
-);
-// end MOD DMH
+`);
 
-
-const cssProbe = styled('div', 
+const cssProbe = styled('div', `
   min-width: 0px;
   padding: 0px;
   transition: width 0.2s ease-out;
-);
+`);
 
-const cssMiniFloater = styled(cssBox, 
+const cssMiniFloater = styled(cssBox, `
   pointer-events: none;
   position: absolute;
   overflow: hidden;
@@ -1266,55 +1257,57 @@ const cssMiniFloater = styled(cssBox,
   -webkit-transform: rotate(5deg) scale(0.8);
   transform: rotate(5deg) scale(0.8);
   transform-origin: top left;
-);
+`);
 
-const cssVirtualPart = styled('div', 
+const cssVirtualPart = styled('div', `
   outline: 1px solid blue;
   position: absolute;
   z-index: 10;
   background: rgba(0, 0, 0, 0.1);
-);
+`);
 
-const cssHidden = styled('div', display: none;);
+const cssHidden = styled('div', `display: none;`);
 
-
-/**
- * MOD DMH: CSS for hover-triggered tray expansion and wrapper.
- */
-const cssVFull = styled('div', 
+// MOD DMH
+const cssVFull = styled('div', `
   position: relative;
   height: 100%;
   display: flex;
   flex-direction: column;
-);
+`);
 
-const cssCollapsedTrayWrapper = styled('div', 
+const cssCollapsedTrayWrapper = styled('div', `
   position: relative;
-  height: 10px;  // Hover area only
-  margin-top: -10px;  // Pull up to eliminate visible gap
+  height: 14px; /* 4px green bar + 10px hover */
   z-index: 100;
-);
-
+`);
 
 const cssCollapsedTray = styled('div.collapsed_layout', `
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  position: relative;
-  margin: calc(-1 * var(--view-content-page-padding, 12px));
-  margin-bottom: 0;
-  user-select: none;
-  background-color: ${theme.pageBg};
-  border-top: 5px solid green;
-  height: auto;
+  height: 3px;
+  background-color: #16b378;
   transition: height 0.3s ease;
+  position: absolute;
+  z-index: 101;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
 
-  &.-collapsed {
-    height: 5px;
-  }
-
-  &.-collapsed:hover {
-    height: 100px;
+  .collapsed-tray-wrapper:hover &,
+  .collapsed-tray-wrapper:focus-within & {
+    pointer-events: auto;
+    height: 45px;
+    background-color: #f7f7f7;
+    padding-left: 20px;
+    padding-right: 20px;
+    border: none !important;
+    border-radius: 0 !important;
   }
 
   &-is-active {
@@ -1327,15 +1320,7 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   }
 
   @media print {
-    & {
-      display: none;
-    }
+    display: none;
   }
 `);
-
-
-
-
-
-
 // end MOD DMH

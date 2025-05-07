@@ -42,9 +42,7 @@ WORKDIR /grist
 COPY --from=builder /grist/node_modules_prod /grist/node_modules
 COPY --from=builder /grist/app /grist/app
 COPY --from=builder /grist/static /grist/static
-COPY --from=builder /grist/dist /grist/dist
 COPY --from=builder /grist/_build /grist/_build
-COPY --from=builder /grist/cli.sh /grist/cli
 COPY --from=builder /grist/package.json /grist/package.json
 
 # Minimal runtime settings

@@ -11,7 +11,7 @@
   Version: v0.5 (corrected)
 ===================================================================================*/
 
-console.log("[Custom JS] index.js loaded ✅ v0.5");
+console.log("[Custom Patch] index.js loaded ✅ v0.5");
 
 (function () {
   const docId = window.gristDoc?.docId || window.location.pathname.split('/')[1];
@@ -59,7 +59,7 @@ console.log("[Custom JS] index.js loaded ✅ v0.5");
     new MutationObserver(toggle).observe(document.body, { childList: true, subtree: true });
     toggle();
 
-    console.log(`[Custom JS] Unlock_Structure = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
+    console.log(`[Custom Patch] Unlock_Structure = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
   }
 
   window.addEventListener('load', () => {

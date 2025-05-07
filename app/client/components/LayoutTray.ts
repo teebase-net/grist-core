@@ -1232,13 +1232,17 @@ const cssBox = styled('div', `
   border: 1px solid ${theme.widgetBorder};
   border-radius: 3px;
   background: ${theme.widgetBg};
-  min-width: 120px;
-  max-width: 160px;
-  min-height: 34px;
-  margin-bottom: 6px;
-  flex-shrink: 0;
+  min-width: 140px;
+  max-width: 160px;        /* Optional: limit so they wrap nicely */
+  height: 40px;            /* Match standard collapsed section height */
   cursor: pointer;
+  flex: 0 0 auto;          /* Ensure they don’t stretch */
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `);
+
 
 
 const cssEmptyBox = styled('div', `
@@ -1307,43 +1311,31 @@ const cssCollapsedTrayWrapper = styled('div', `
 
 const cssCollapsedTray = styled('div.collapsed_layout', `
   display: flex;
-  flex-wrap: wrap;  // ⬅ needed for #3 too
-  flex-direction: row;
+  flex-direction: column;
   overflow: hidden;
-  height: 3px;
-  background-color: #16b378;
-  transition: height 0.3s ease, padding 0.3s ease, background-color 0.3s ease;
-  position: absolute;
-  z-index: 101;
-  top: 0; left: 0; right: 0;
-  margin-left: auto;
-  margin-right: auto;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  pointer-events: auto;
-
-  .collapsed-tray-wrapper:hover &,
-  .collapsed-tray-wrapper:focus-within & {
-    height: 45px;
-    background-color: #f7f7f7;
-    padding-left: 20px;
-    padding-right: 20px;
-    border: none !important;
-    border-radius: 0 !important;
-  }
+  transition: height 0.2s ease;  /* smoother transition */
+  position: relative;
+  margin-top: 0;                 /* 🟢 changed from calc(-1 * padding) to 0 */
+  margin-bottom: 0;
+  user-select: none;
+  background-color: ${theme.pageBg};
+  border-bottom: 1px solid ${theme.pagePanelsBorder};
+  outline-offset: -1px;
 
   &-is-active {
     outline: 2px dashed ${theme.widgetBorder};
   }
-
   &-is-target {
     outline: 2px dashed #7B8CEA;
     background: rgba(123, 140, 234, 0.1);
   }
-
   @media print {
-    display: none;
+    & {
+      display: none;
+    }
   }
 `);
+
 
 
 // end MOD DMH

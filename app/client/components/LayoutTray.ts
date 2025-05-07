@@ -184,7 +184,12 @@ public buildDom() {
     )
   );
 
-  return this._rootElement = cssVFull(tray);
+return this._rootElement = cssVFull(
+  tray,
+  this.viewLayout.layoutEditor.buildDom()  // ✅ Add main layout back
+);
+
+  
 }
 
 // end MOD DMH

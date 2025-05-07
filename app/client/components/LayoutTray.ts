@@ -1242,33 +1242,46 @@ const cssVirtualPart = styled('div', `
 const cssHidden = styled('div', `display: none;`);
 
 const cssCollapsedTrayWrapper = styled('div', `
-  .collapsed-tray-wrapper {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    height: 3px;   /* Tray collapsed height */
-    transition: height 0.3s ease;
-    background-color: #16b378;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    pointer-events: none; /* Disable pointer events by default */
+  position: relative;
+  width: 100%;
+  height: 3px;               /* Default collapsed height */
+  z-index: 100;
+  pointer-events: none;      /* Disable pointer events by default */
 
-    /* Hover effect */
-    &:hover {
-      pointer-events: auto;   /* Enable pointer events on hover */
-      height: 45px;            /* Expand the height when hovered */
-      background-color: #f7f7f7;  /* Change background color */
-    }
+  &:hover {
+    pointer-events: auto;    /* Enable pointer events when hovered */
+  }
+
+  /* Optional: You can also trigger expansion on focus if required */
+  &:focus-within {
+    pointer-events: auto;
   }
 `);
 
 const cssCollapsedTray = styled('div', `
-  /* Style the tray when it is active or a valid drop target */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 3px;               /* Tray collapsed height */
+  background-color: #16b378; /* Green color for the collapsed tray */
+  transition: height 0.3s ease;  /* Smooth transition for expansion */
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  
+  /* Expands on hover/focus */
+  &:hover, &:focus-within {
+    pointer-events: auto;           /* Enable pointer events on hover/focus */
+    height: 45px;                   /* Expanded height */
+    background-color: #f7f7f7;      /* Change background color */
+  }
+
   &.collapsed-tray-wrapper.-is-active {
-    outline: 2px dashed ${theme.widgetBorder}; /* Dotted border when active */
+    outline: 2px dashed ${theme.widgetBorder};  /* Dotted outline when active */
   }
 
   &.collapsed-tray-wrapper.-is-target {
@@ -1277,10 +1290,3 @@ const cssCollapsedTray = styled('div', `
   }
 `);
 
-// Define cssVFull
-const cssVFull = styled('div', `
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-`);

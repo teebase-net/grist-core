@@ -1220,30 +1220,27 @@ const cssFloaterWrapper = styled('div', `
 const cssLayout = styled('div', `
   display: flex;
   flex-wrap: wrap;
-  column-gap: 12px;
-  row-gap: 8px;
-  padding: 4px 0;
+  gap: 8px 16px;
+  padding: 8px 24px;
   position: relative;
 `);
-
-
 
 const cssBox = styled('div', `
   border: 1px solid ${theme.widgetBorder};
   border-radius: 3px;
   background: ${theme.widgetBg};
-  min-width: 140px;
-  max-width: 160px;        /* Optional: limit so they wrap nicely */
-  height: 40px;            /* Match standard collapsed section height */
-  cursor: pointer;
-  flex: 0 0 auto;          /* Ensure they don’t stretch */
-  overflow: hidden;
+  min-width: 120px;
+  min-height: 34px;
+  height: 34px;
+  max-width: 140px;
+  padding: 0 4px;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `);
-
-
 
 const cssEmptyBox = styled('div', `
   text-align: center;
@@ -1313,9 +1310,8 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: height 0.2s ease;  /* smoother transition */
   position: relative;
-  margin-top: 0;                 /* 🟢 changed from calc(-1 * padding) to 0 */
+  margin: calc(-1 * var(--view-content-page-padding, 12px));
   margin-bottom: 0;
   user-select: none;
   background-color: ${theme.pageBg};
@@ -1329,12 +1325,14 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
     outline: 2px dashed #7B8CEA;
     background: rgba(123, 140, 234, 0.1);
   }
+
   @media print {
     & {
       display: none;
     }
   }
 `);
+
 
 
 

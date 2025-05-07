@@ -170,12 +170,10 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
  * ✅ Patch: Added console log for verification of successful tray rendering.
  */
 public buildDom() {
-  const isEmpty = this.layout.all().length === 0;
-  console.log("📦 Tray is empty?", isEmpty);
-
   return this._rootElement = cssVFull(
-    !isEmpty ? cssCollapsedTrayWrapper(
+    cssCollapsedTrayWrapper(
       dom.cls('collapsed-tray-wrapper'),
+      dom.hide(use => use(this.layout.count) === 0),  // ✅ Hide when empty
       cssCollapsedTray(
         testId('editor'),
         cssCollapsedTray.cls('-is-active', this.active.state),
@@ -184,10 +182,11 @@ public buildDom() {
         dom.create(CollapsedDropZone, this),
         this.layout.buildDom() || dom('div')
       )
-    ) : null,
+    ),
     this.viewLayout.layout.buildDom()
   );
 }
+
 
 
 

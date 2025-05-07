@@ -159,7 +159,10 @@ public buildDom() {
   // Instead of returning the tray alone, just inject it into the DOM manually in replaceLayout()
   // or wherever it's expected. But for safety, return only the tray DOM here to not break assumptions.
 
-  return this._rootElement = trayDom || dom('div'); // Always return something to prevent null DOM
+  return this._rootElement = cssVFull(
+  trayDom ?? dom('div')
+);
+
 }
 
 

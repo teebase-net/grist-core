@@ -1,3 +1,8 @@
+html::before {
+  content: "[Custom Patch] ✅ DetailView.css loaded (from /opt/grist/dev/app/client/components/)";
+  display: none; /* Or block to visibly show it */
+}
+
 
 .detail_menu_bottom {
   border-top: 1px solid lightgrey;

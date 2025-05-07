@@ -288,7 +288,7 @@ export class AccessRules extends Disposable {
         .map(tableId => TableRules.create(this._tableRules,
             tableId, this, rules.getAllColumnRuleSets(tableId), rules.getTableDefaultRuleSet(tableId)))
     );
-    console.log("[Custom Patch] 🔤 Table rules sorted alphabetically by tableId");  // MOD DMH
+    console.log("[Patch] ✅ Table rules sorted alphabetically by tableId");  // MOD DMH
 
     const withDefaultRules = ['SeedRule'];
     const separateRules = ['SchemaEdit', 'FullCopies', 'AccessRules'];

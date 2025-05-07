@@ -1291,17 +1291,20 @@ const cssVFull = styled('div', `
 
 const cssCollapsedTrayWrapper = styled('div', `
   position: relative;
-  height: 14px;  // 4px green bar + 10px hover area
+  height: 10px;  // Hover area only
+  margin-top: -10px;  // Pull up to eliminate visible gap
   z-index: 100;
 `);
 
+
 const cssCollapsedTray = styled('div.collapsed_layout', `
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;  // ⬅ needed for #3 too
+  flex-direction: row;
   overflow: hidden;
   height: 3px;
-  background-color: #16b378;  // Green line
-  transition: height 0.3s ease;
+  background-color: #16b378;
+  transition: height 0.3s ease, padding 0.3s ease, background-color 0.3s ease;
   position: absolute;
   z-index: 101;
   top: 0; left: 0; right: 0;
@@ -1333,5 +1336,6 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
     display: none;
   }
 `);
+
 
 // end MOD DMH

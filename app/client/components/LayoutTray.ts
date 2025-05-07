@@ -1063,103 +1063,13 @@ class VRect {
   }
 }
 
-const cssVirtualZone = styled('div', `
-  position: absolute;
-  inset: 0;
-`);
-
-
-const cssFloaterWrapper = styled('div', `
-  height: 40px;
-  width: 140px;
-  max-width: 140px;
-  background: ${theme.tableBodyBg};
-  border: 1px solid ${theme.widgetBorder};
-  border-radius: 4px;
-  -webkit-transform: rotate(5deg) scale(0.8) translate(-10px, 0px);
-  transform: rotate(5deg) scale(0.8) translate(-10px, 0px);
-  & .mini_section_container {
-    overflow: hidden;
-    white-space: nowrap;
-  }
-`);
-
-
-const cssRow = styled('div', `display: flex`);
-const cssLayout = styled(cssRow, `
-  padding: 8px 24px;
-  column-gap: 16px;
-  row-gap: 8px;
-  flex-wrap: wrap;
-  position: relative;
-`);
-
-const cssBox = styled('div', `
-  border: 1px solid ${theme.widgetBorder};
-  border-radius: 3px;
-  background: ${theme.widgetBg};
-  min-width: 120px;
-  min-height: 34px;
-  cursor: pointer;
-`);
-
-const cssEmptyBox = styled('div', `
-  text-align: center;
-  text-transform: uppercase;
-  color: ${theme.widgetBorder};
-  font-weight: bold;
-  letter-spacing: 1px;
-  border: 2px dashed ${theme.widgetBorder};
-  border-radius: 3px;
-  padding: 8px;
-  width: 120px;
-  min-height: 34px;
-  &-can-accept {
-    border: 2px dashed #7B8CEA;
-    background: rgba(123, 140, 234, 0.1);
-  }
-`);
-
-const cssProbe = styled('div', `
-  min-width: 0px;
-  padding: 0px;
-  transition: width 0.2s ease-out;
-`);
-
-const cssMiniFloater = styled(cssBox, `
-  pointer-events: none;
-  position: absolute;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 10;
-  -webkit-transform: rotate(5deg) scale(0.8);
-  transform: rotate(5deg) scale(0.8);
-  transform-origin: top left;
-`);
-
-const cssVirtualPart = styled('div', `
-  outline: 1px solid blue;
-  position: absolute;
-  z-index: 10;
-  background: rgba(0, 0, 0, 0.1);
-`);
-
-const cssHidden = styled('div', `display: none;`);
-
-const cssVFull = styled('div', `
-  position: relative;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-`);
-
 const cssCollapsedTrayWrapper = styled('div', `
   position: relative;
   height: 14px; /* 4px green bar + 10px hover */
   z-index: 100;
 `);
 
-const cssCollapsedTray = styled('div.collapsed_layout', `
+const cssCollapsedTray = styled('div', `
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1176,15 +1086,12 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   pointer-events: none;
 
-  .collapsed-tray-wrapper:hover &,
-  .collapsed-tray-wrapper:focus-within & {
+  &:hover, &:focus-within {
     pointer-events: auto;
     height: 45px;
     background-color: #f7f7f7;
     padding-left: 20px;
     padding-right: 20px;
-    border: none !important;
-    border-radius: 0 !important;
   }
 
   &-is-active {
@@ -1201,29 +1108,89 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   }
 `);
 
-/* Add this to the CSS */
-.collapsed-tray-wrapper:hover .collapsed-tray {
-  height: 45px !important;   /* Ensure the height expands */
-  background-color: #f7f7f7; /* Light background on hover */
-  padding-left: 20px;         /* Add some padding */
-  padding-right: 20px;        /* Add some padding */
-}
+const cssVFull = styled('div', `
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+`);
 
-/* Make sure this transition style exists */
-.collapsed-tray {
-  transition: height 0.3s ease;
-  position: absolute;
-  z-index: 101;
-  top: 0;
-  left: 0;
-  right: 0;
-  margin-left: auto;
-  margin-right: auto;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+const cssEmptyBox = styled('div', `
+  text-align: center;
+  text-transform: uppercase;
+  color: ${theme.widgetBorder};
+  font-weight: bold;
+  letter-spacing: 1px;
+  border: 2px dashed ${theme.widgetBorder};
+  border-radius: 3px;
+  padding: 8px;
+  width: 120px;
+  min-height: 34px;
+
+  &-can-accept {
+    border: 2px dashed #7B8CEA;
+    background: rgba(123, 140, 234, 0.1);
+  }
+`);
+
+const cssBox = styled('div', `
+  border: 1px solid ${theme.widgetBorder};
+  border-radius: 3px;
+  background: ${theme.widgetBg};
+  min-width: 120px;
+  min-height: 34px;
+  cursor: pointer;
+`);
+
+const cssMiniFloater = styled(cssBox, `
   pointer-events: none;
-}
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 10;
+  transform: rotate(5deg) scale(0.8);
+  transform-origin: top left;
+`);
 
-const syncHover = (obs: Signal) => [
-  dom.on('mouseenter', () => obs.emit(true)),
-  dom.on('mouseleave', () => obs.emit(false))
-];
+const cssFloaterWrapper = styled('div', `
+  height: 40px;
+  width: 140px;
+  max-width: 140px;
+  background: ${theme.tableBodyBg};
+  border: 1px solid ${theme.widgetBorder};
+  border-radius: 4px;
+  transform: rotate(5deg) scale(0.8) translate(-10px, 0px);
+  
+  & .mini_section_container {
+    overflow: hidden;
+    white-space: nowrap;
+  }
+`);
+
+const cssVirtualPart = styled('div', `
+  outline: 1px solid blue;
+  position: absolute;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.1);
+`);
+
+const cssRow = styled('div', `
+  display: flex;
+`);
+
+const cssLayout = styled(cssRow, `
+  padding: 8px 24px;
+  column-gap: 16px;
+  row-gap: 8px;
+  flex-wrap: wrap;
+  position: relative;
+`);
+
+const cssHidden = styled('div', `
+  display: none;
+`);
+
+const cssVirtualZone = styled('div', `
+  position: absolute;
+  inset: 0;
+`);

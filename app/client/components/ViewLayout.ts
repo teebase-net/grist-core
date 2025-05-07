@@ -178,8 +178,8 @@ public buildDom() {
     dom.create(CollapsedDropZone, this),
     this.layout.buildDom(),
 
-    // ✅ Put this line here (don't omit it!)
-    dom.show(use => use(this.layout.count) > 0 || use(this.active.state)),
+  // ✅ Always render the tray, even if empty — allow CSS to control visibility.
+  dom.style('display', 'block'),
   );
 }
 
@@ -1313,16 +1313,21 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   user-select: none;
   background-color: ${theme.pageBg};
   border-top: 5px solid green;
-  height: 5px;
+  height: auto;
   transition: height 0.3s ease;
 
-  &:hover {
-    height: 100px;  /* Enough to reveal contents */
+  &.has-items {
+    height: 5px;
+  }
+
+  &.has-items:hover {
+    height: 100px;
   }
 
   &-is-active {
     outline: 2px dashed ${theme.widgetBorder};
   }
+
   &-is-target {
     outline: 2px dashed #7B8CEA;
     background: rgba(123, 140, 234, 0.1);
@@ -1334,6 +1339,7 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
     }
   }
 `);
+
 
 
 

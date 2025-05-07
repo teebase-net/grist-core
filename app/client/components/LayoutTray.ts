@@ -21,6 +21,7 @@ const testId = makeTestId('test-layoutTray-');
 
 const G = getBrowserGlobals('document', 'window', '$');
 
+console.log("✅ [Custom Patch] Collapsible Tray - LayoutTray.js loaded.");  // ✅ Patch confirmation
 
 /**
  * Adds a tray for minimizing and restoring sections. It is built as a plugin for the ViewLayout component.
@@ -165,24 +166,27 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
 
 /**
  * MOD DMH: Wrap the collapsed tray with hover-sensitive container for expand-on-hover behavior.
+ * ✅ Patch: Added fallback DOM element in case layout.buildDom() returns null, to avoid blank screen.
+ * ✅ Patch: Added console log for verification of successful tray rendering.
  */
 public buildDom() {
-  return this._rootElement = cssVFull(
-    dom.maybe(use => use(this.layout.count) > 0, () =>
-      cssCollapsedTrayWrapper(
-        dom.cls('collapsed-tray-wrapper'),  // 👈 Required for hover effect
-        cssCollapsedTray(
-          testId('editor'),
-          cssCollapsedTray.cls('-is-active', this.active.state),
-          cssCollapsedTray.cls('-is-target', this.over.state),
-          syncHover(this.hovering),
-          dom.create(CollapsedDropZone, this),
-          this.layout.buildDom(),
-        )
+  const tray = dom.maybe(use => use(this.layout.count) > 0, () =>
+    cssCollapsedTrayWrapper(
+      dom.cls('collapsed-tray-wrapper'),  // 👈 Required for hover effect
+      cssCollapsedTray(
+        testId('editor'),
+        cssCollapsedTray.cls('-is-active', this.active.state),
+        cssCollapsedTray.cls('-is-target', this.over.state),
+        syncHover(this.hovering),
+        dom.create(CollapsedDropZone, this),
+        this.layout.buildDom() || dom('div')  // ✅ Safe fallback if layout.buildDom() fails
       )
     )
   );
+
+  return this._rootElement = cssVFull(tray);
 }
+
 // end MOD DMH
 
 

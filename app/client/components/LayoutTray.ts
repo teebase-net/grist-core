@@ -1179,34 +1179,6 @@ const cssFloaterWrapper = styled('div', `
   }
 `);
 
-const cssCollapsedTray = styled('div.collapsed_layout', `
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transition: height 0.2s;
-  position: relative;
-  margin: calc(-1 * var(--view-content-page-padding, 12px));
-  margin-bottom: 0;
-  user-select: none;
-  background-color: ${theme.pageBg};
-  border-bottom: 1px solid ${theme.pagePanelsBorder};
-  outline-offset: -1px;
-
-  &-is-active {
-    outline: 2px dashed ${theme.widgetBorder};
-  }
-  &-is-target {
-    outline: 2px dashed #7B8CEA;
-    background: rgba(123, 140, 234, 0.1);
-  }
-  @media print {
-    & {
-      display: none;
-    }
-  }
-`
-);
-
 const cssRow = styled('div', `display: flex`);
 const cssLayout = styled(cssRow, `
   padding: 8px 24px;

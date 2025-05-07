@@ -170,27 +170,24 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
  * ✅ Patch: Added console log for verification of successful tray rendering.
  */
 public buildDom() {
-  const tray = dom.maybe(use => use(this.layout.count) > 0, () =>
-    cssCollapsedTrayWrapper(
-      dom.cls('collapsed-tray-wrapper'),  // 👈 Required for hover effect
-      cssCollapsedTray(
-        testId('editor'),
-        cssCollapsedTray.cls('-is-active', this.active.state),
-        cssCollapsedTray.cls('-is-target', this.over.state),
-        syncHover(this.hovering),
-        dom.create(CollapsedDropZone, this),
-        this.layout.buildDom() || dom('div')  // ✅ Safe fallback if layout.buildDom() fails
+  return this._rootElement = cssVFull(
+    dom.maybe(use => use(this.layout.count) > 0, () =>
+      cssCollapsedTrayWrapper(
+        dom.cls('collapsed-tray-wrapper'),
+        cssCollapsedTray(
+          testId('editor'),
+          cssCollapsedTray.cls('-is-active', this.active.state),
+          cssCollapsedTray.cls('-is-target', this.over.state),
+          syncHover(this.hovering),
+          dom.create(CollapsedDropZone, this),
+          this.layout.buildDom() || dom('div')
+        )
       )
-    )
+    ),
+    this.viewLayout.layout.buildDom()
   );
-
-return this._rootElement = cssVFull(
-  tray,
-  this.viewLayout.layout.buildDom()  // ✅ Add main layout back
-);
-
-  
 }
+
 
 // end MOD DMH
 

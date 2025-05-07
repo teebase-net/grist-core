@@ -142,22 +142,28 @@ export class LayoutTray extends DisposableWithEvents {
 
 // MOD DMH
 public buildDom() {
-  return this._rootElement = cssVFull(
-    dom.maybe(use => use(this.layout.count) > 0, () =>
-      cssCollapsedTrayWrapper(
-        dom.cls('collapsed-tray-wrapper'),
-        cssCollapsedTray(
-          testId('editor'),
-          cssCollapsedTray.cls('-is-active', this.active.state),
-          cssCollapsedTray.cls('-is-target', this.over.state),
-          syncHover(this.hovering),
-          dom.create(CollapsedDropZone, this),
-          this.layout.buildDom(),
-        )
+  const trayDom = dom.maybe(use => use(this.layout.count) > 0, () =>
+    cssCollapsedTrayWrapper(
+      dom.cls('collapsed-tray-wrapper'),
+      cssCollapsedTray(
+        testId('editor'),
+        cssCollapsedTray.cls('-is-active', this.active.state),
+        cssCollapsedTray.cls('-is-target', this.over.state),
+        syncHover(this.hovering),
+        dom.create(CollapsedDropZone, this),
+        this.layout.buildDom(),
       )
     )
   );
+
+  const mainLayoutDom = this.viewLayout.layoutEditor.buildDom(); // 👈 This is the missing piece
+
+  return this._rootElement = cssVFull(
+    trayDom,
+    mainLayoutDom
+  );
 }
+
 //end MOD DMH
 
   public buildContentDom(id: string|number) {

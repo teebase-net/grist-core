@@ -174,18 +174,13 @@ public buildDom() {
     testId('editor'),
     cssCollapsedTray.cls('-is-active', this.active.state),
     cssCollapsedTray.cls('-is-target', this.over.state),
+    cssCollapsedTray.cls('-collapsed', use => use(this.layout.count) > 0),
     syncHover(this.hovering),
     dom.create(CollapsedDropZone, this),
     this.layout.buildDom(),
-
-    // ✅ Put this line here (don't omit it!)
-    dom.show(use => use(this.layout.count) > 0 || use(this.active.state)),
+    dom.style('display', 'block'),  // ✅ Always show so green line renders
   );
 }
-
-
-
-
 
 // end MOD DMH
 
@@ -196,8 +191,6 @@ public buildDom() {
       sectionRowId: id,
     });
   }
-
-
 
   private _registerCommands() {
     const viewLayout = this.viewLayout;
@@ -1303,7 +1296,7 @@ const cssCollapsedTrayWrapper = styled('div',
 );
 
 
-const cssCollapsedTray = styled('div.collapsed_layout', 
+const cssCollapsedTray = styled('div.collapsed_layout', `
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1313,16 +1306,21 @@ const cssCollapsedTray = styled('div.collapsed_layout',
   user-select: none;
   background-color: ${theme.pageBg};
   border-top: 5px solid green;
-  height: 5px;
+  height: auto;
   transition: height 0.3s ease;
 
-  &:hover {
-    height: 100px;  /* Enough to reveal contents */
+  &.-collapsed {
+    height: 5px;
+  }
+
+  &.-collapsed:hover {
+    height: 100px;
   }
 
   &-is-active {
     outline: 2px dashed ${theme.widgetBorder};
   }
+
   &-is-target {
     outline: 2px dashed #7B8CEA;
     background: rgba(123, 140, 234, 0.1);
@@ -1333,7 +1331,8 @@ const cssCollapsedTray = styled('div.collapsed_layout',
       display: none;
     }
   }
-);
+`);
+
 
 
 

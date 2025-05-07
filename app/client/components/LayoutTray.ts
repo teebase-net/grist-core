@@ -170,22 +170,19 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
  * ✅ Patch: Added console log for verification of successful tray rendering.
  */
 public buildDom() {
-  return this._rootElement = cssVFull(
-    cssCollapsedTrayWrapper(
-      dom.cls('collapsed-tray-wrapper'),
-      dom.hide(use => use(this.layout.count) === 0),  // ✅ Hide when empty
-      cssCollapsedTray(
-        testId('editor'),
-        cssCollapsedTray.cls('-is-active', this.active.state),
-        cssCollapsedTray.cls('-is-target', this.over.state),
-        syncHover(this.hovering),
-        dom.create(CollapsedDropZone, this),
-        this.layout.buildDom() || dom('div')
-      )
-    ),
-    this.viewLayout.layout.buildDom()
+  return this._rootElement = cssCollapsedTray(
+    testId('editor'),
+    cssCollapsedTray.cls('-is-active', this.active.state),
+    cssCollapsedTray.cls('-is-target', this.over.state),
+    syncHover(this.hovering),
+    dom.create(CollapsedDropZone, this),
+    this.layout.buildDom(),
+
+    // ✅ Put this line here (don't omit it!)
+    dom.show(use => use(this.layout.count) > 0 || use(this.active.state)),
   );
 }
+
 
 
 
@@ -1315,8 +1312,13 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   margin-bottom: 0;
   user-select: none;
   background-color: ${theme.pageBg};
-  border-bottom: 1px solid ${theme.pagePanelsBorder};
-  outline-offset: -1px;
+  border-top: 5px solid green;
+  height: 5px;
+  transition: height 0.3s ease;
+
+  &:hover {
+    height: 100px;  /* Enough to reveal contents */
+  }
 
   &-is-active {
     outline: 2px dashed ${theme.widgetBorder};
@@ -1332,6 +1334,7 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
     }
   }
 `);
+
 
 
 

@@ -1277,3 +1277,10 @@ const cssCollapsedTray = styled('div', `
   }
 `);
 
+// Define cssVFull
+const cssVFull = styled('div', `
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+`);

@@ -1313,4 +1313,3 @@ const cssMainLayout = styled('div', `
   z-index: 1;             /* Ensure it is on top of the collapsed tray */
 `);
 
-`);

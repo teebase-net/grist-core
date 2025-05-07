@@ -140,35 +140,35 @@ export class LayoutTray extends DisposableWithEvents {
     });
   }
 
-// MOD DMH
-public buildDom() {
-  // Wrap the main layout content with the updated wrapper that uses flexbox
-  const trayDom = dom.maybe(
-    use => use(this.layout.count) > 0, () =>
-      cssCollapsedTrayWrapper(
-        dom.cls('collapsed-tray-wrapper'),
-        cssCollapsedTray.cls('-is-active', this.active.state),
-        cssCollapsedTray.cls('-is-target', this.over.state),
-        syncHover(this.hovering),
-        dom.create(CollapsedDropZone, this),
-        this.layout.buildDom(), // Collapsed tray content
-      )
-  );
+  public buildDom() {
+  // Wrap the tray content and sections below the tray
+  return this._rootElement = cssCollapsedTray(
+    testId('editor'),
+    // When drag is active, we show a dotted border around the tray.
+    cssCollapsedTray.cls('-is-active', this.active.state),
+    // If the element is over the tray, indicate that we are ready by changing color.
+    cssCollapsedTray.cls('-is-target', this.over.state),
+    // Synchronize the hovering state with the event.
+    syncHover(this.hovering),
+    // Create a drop zone (below actual sections)
+    dom.create(CollapsedDropZone, this),
+    // Build the tray layout content (collapsed or expanded)
+    this.layout.buildDom(),
+    // Show only if there are any sections in the tray or it can accept a drop.
+    dom.show(use => use(this.layout.count) > 0 || use(this.active.state)),
 
-  // Wrap everything below the tray content in the main layout container
-  return this._rootElement = cssMainLayout(
-    trayDom || dom('div'),  // Ensure something is returned in case of null
-    dom.maybe(use => use(this.layout.count) > 0, () => 
-      cssMainLayout(         // Add this wrapper for the section below the tray
-        dom.forEach(this.layout.all(), box => box.buildDom())  // Add all widgets/content below the tray
+    // Now, add sections below the tray.
+    dom.maybe(use => use(this.layout.count) > 0, () =>
+      cssMainLayout(
+        // Show the sections only when the tray is expanded or when content exists.
+        dom.show(use => use(this.active.state)),
+        // Render the sections below the tray.
+        dom.forEach(this.layout.all(), box => box.buildDom())
       )
-    ),
+    )
   );
 }
 
-
-
-//end MOD DMH
 
   public buildContentDom(id: string|number) {
     return buildCollapsedSectionDom({
@@ -1189,6 +1189,34 @@ const cssFloaterWrapper = styled('div', `
   }
 `);
 
+const cssCollapsedTray = styled('div.collapsed_layout', `
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: height 0.2s;
+  position: relative;
+  margin: calc(-1 * var(--view-content-page-padding, 12px));
+  margin-bottom: 0;
+  user-select: none;
+  background-color: ${theme.pageBg};
+  border-bottom: 1px solid ${theme.pagePanelsBorder};
+  outline-offset: -1px;
+
+  &-is-active {
+    outline: 2px dashed ${theme.widgetBorder};
+  }
+  &-is-target {
+    outline: 2px dashed #7B8CEA;
+    background: rgba(123, 140, 234, 0.1);
+  }
+  @media print {
+    & {
+      display: none;
+    }
+  }
+`
+);
+
 const cssRow = styled('div', `display: flex`);
 const cssLayout = styled(cssRow, `
   padding: 8px 24px;
@@ -1250,26 +1278,26 @@ const cssVirtualPart = styled('div', `
 
 const cssHidden = styled('div', `display: none;`);
 
-// MOD DMH
-
+const cssVFull = styled('div', `
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+`);
 
 const cssCollapsedTrayWrapper = styled('div', `
   position: relative;
-  display: flex;
-  flex-direction: column;
-  height: auto;
-  z-index: 10;
-  margin-top: 0;  /* Ensure the tray doesn't add unintended spacing */
+  height: 14px; /* 4px green bar + 10px hover */
+  z-index: 100;
 `);
-
 
 const cssCollapsedTray = styled('div.collapsed_layout', `
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  height: 3px; /* Start collapsed height */
+  height: 3px;
   background-color: #16b378;
-  transition: height 0.3s ease; /* Smooth transition for collapsing/expanding */
+  transition: height 0.3s ease;
   position: absolute;
   z-index: 101;
   top: 0;
@@ -1283,7 +1311,7 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   .collapsed-tray-wrapper:hover &,
   .collapsed-tray-wrapper:focus-within & {
     pointer-events: auto;
-    height: 45px; /* Height when expanded */
+    height: 45px;
     background-color: #f7f7f7;
     padding-left: 20px;
     padding-right: 20px;
@@ -1304,17 +1332,3 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
     display: none;
   }
 `);
-
-// end MOD DMH
-
-const cssMainLayout = styled('div', `
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-  overflow: visible;
-  position: relative;
-  z-index: 1;
-  margin-top: 0;  /* Remove any margin that might push content down */
-`);
-
-

@@ -1268,13 +1268,14 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   margin-left: auto;
   margin-right: auto;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  pointer-events: none;
+  pointer-events: none;  /* Disable pointer events by default to prevent hover */
 
+  /* Allow hover interaction */
   .collapsed-tray-wrapper:hover &,
   .collapsed-tray-wrapper:focus-within & {
-    pointer-events: auto;
-    height: 45px;
-    background-color: #f7f7f7;
+    pointer-events: auto;  /* Enable pointer events when tray is hovered */
+    height: 45px;          /* Increase height */
+    background-color: #f7f7f7;  /* Change color */
     padding-left: 20px;
     padding-right: 20px;
     border: none !important;
@@ -1294,6 +1295,10 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
     display: none;
   }
 `);
+
+.collapsed-tray-wrapper:hover {
+  border: 2px solid red;  /* Temporarily highlight hover */
+}
 
 const cssMainLayout = styled('div', `
   display: flex;

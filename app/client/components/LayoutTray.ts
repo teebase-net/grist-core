@@ -1308,11 +1308,10 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   margin-left: auto;
   margin-right: auto;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  pointer-events: none;
+  pointer-events: auto;
 
   .collapsed-tray-wrapper:hover &,
   .collapsed-tray-wrapper:focus-within & {
-    pointer-events: auto;
     height: 45px;
     background-color: #f7f7f7;
     padding-left: 20px;
@@ -1334,4 +1333,5 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
     display: none;
   }
 `);
+
 // end MOD DMH

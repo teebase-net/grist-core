@@ -140,37 +140,22 @@ export class LayoutTray extends DisposableWithEvents {
     });
   }
 
- public buildDom() {
-  // Wrap the tray content and sections below the tray
-  this._rootElement = dom.create('div', { className: 'collapsed-tray-wrapper' }, [
-    cssCollapsedTray(
-      testId('editor'),
-      // When drag is active, we show a dotted border around the tray.
-      cssCollapsedTray.cls('-is-active', this.active.state),
-      // If the element is over the tray, indicate that we are ready by changing color.
-      cssCollapsedTray.cls('-is-target', this.over.state),
-      // Synchronize the hovering state with the event.
-      syncHover(this.hovering),
-      // Create a drop zone (below actual sections)
-      dom.create(CollapsedDropZone, this),
-      // Build the tray layout content (collapsed or expanded)
-      this.layout.buildDom(),
-      // Show only if there are any sections in the tray or it can accept a drop.
-      dom.show(use => use(this.layout.count) > 0 || use(this.active.state)),
-
-      // Now, add sections below the tray.
-      dom.maybe(use => use(this.layout.count) > 0, () =>
-        cssMainLayout(
-          // Show the sections only when the tray is expanded or when content exists.
-          dom.show(use => use(this.active.state)),
-          // Render the sections below the tray.
-          dom.forEach(this.layout.all(), box => box.buildDom())
+  public buildDom() {
+  return this._rootElement = cssVFull(
+    dom.maybe(use => use(this.layout.count) > 0, () =>
+      cssCollapsedTrayWrapper(
+        dom.cls('collapsed-tray-wrapper'),
+        cssCollapsedTray(
+          testId('editor'),
+          cssCollapsedTray.cls('-is-active', this.active.state),
+          cssCollapsedTray.cls('-is-target', this.over.state),
+          syncHover(this.hovering),
+          dom.create(CollapsedDropZone, this),
+          this.layout.buildDom(),
         )
       )
     )
-  ]);
-
-  return this._rootElement;
+  );
 }
 
 
@@ -1194,7 +1179,6 @@ const cssFloaterWrapper = styled('div', `
 `);
 
 
-
 const cssRow = styled('div', `display: flex`);
 const cssLayout = styled(cssRow, `
   padding: 8px 24px;
@@ -1256,6 +1240,18 @@ const cssVirtualPart = styled('div', `
 
 const cssHidden = styled('div', `display: none;`);
 
+const cssVFull = styled('div', `
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+`);
+
+const cssCollapsedTrayWrapper = styled('div', `
+  position: relative;
+  height: 14px; /* 4px green bar + 10px hover */
+  z-index: 100;
+`);
 
 const cssCollapsedTray = styled('div.collapsed_layout', `
   display: flex;
@@ -1272,14 +1268,13 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   margin-left: auto;
   margin-right: auto;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  pointer-events: none;  /* Disable pointer events by default to prevent hover */
+  pointer-events: none;
 
-  /* Allow hover interaction */
   .collapsed-tray-wrapper:hover &,
   .collapsed-tray-wrapper:focus-within & {
-    pointer-events: auto;  /* Enable pointer events when tray is hovered */
-    height: 45px;          /* Increase height */
-    background-color: #f7f7f7;  /* Change color */
+    pointer-events: auto;
+    height: 45px;
+    background-color: #f7f7f7;
     padding-left: 20px;
     padding-right: 20px;
     border: none !important;
@@ -1300,32 +1295,3 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   }
 `);
 
-
-const cssMainLayout = styled('div', `
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1; /* Makes it take up the remaining space */
-  overflow: visible;
-  position: relative;
-  z-index: 1;
-`);
-
-const cssCollapsedTrayWrapper = styled('div.collapsed-tray-wrapper', `
-  position: relative;  /* Ensure proper positioning for hover */
-  pointer-events: none;  /* Initially disable pointer events */
-  transition: height 0.3s ease;  /* Smooth transition for height */
-
-  /* Allow hover interaction */
-  &:hover {
-    pointer-events: auto;  /* Enable pointer events on hover */
-  }
-
-  .collapsed_layout {
-    transition: height 0.3s ease;  /* Smooth transition for collapsed_layout */
-  }
-
-  &:hover .collapsed_layout {
-    height: 45px;  /* Expanded height */
-    background-color: #f7f7f7;  /* Light background color change */
-  }
-`);

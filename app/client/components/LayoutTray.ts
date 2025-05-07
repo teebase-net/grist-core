@@ -14,6 +14,8 @@ import { isNonNullish } from 'app/common/gutil';
 import { Computed, Disposable, dom, IDisposable, IDisposableOwner, makeTestId, obsArray, Observable, styled } from 'grainjs';
 import isEqual from 'lodash/isEqual';
 
+import { styled } from 'grainjs';
+
 const testId = makeTestId('test-layoutTray-');
 const G = getBrowserGlobals('document', 'window', '$');
 

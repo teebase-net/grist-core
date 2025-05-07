@@ -1241,6 +1241,15 @@ const cssVirtualPart = styled('div', `
 
 const cssHidden = styled('div', `display: none;`);
 
+const cssVFull = styled('div', `
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+`);
+
+
 const cssCollapsedTrayWrapper = styled('div', `
   position: relative;
   width: 100%;

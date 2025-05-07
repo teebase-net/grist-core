@@ -1252,18 +1252,6 @@ const cssVirtualPart = styled('div', `
 
 const cssHidden = styled('div', `display: none;`);
 
-const cssVFull = styled('div', `
-  position: relative;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-`);
-
-const cssCollapsedTrayWrapper = styled('div', `
-  position: relative;
-  height: 14px; /* 4px green bar + 10px hover */
-  z-index: 100;
-`);
 
 const cssCollapsedTray = styled('div.collapsed_layout', `
   display: flex;
@@ -1306,3 +1294,13 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
     display: none;
   }
 `);
+
+const cssMainLayout = styled('div', `
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* Makes it take up the remaining space */
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+`);
+

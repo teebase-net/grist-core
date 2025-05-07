@@ -47,20 +47,27 @@ RUN \
 ################################################################################
 
 FROM python:3.11-slim-bookworm AS collector-py3
-COPY sandbox/requirements3.txt requirements3.txt
+
+# ✅ Fix: explicitly place file where RUN command expects it
+COPY sandbox/requirements3.txt /requirements.txt
+
 RUN \
   pip3 install setuptools==75.8.1 && \
-  pip3 install -r requirements.txt
+  pip3 install -r /requirements.txt
 
 FROM debian:buster-slim AS collector-py2
-COPY sandbox/requirements.txt requirements.txt
+
+# ✅ Fix: same treatment for Python 2 to avoid the same issue
+COPY sandbox/requirements.txt /requirements.txt
+
 RUN \
   apt update && \
   apt install -y --no-install-recommends python2 python-pip python-setuptools \
   build-essential libxml2-dev libxslt-dev python-dev zlib1g-dev && \
   pip2 install wheel && \
-  pip2 install -r requirements.txt && \
+  pip2 install -r /requirements.txt && \
   find /usr/lib -iname "libffi.so.6*" -exec cp {} /usr/local/lib \;
+
 
 ################################################################################
 ## Sandbox collection stage

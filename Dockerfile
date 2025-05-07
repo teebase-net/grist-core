@@ -123,9 +123,10 @@ COPY static /grist/static
 COPY --from=builder /grist/sandbox/pyodide /grist/sandbox/pyodide
 
 # Finalize static directory
+# ✅ Safe copy across filesystems, then cleanup
 RUN \
-  mv /grist/static-built/* /grist/static && \
-  rmdir /grist/static-built
+  cp -a /grist/static-built/. /grist/static/ && \
+  rm -r /grist/static-built
 
 # Add a user to de-escalate from root
 RUN useradd -ms /bin/bash grist

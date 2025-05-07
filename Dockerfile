@@ -14,7 +14,9 @@ WORKDIR /grist
 # Copy base files and install
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile && \
-    yarn install --prod --modules-folder=node_modules_prod
+    yarn global add node-gyp node-pre-gyp node-gyp-build node-gyp-build-optional-packages && \
+    yarn install --prod --frozen-lockfile --modules-folder=node_modules_prod
+
 
 # Copy Grist source
 COPY . .

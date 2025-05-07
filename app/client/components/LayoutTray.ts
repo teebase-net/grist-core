@@ -1251,12 +1251,7 @@ const cssVirtualPart = styled('div', `
 const cssHidden = styled('div', `display: none;`);
 
 // MOD DMH
-const cssVFull = styled('div', `
-  position: relative;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-`);
+
 
 const cssCollapsedTrayWrapper = styled('div', `
   position: relative;
@@ -1318,15 +1313,4 @@ const cssMainLayout = styled('div', `
   z-index: 1;             /* Ensure it is on top of the collapsed tray */
 `);
 
-const cssGridViewContainer = styled('div', `
-  flex-grow: 1;
-  min-height: 200px;    /* Make sure the grid or content has a minimum height */
-  overflow: auto;       /* Allow scrolling if content exceeds the available space */
-`);
-
-const cssLayoutBelowTray = styled('div', `
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-  overflow: visible;   /* Ensure no clipping of content */
 `);

@@ -8,10 +8,10 @@
     Hides the “+” Add Column button unless the logged-in user has `Unlock_Structure = true`
     in the SysUsers table. If table or fields are missing, skips all logic entirely.
 
-  Version: v0.5 (corrected)
+  Version: v0.6 (corrected)
 ===================================================================================*/
 
-console.log("[Custom Patch] index.js loaded ✅ v0.5");
+console.log("[Custom Patch] index.js loaded ✅ v0.6");
 
 (function () {
   const docId = window.gristDoc?.docId || window.location.pathname.split('/')[1];

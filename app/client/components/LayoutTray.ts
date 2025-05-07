@@ -1218,12 +1218,14 @@ const cssFloaterWrapper = styled('div', `
  * MOD DMH: Reduced padding on collapsed section layout for tighter spacing.
  */
 const cssLayout = styled('div', `
-  padding: 4px 24px 4px 24px;
-  column-gap: 16px;
-  row-gap: 8px;
+  display: flex;
   flex-wrap: wrap;
+  column-gap: 12px;
+  row-gap: 8px;
+  padding: 4px 0;
   position: relative;
 `);
+
 // end MOD DMH
 
 const cssBox = styled('div', `
@@ -1231,9 +1233,13 @@ const cssBox = styled('div', `
   border-radius: 3px;
   background: ${theme.widgetBg};
   min-width: 120px;
+  max-width: 160px;
   min-height: 34px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
   cursor: pointer;
 `);
+
 
 const cssEmptyBox = styled('div', `
   text-align: center;

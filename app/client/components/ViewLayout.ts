@@ -174,17 +174,13 @@ public buildDom() {
     testId('editor'),
     cssCollapsedTray.cls('-is-active', this.active.state),
     cssCollapsedTray.cls('-is-target', this.over.state),
+    cssCollapsedTray.cls('-collapsed', use => use(this.layout.count) > 0),
     syncHover(this.hovering),
     dom.create(CollapsedDropZone, this),
     this.layout.buildDom(),
-
-  // ✅ Always render the tray, even if empty — allow CSS to control visibility.
-  dom.style('display', 'block'),
+    dom.style('display', 'block'),  // ✅ Always show so green line renders
   );
 }
-
-
-
 
 
 // end MOD DMH
@@ -1316,11 +1312,11 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   height: auto;
   transition: height 0.3s ease;
 
-  &.has-items {
+  &.-collapsed {
     height: 5px;
   }
 
-  &.has-items:hover {
+  &.-collapsed:hover {
     height: 100px;
   }
 
@@ -1339,6 +1335,7 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
     }
   }
 `);
+
 
 
 

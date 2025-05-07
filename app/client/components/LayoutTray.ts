@@ -142,7 +142,7 @@ export class LayoutTray extends DisposableWithEvents {
 
  public buildDom() {
   // Wrap the tray content and sections below the tray
-  return this._rootElement = dom.create('div', { className: 'collapsed-tray-wrapper' }, 
+  this._rootElement = dom.create('div', { className: 'collapsed-tray-wrapper' }, [
     cssCollapsedTray(
       testId('editor'),
       // When drag is active, we show a dotted border around the tray.
@@ -168,7 +168,9 @@ export class LayoutTray extends DisposableWithEvents {
         )
       )
     )
-  );
+  ]);
+
+  return this._rootElement;
 }
 
 

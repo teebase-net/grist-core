@@ -1244,7 +1244,7 @@ const cssVFull = styled('div', `
 
 // MOD DMH - Add wrapper around the collapsed tray to expand the hover-sensitive area
 const cssCollapsedTrayWrapper = styled('div', `
-  position: relative
+  position: relative;
   height: 14px;          // 4px green bar + 10px hover area
   z-index: 100;
 `);

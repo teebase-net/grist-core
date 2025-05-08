@@ -1,3 +1,6 @@
+// Make sure TypeScript treats this as a module
+export {};
+
 import BaseView from 'app/client/components/BaseView';
 import {buildCollapsedSectionDom, buildViewSectionDom} from 'app/client/components/buildViewSectionDom';
 import * as commands from 'app/client/components/commands';
@@ -14,6 +17,9 @@ import {isNonNullish} from 'app/common/gutil';
 import {Computed, Disposable, dom, IDisposable, IDisposableOwner,
         makeTestId, obsArray, Observable, styled} from 'grainjs';
 import isEqual from 'lodash/isEqual';
+// MOD DMH - to make search button open automatically
+import { ViewSectionRec } from 'app/client/models/DocModel';   
+// end MOD DMH
 
 const testId = makeTestId('test-layoutTray-');
 
@@ -44,6 +50,7 @@ export class LayoutTray extends DisposableWithEvents {
 
   constructor(public viewLayout: ViewLayout) {
     super();
+
     // Create a proxy for the LayoutEditor. It will mimic the same interface as CollapsedLeaf.
     const externalLeaf = ExternalLeaf.create(this, this);
 
@@ -113,9 +120,9 @@ export class LayoutTray extends DisposableWithEvents {
     };
   }
 
-  /**
-   * Builds a popup for a maximized section.
-   */
+/* -------------------------------------------
+  /*Builds a popup for a maximized section. */
+/* Original
   public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, close: () => void) {
     const section = Observable.create<number|null>(owner, null);
     owner.autoDispose(selected.addListener((cur, prev) => {
@@ -139,35 +146,82 @@ export class LayoutTray extends DisposableWithEvents {
       );
     });
   }
+end Original */
 
+// MOD DMH & ChatGPT
+public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, close: () => void) {
+  const section = Observable.create<number|null>(owner, null);
+
+  owner.autoDispose(selected.addListener((cur, prev) => {
+    if (prev) {
+      this.layout.getBox(prev)?.attach();
+    }
+    if (cur) {
+      this.layout.getBox(cur)?.detach();
+    }
+    section.set(cur);
+  }));
+
+  return dom.domComputed(section, (id) => {
+    if (!id) return null;
+
+    const viewSections = this.viewLayout.viewModel.viewSections.peek();
+    const vs = viewSections.all().find((s: ViewSectionRec) => s.getRowId() === id);
+    const title = vs?.title.peek()?.trim().toUpperCase();
+
+    if (title === "🔍 SEARCH") {
+      setTimeout(() => {
+        const input = document.querySelector('input[placeholder="Search in document"]') as HTMLInputElement | null;
+        if (input) {
+          input.focus();
+          input.select();
+          console.log("✅ [Patch] Focused search input for 🔍 SEARCH popup.");
+        } else {
+          console.warn("⚠️ [Patch] Search input not found.");
+        }
+      }, 300);
+    }
+
+    return dom.update(
+      buildViewSectionDom({
+        gristDoc: this.viewLayout.gristDoc,
+        sectionRowId: id,
+        draggable: false,
+        focusable: false,
+      }),
+    );
+  });
+}
+
+// end MOD DMH
+
+
+
+// MOD DMH & ChatGPT
 public buildDom() {
-  // Creating the root element for the tray layout
   return this._rootElement = cssVFull(
     dom.maybe(use => use(this.layout.count) > 0, () =>
       cssCollapsedTrayWrapper(
-        dom.cls('collapsed-tray-wrapper'),  // Required for hover effect to work
+        dom.cls('collapsed-tray-wrapper'),  // 👈 Required for hover effect to work
         cssCollapsedTray(
           testId('editor'),
-          cssCollapsedTray.cls('-is-active', this.active.state),  // Show the dotted outline when active
-          cssCollapsedTray.cls('-is-target', this.over.state),   // Show target styling when hovering
-          syncHover(this.hovering),  // Sync hover state with the element
-          dom.create(CollapsedDropZone, this),  // Create the drop zone for collapsed sections
-          this.layout.buildDom(),   // Render the collapsed section layout content
+          cssCollapsedTray.cls('-is-active', this.active.state),
+          cssCollapsedTray.cls('-is-target', this.over.state),
+          syncHover(this.hovering),
+          dom.create(CollapsedDropZone, this),
+          this.layout.buildDom(),
         )
       )
     )
   );
 }
-
-
+// end MOD DMH
   public buildContentDom(id: string|number) {
     return buildCollapsedSectionDom({
       gristDoc: this.viewLayout.gristDoc,
       sectionRowId: id,
     });
   }
-
-
 
   private _registerCommands() {
     const viewLayout = this.viewLayout;
@@ -1136,6 +1190,7 @@ function useDragging() {
   };
 }
 
+
 /**
  * A virtual rectangle that is relative to a DOMRect.
  */
@@ -1165,7 +1220,7 @@ const cssVirtualZone = styled('div', `
 
 
 const cssFloaterWrapper = styled('div', `
-  height: 40px;
+  height: 40px;     
   width: 140px;
   max-width: 140px;
   background: ${theme.tableBodyBg};
@@ -1180,122 +1235,245 @@ const cssFloaterWrapper = styled('div', `
 `);
 
 
-const cssRow = styled('div', `display: flex`);
-const cssLayout = styled(cssRow, `
-  padding: 8px 24px;
-  column-gap: 16px;
-  row-gap: 8px;
-  flex-wrap: wrap;
-  position: relative;
-`);
-
-const cssBox = styled('div', `
-  border: 1px solid ${theme.widgetBorder};
-  border-radius: 3px;
-  background: ${theme.widgetBg};
-  min-width: 120px;
-  min-height: 34px;
-  cursor: pointer;
-`);
-
-const cssEmptyBox = styled('div', `
-  text-align: center;
-  text-transform: uppercase;
-  color: ${theme.widgetBorder};
-  font-weight: bold;
-  letter-spacing: 1px;
-  border: 2px dashed ${theme.widgetBorder};
-  border-radius: 3px;
-  padding: 8px;
-  width: 120px;
-  min-height: 34px;
-  &-can-accept {
-    border: 2px dashed #7B8CEA;
-    background: rgba(123, 140, 234, 0.1);
-  }
-`);
-
-const cssProbe = styled('div', `
-  min-width: 0px;
-  padding: 0px;
-  transition: width 0.2s ease-out;
-`);
-
-const cssMiniFloater = styled(cssBox, `
-  pointer-events: none;
-  position: absolute;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 10;
-  -webkit-transform: rotate(5deg) scale(0.8);
-  transform: rotate(5deg) scale(0.8);
-  transform-origin: top left;
-`);
-
-const cssVirtualPart = styled('div', `
-  outline: 1px solid blue;
-  position: absolute;
-  z-index: 10;
-  background: rgba(0, 0, 0, 0.1);
-`);
-
-const cssHidden = styled('div', `display: none;`);
+console.log("✅ [Custom Script] LayoutTray.ts loaded - v1.0");
 
 const cssVFull = styled('div', `
-  position: relative;
-  width: 100%;
+  position: relative;    // ✅ Needed to anchor absolute tray
   height: 100%;
   display: flex;
   flex-direction: column;
 `);
 
-
+// MOD DMH - Add wrapper around the collapsed tray to expand the hover-sensitive area
 const cssCollapsedTrayWrapper = styled('div', `
   position: relative;
-  width: 100%;
-  height: 3px;               /* Default collapsed height */
+  height: 14px;              // 4px green bar + 10px hover area
   z-index: 100;
-  pointer-events: none;      /* Disable pointer events by default */
-
-  &:hover {
-    pointer-events: auto;    /* Enable pointer events when hovered */
-  }
-
-  /* Optional: You can also trigger expansion on focus if required */
-  &:focus-within {
-    pointer-events: auto;
-  }
 `);
+// end MOD DMH
 
-const cssCollapsedTray = styled('div', `
+// MOD DMH - Modify behaviour of Tray
+
+// The actual collapsed tray content (green line initially) that expands on mouse hover/focus
+
+const cssCollapsedTray = styled('div.collapsed_layout', `
+
   display: flex;
+
   flex-direction: column;
+
   overflow: hidden;
-  height: 3px;               /* Tray collapsed height */
-  background-color: #16b378; /* Green color for the collapsed tray */
-  transition: height 0.3s ease;  /* Smooth transition for expansion */
+
+  height: 3px;
+
+  background-color: #16b378;        // ✅ Green line color
+
+  transition: height 0.3s ease;
+
   position: absolute;
+
+  z-index: 101;  /* ⬅️ Just slightly higher, to ensure it's topmost */
+
   top: 0;
+
   left: 0;
+
   right: 0;
+
   margin-left: auto;
+
   margin-right: auto;
+
+  /* border: 1px solid #aaa; */        // 🗑️ Removed grey border around tray
+
+  /* border-radius: 4px; */            // 🗑️ Removed rounded corners that contributed to border appearance
+
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  
-  /* Expands on hover/focus */
-  &:hover, &:focus-within {
-    pointer-events: auto;           /* Enable pointer events on hover/focus */
-    height: 45px;                   /* Expanded height */
-    background-color: #f7f7f7;      /* Change background color */
+
+  pointer-events: none;
+
+
+
+   .collapsed-tray-wrapper:hover &,
+
+  .collapsed-tray-wrapper:focus-within & {
+
+    pointer-events: auto;
+
+    height: 45px;
+
+    background-color: #f7f7f7;
+
+    padding-left: 20px;
+
+    padding-right: 20px;
+
+    border: none !important;             // ✅ Fixes grey border
+
+    border-radius: 0 !important;         // ✅ Removes rounded corners
+
   }
 
-  &.collapsed-tray-wrapper.-is-active {
-    outline: 2px dashed ${theme.widgetBorder};  /* Dotted outline when active */
+
+
+
+
+  &-is-active {
+
+    outline: 2px dashed ${theme.widgetBorder};
+
   }
 
-  &.collapsed-tray-wrapper.-is-target {
+
+
+  &-is-target {
+
     outline: 2px dashed #7B8CEA;
-    background: rgba(123, 140, 234, 0.1);  /* Highlight color when target */
+
+    background: rgba(123, 140, 234, 0.1);
+
   }
+
+
+
+  @media print {
+
+    display: none;
+
+  }
+
 `);
 
+// end MOD DMH
+
+
+
+const cssRow = styled('div', `display: flex`);
+
+
+
+// MOD DMH - modify layout of collapsed widgets
+
+const cssLayout = styled(cssRow, `
+
+  padding: 4px 24px 4px 24px;  /* MOD ⬅️ Reduced top padding */
+
+  column-gap: 16px;
+
+  row-gap: 8px;
+
+  flex-wrap: wrap;
+
+  position: relative;
+
+`);
+
+
+
+const cssBox = styled('div', `
+
+  border: 1px solid ${theme.widgetBorder};
+
+  border-radius: 3px;
+
+  background: ${theme.widgetBg};
+
+  min-width: 120px;
+
+  min-height: 34px;
+
+  cursor: pointer;
+
+`);
+
+
+
+const cssEmptyBox = styled('div', `
+
+  text-align: center;
+
+  text-transform: uppercase;
+
+  color: ${theme.widgetBorder};
+
+  font-weight: bold;
+
+  letter-spacing: 1px;
+
+  border: 2px dashed ${theme.widgetBorder};
+
+  border-radius: 3px;
+
+  padding: 2px;
+
+  width: 120px;
+
+  min-height: 34px;
+
+  &-can-accept {
+
+    border: 2px dashed #7B8CEA;
+
+    background: rgba(123, 140, 234, 0.1);
+
+  }
+
+`);
+
+// end MOD DMH
+
+
+
+const cssProbe = styled('div', `
+
+  min-width: 0px;
+
+  padding: 0px;
+
+  transition: width 0.2s ease-out;
+
+`);
+
+
+
+const cssMiniFloater = styled(cssBox, `
+
+  pointer-events: none;
+
+  position: absolute;
+
+  overflow: hidden;
+
+  pointer-events: none;
+
+  z-index: 10;
+
+  -webkit-transform: rotate(5deg) scale(0.8);
+
+  transform: rotate(5deg) scale(0.8);
+
+  transform-origin: top left;
+
+`);
+
+
+
+const cssVirtualPart = styled('div', `
+
+  outline: 1px solid blue;
+
+  position: absolute;
+
+  z-index: 10;
+
+  background: rgba(0, 0, 0, 0.1);
+
+`);
+
+
+
+const cssHidden = styled('div', `display: none;`);
+
+
+
+export {};

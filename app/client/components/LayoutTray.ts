@@ -1244,7 +1244,7 @@ const cssVFull = styled('div', `
   flex-direction: column;
   
   /* 🧼 Remove 12px padding above Green line */
-  --view-content-page-padding: 0px;
+  --view-content-page-padding: 0px !important;
 
 `);
 

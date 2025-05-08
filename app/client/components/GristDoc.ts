@@ -1984,7 +1984,12 @@ const cssViewContentPane = styled('div', `
   overflow: visible;
   position: relative;
   min-width: 240px;
-  padding: var(--view-content-page-padding, 12px);
+
+  // MOD DMH - Modified on 2025-05-08 to remove top padding above collapsed tray.
+  // Previously: --view-content-page-padding: 12px;
+  padding: var(--view-content-page-padding, 0px);
+  // end MOD DMH
+  
   @media ${mediaSmall} {
     & {
       padding: 4px;

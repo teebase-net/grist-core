@@ -1984,7 +1984,9 @@ const cssViewContentPane = styled('div', `
   overflow: visible;
   position: relative;
   min-width: 240px;
-  padding: var(--view-content-page-padding, 12px);
+  // MOD DMH - Removes gap above green line in Layout Tray. 
+  // This also has the effect of removing border around main body, which also saves more screen space 😊
+  padding: var(--view-content-page-padding, 0px);   // was 12px
   @media ${mediaSmall} {
     & {
       padding: 4px;

@@ -1976,19 +1976,15 @@ async function finalizeAnchor() {
   setTestState({anchorApplied: true});
 }
 
-// MOD DMH - Modified on 2025-05-08 to remove top padding above collapsed tray.
 const cssViewContentPane = styled('div', `
-  --view-content-page-padding: 12px;     // previously 12px
+  --view-content-page-padding: 12px;
   flex: auto;
   display: flex;
   flex-direction: column;
   overflow: visible;
   position: relative;
   min-width: 240px;
-
-  padding: var(--view-content-page-padding, 12px);    // previously 12px
-  // end MOD DMH
-  
+  padding: var(--view-content-page-padding, 12px);
   @media ${mediaSmall} {
     & {
       padding: 4px;

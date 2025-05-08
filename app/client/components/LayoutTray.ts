@@ -1257,227 +1257,113 @@ const cssCollapsedTrayWrapper = styled('div', `
 // end MOD DMH
 
 // MOD DMH - Modify behaviour of Tray
-
 // The actual collapsed tray content (green line initially) that expands on mouse hover/focus
-
 const cssCollapsedTray = styled('div.collapsed_layout', `
-
   display: flex;
-
   flex-direction: column;
-
   overflow: hidden;
-
   height: 3px;
-
   background-color: #16b378;        // ✅ Green line color
-
   transition: height 0.3s ease;
-
   position: absolute;
-
   z-index: 101;  /* ⬅️ Just slightly higher, to ensure it's topmost */
-
   top: 0;
-
   left: 0;
-
   right: 0;
-
   margin-left: auto;
-
   margin-right: auto;
-
-  /* border: 1px solid #aaa; */        // 🗑️ Removed grey border around tray
-
-  /* border-radius: 4px; */            // 🗑️ Removed rounded corners that contributed to border appearance
-
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-
   pointer-events: none;
 
-
-
-   .collapsed-tray-wrapper:hover &,
-
+  .collapsed-tray-wrapper:hover &,
   .collapsed-tray-wrapper:focus-within & {
-
     pointer-events: auto;
-
     height: 45px;
-
     background-color: #f7f7f7;
-
     padding-left: 20px;
-
     padding-right: 20px;
-
     border: none !important;             // ✅ Fixes grey border
-
     border-radius: 0 !important;         // ✅ Removes rounded corners
-
   }
-
-
-
-
 
   &-is-active {
-
     outline: 2px dashed ${theme.widgetBorder};
-
   }
-
-
 
   &-is-target {
-
     outline: 2px dashed #7B8CEA;
-
     background: rgba(123, 140, 234, 0.1);
-
   }
-
-
 
   @media print {
-
     display: none;
-
   }
-
 `);
-
 // end MOD DMH
-
-
 
 const cssRow = styled('div', `display: flex`);
 
-
-
 // MOD DMH - modify layout of collapsed widgets
-
 const cssLayout = styled(cssRow, `
-
   padding: 4px 24px 4px 24px;  /* MOD ⬅️ Reduced top padding */
-
   column-gap: 16px;
-
   row-gap: 8px;
-
   flex-wrap: wrap;
-
   position: relative;
-
 `);
-
-
 
 const cssBox = styled('div', `
-
   border: 1px solid ${theme.widgetBorder};
-
   border-radius: 3px;
-
   background: ${theme.widgetBg};
-
   min-width: 120px;
-
   min-height: 34px;
-
   cursor: pointer;
-
 `);
 
-
-
 const cssEmptyBox = styled('div', `
-
   text-align: center;
-
   text-transform: uppercase;
-
   color: ${theme.widgetBorder};
-
   font-weight: bold;
-
   letter-spacing: 1px;
-
   border: 2px dashed ${theme.widgetBorder};
-
   border-radius: 3px;
-
   padding: 2px;
-
   width: 120px;
-
   min-height: 34px;
 
   &-can-accept {
-
     border: 2px dashed #7B8CEA;
-
     background: rgba(123, 140, 234, 0.1);
-
   }
-
 `);
-
 // end MOD DMH
 
-
-
 const cssProbe = styled('div', `
-
   min-width: 0px;
-
   padding: 0px;
-
   transition: width 0.2s ease-out;
-
 `);
-
-
 
 const cssMiniFloater = styled(cssBox, `
-
   pointer-events: none;
-
   position: absolute;
-
   overflow: hidden;
-
   pointer-events: none;
-
   z-index: 10;
-
   -webkit-transform: rotate(5deg) scale(0.8);
-
   transform: rotate(5deg) scale(0.8);
-
   transform-origin: top left;
-
 `);
-
-
 
 const cssVirtualPart = styled('div', `
-
   outline: 1px solid blue;
-
   position: absolute;
-
   z-index: 10;
-
   background: rgba(0, 0, 0, 0.1);
-
 `);
 
-
-
 const cssHidden = styled('div', `display: none;`);
-
-
 
 export {};

@@ -1237,26 +1237,19 @@ const cssFloaterWrapper = styled('div', `
 `);
 
 const cssVFull = styled('div', `
-  position: relative;   // ✅ Needed to anchor absolute tray
-  height: auto;         // ✅ (Confirm it's not 100%)
+  position: relative;
+  min-height: 0;         // ✅ Fixes height constraint from 100%
   display: flex;
   flex-direction: column;
-
-  /* 🧼 Remove 12px padding above Green line */
- // --view-content-page-padding: 0px !important;
+  flex: 1 1 auto;        // ✅ Allows flexible growth of layout
 `);
-
-
 
 
 // MOD DMH - Add wrapper around the collapsed tray to expand the hover-sensitive area
 const cssCollapsedTrayWrapper = styled('div', `
-  position: absolute;    // ✅ Was: relative
+  position: relative
   height: 14px;          // 4px green bar + 10px hover area
   z-index: 100;
-  top: 0;
-  left: 0;
-  right: 0;
 `);
 
 // end MOD DMH

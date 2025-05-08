@@ -1238,10 +1238,7 @@ const cssFloaterWrapper = styled('div', `
 
 const cssVFull = styled('div', `
   position: relative;
-  min-height: 0;         // ✅ Fixes height constraint from 100%
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;        // ✅ Allows flexible growth of layout
+  display: contents;   // ✅ Removes wrapper layout impact entirely
 `);
 
 

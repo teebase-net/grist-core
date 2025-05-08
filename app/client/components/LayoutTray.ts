@@ -1242,6 +1242,10 @@ const cssVFull = styled('div', `
   height: 100%;
   display: flex;
   flex-direction: column;
+  
+  /* 🧼 Remove 12px padding above Green line */
+  --view-content-page-padding: 0px;
+
 `);
 
 // MOD DMH - Add wrapper around the collapsed tray to expand the hover-sensitive area

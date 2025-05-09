@@ -44,7 +44,7 @@
 }
 
 .gridview_corner_spacer { /* spacer in .gridview_data_header */
-  width: 30px; /* matches row_num width */   // MOD DMH was 52px
+  width: 52px; /* matches row_num width */   // MOD DMH was 52px
   flex: none;
 }
 

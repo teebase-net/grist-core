@@ -45,7 +45,10 @@
 
 .gridview_corner_spacer { /* spacer in .gridview_data_header */
   width: 30px; /* matches row_num width */   // MOD DMH was 52px
-  flex: none;
+  // flex: none;   //MOD DMH - remove & replay with 3 lines beneath
+  min-width: 30px; // MOD DMH - added
+  max-width: 30px; // MOD DMH - added
+  flex: 0 0 auto;   /* Fully disables grow/shrink */ // MOD DMH - added
 }
 
 .field.column_name {

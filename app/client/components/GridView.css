@@ -177,7 +177,8 @@
      - frozen-offset: when frozen columns are wider then the screen, we want them to move left initially,
                       this value is the position where this movement should stop.
    */
-  left: calc(30px + (var(--frozen-width, 0) - min(var(--frozen-scroll-offset, 0), var(--frozen-offset, 0))) * 1px);    // MOD DMH was 52px
+  left: 30px; //left: calc(30px + (var(--frozen-width, 0) - min(var(--frozen-scroll-offset, 0), var(--frozen-offset, 0))) * 1px);    // MOD DMH was 52px
+  
   box-shadow: -6px 0 6px 6px var(--grist-theme-table-scroll-shadow, #444);
   /* shadow should only show to the right of it (10px should be enough) */
   -webkit-clip-path: polygon(0 0, 10px 0, 10px 100%, 0 100%);
@@ -205,7 +206,7 @@
   /* this value is the same as for the left shadow - but doesn't need to really on the scroll offset
      as this component will be hidden when the scroll starts
    */
-  left: calc(30px + var(--frozen-width, 0) * 1px);         // MOD DMH was 52px
+  left: 30px;  //left: calc(30px + var(--frozen-width, 0) * 1px);         // MOD DMH was 52px
   background-color: var(--grist-theme-table-frozen-columns-border, #999999);
   z-index: 30;
   user-select: none;
@@ -311,7 +312,7 @@
 /* style header and a data field */
 .record .field.frozen {
   position: sticky;
-  left: calc(30px + 1px + (var(--frozen-position, 0) - var(--frozen-offset, 0)) * 1px); /* 52px (4em) for row number + total width of cells + 1px for border*/   // MOD DMH was 52px
+  left: 30px;    //left: calc(30px + 1px + (var(--frozen-position, 0) - var(--frozen-offset, 0)) * 1px); /* 52px (4em) for row number + total width of cells + 1px for border*/   // MOD DMH was 52px
   z-index: 10;
 }
 /* for data field we need to reuse color from record (add-row and zebra stripes) */

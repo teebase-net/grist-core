@@ -177,7 +177,7 @@
      - frozen-offset: when frozen columns are wider then the screen, we want them to move left initially,
                       this value is the position where this movement should stop.
    */
-  left: calc(50px + (var(--frozen-width, 0) - min(var(--frozen-scroll-offset, 0), var(--frozen-offset, 0))) * 1px);    // MOD DMH was 52px
+  left: calc(30px + (var(--frozen-width, 0) - min(var(--frozen-scroll-offset, 0), var(--frozen-offset, 0))) * 1px);    // MOD DMH was 52px
   box-shadow: -6px 0 6px 6px var(--grist-theme-table-scroll-shadow, #444);
   /* shadow should only show to the right of it (10px should be enough) */
   -webkit-clip-path: polygon(0 0, 10px 0, 10px 100%, 0 100%);

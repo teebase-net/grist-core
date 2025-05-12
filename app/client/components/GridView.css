@@ -40,8 +40,14 @@
 }
 
 .gridview_data_header {
-  position:relative;
+  position: relative;
+  padding-left: 30px; /* DMH MOD was 52px */
 }
+
+.gridview_header_backdrop_left {
+  width: calc(30px + 1px); // MOD DMH added this section
+}
+
 
 .gridview_corner_spacer { /* spacer in .gridview_data_header */
   width: 30px; /* matches row_num width */       // DMH MOD was 52px

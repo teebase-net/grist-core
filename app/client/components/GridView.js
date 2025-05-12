@@ -72,7 +72,7 @@ const SHORT_CLICK_IN_MS = 500;
 // size of the plus width ()
 const PLUS_WIDTH = 40;
 // size of the row number field (we assume 4rem, 1rem = 13px in grist)
-const ROW_NUMBER_WIDTH = 30;
+const ROW_NUMBER_WIDTH = 30;    // DMG MOD was 52px
 
 
 /**

@@ -124,32 +124,6 @@ export class LayoutTray extends DisposableWithEvents {
 
 /* -------------------------------------------
   /*Builds a popup for a maximized section. */
-/* Original
-  public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, close: () => void) {
-    const section = Observable.create<number|null>(owner, null);
-    owner.autoDispose(selected.addListener((cur, prev) => {
-      if (prev) {
-        this.layout.getBox(prev)?.attach();
-      }
-      if (cur) {
-        this.layout.getBox(cur)?.detach();
-      }
-      section.set(cur);
-    }));
-    return dom.domComputed(section, (id) => {
-      if (!id) { return null; }
-      return dom.update(
-        buildViewSectionDom({
-          gristDoc: this.viewLayout.gristDoc,
-          sectionRowId: id,
-          draggable: false,
-          focusable: false,
-        })
-      );
-    });
-  }
-end Original */
-
 // MOD DMH & ChatGPT
 public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, close: () => void) {
   const section = Observable.create<number|null>(owner, null);
@@ -199,7 +173,7 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
 
 
 
-// MOD DMH & ChatGPT
+// MOD DMH
 public buildDom() {
   return this._rootElement = cssVFull(
     dom.maybe(use => use(this.layout.count) > 0, () =>
@@ -218,6 +192,7 @@ public buildDom() {
   );
 }
 // end MOD DMH
+
   public buildContentDom(id: string|number) {
     return buildCollapsedSectionDom({
       gristDoc: this.viewLayout.gristDoc,

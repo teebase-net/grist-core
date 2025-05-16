@@ -1,7 +1,20 @@
+/**
+ * custom.css
+ *
+ * Custom theme overrides for Grist UI.
+ *
+ * 🔧 MOD DMH — May 2025:
+ * - Narrows the “Add Column” button in the Table widget for a cleaner layout
+ * - Adds visual confirmation of custom.css load via `html::before`
+ * - Each custom block is clearly marked using `// MOD DMH` and `// end MOD DMH` comments
+ */
+
+/* MOD DMH */
 html::before {
-  content: "[Custom Patch] ✅ custom.css loaded (from /opt/grist/dev/static/custom.css)";
+  content: "[Custom Patch] ✅ custom.css loaded";
   display: none; /* Or block to visibly show it */
 }
+/* end MOD DMH */
 
 
 /*
@@ -161,3 +174,4 @@ html::before {
   padding: 0 !important;
   justify-content: center; /* Center the "+" icon */
 }
+

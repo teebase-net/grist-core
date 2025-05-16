@@ -1,8 +1,18 @@
+/**
+ * DetailView.css
+ *
+ * Styles for Grist's Detail View, including themes (compact, blocks, form), card layouts,
+ * and layout editor behavior.
+ *
+ * 🔧 MOD DMH — May 2025:
+ * - Reduced padding in compact single-record mode for tighter layout
+ * - All changes clearly marked with `// MOD DMH` and `// end MOD DMH`
+ */
+
 html::before {
-  content: "[Custom Patch] ✅ DetailView.css loaded (from /opt/grist/dev/app/client/components/)";
+  content: "[Custom Patch] ✅ DetailView.css loaded";
   display: none; /* Or block to visibly show it */
 }
-
 
 .detail_menu_bottom {
   border-top: 1px solid lightgrey;
@@ -216,14 +226,15 @@ html::before {
  * 📅 Applied: 2025-05-05
  * This reduces vertical and horizontal space around a card-style record,
  * creating a tighter layout in Detail (Card) View.
- * 
+ *
  * Original: padding: 8px;
  * Patched:  padding: 0px;
  */
+// MOD DMH
 .detail_theme_record_compact.detailview_record_single {
   padding: 0px;
 }
-
+// end MOD DMH
 
 .detail_theme_record_compact > .detail_row_num {
   padding: 0px;

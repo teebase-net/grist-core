@@ -1,15 +1,20 @@
+/**
+ * index.js
+ * 
+ * Custom patch script injected by Grist app.js
+ *
+ * 🔧 MOD DMH — May 2025:
+ * - Conditionally hides the “+ Add Column” button unless the current user has
+ *   `Unlock_Structure = true` in the `SysUsers` table.
+ * - Skips gracefully if table or fields are missing.
+ *
+ * File: /app/client/custom/index.js
+ * Version: v0.6 (corrected)
+ */
+
+// MOD DMH: Hide “Add Column” button unless user has Unlock_Structure permission
 "use strict";
 
-/*===================================================================================
-  Custom Patch: Conditional visibility of “Add Column” button
-  File: custom/index.js
-  Applied: 2025-05-06
-  Purpose:
-    Hides the “+” Add Column button unless the logged-in user has `Unlock_Structure = true`
-    in the SysUsers table. If table or fields are missing, skips all logic entirely.
-
-  Version: v0.6 (corrected)
-===================================================================================*/
 
 console.log("[Custom Patch] index.js loaded ✅ v0.6");
 
@@ -66,3 +71,4 @@ console.log("[Custom Patch] index.js loaded ✅ v0.6");
     setTimeout(controlAddColumnButtons, 1500);
   });
 })();
+// end MOD DMH

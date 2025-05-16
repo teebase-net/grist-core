@@ -1,3 +1,16 @@
+/*
+===================================================================================
+  File: GridView.css
+  Context: Grist UI – Table/Grid View Layout
+  Author: DMH (David Hawley)
+  Date: May 2025
+
+  Purpose:
+  - Custom adjustments to reduce row-number column width from 52px to 30px for a more compact table UI
+  - Annotated all custom modifications with `// MOD DMH` for clarity
+===================================================================================
+*/
+
 .gridview_data_pane {
   background-color: var(--grist-theme-table-body-bg, white);
   position: relative;

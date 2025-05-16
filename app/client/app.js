@@ -1,5 +1,18 @@
 /* global $, window */
 
+/*
+===============================================================================
+📄 app/client/app.js
+
+Entry point for loading the Grist frontend application.
+
+🔧 MOD DMH — May 2025:
+- Adds support for custom UI overrides via `require('./custom')` at end of file.
+- Purpose: Load runtime UI patches from `app/client/custom/index.js`.
+
+===============================================================================
+*/
+
 // This is the entry point into loading the whole of Grist frontend application. Some extensions
 // attempt to load it more than once (e.g. "Lingvanex"). This leads to duplicated work and errors.
 // At least some of such interference can be neutralized by simply ignoring repeated loads.
@@ -51,27 +64,8 @@ $(function() {
     window.exposeModulesForTests().then(() => window.exposedModules.loadScript.loadScript(name));
 });
 
-/*
-===============================================================================
-[Custom Patch] Load custom UI enhancements
--------------------------------------------------------------------------------
-📄 File: app/client/app.js
-🔧 Added: May 2025, custom-iu branch
-👤 Author: You
-
-Purpose:
-This line loads custom JavaScript logic after the Grist application has fully
-initialized. It allows custom UI behaviors (e.g., hiding buttons, modifying access)
-to be added without modifying core app logic.
-
-It imports: `app/client/custom/index.js`, which serves as the entry point
-for all custom scripts under `app/client/custom/`.
-
-Note:
-- This must be the final line of app.js.
-- Safe to include as long as `custom/index.js` exists.
-
-===============================================================================
-*/
+// ==========================
+// MOD DMH: Load custom patch
 require('./custom');
 console.log("[Custom Patch] ✅ app.js loaded");
+// end MOD DMH

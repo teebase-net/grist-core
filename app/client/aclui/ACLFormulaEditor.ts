@@ -1,3 +1,14 @@
+/**
+ * ACLFormulaEditor.ts
+ * 
+ * Renders a themed ACE editor for Access Rules formulas in Grist.
+ * Supports suggestions, syntax highlighting, theme switching, and placeholder text.
+ *
+ * 🔧 MOD DMH — May 2025:
+ * - Enables `word-wrap` in ACE editor via `session.setUseWrapMode(true)`
+ * - Commented for PR clarity with `// MOD DMH` and `// end MOD DMH` tags
+ */
+
 import ace, {Ace} from 'ace-builds';
 import {expandAndFilterSuggestions, ISuggestionWithSubAttrs} from 'app/client/lib/Suggestions';
 import {setupAceEditorCompletions} from 'app/client/components/AceEditorCompletions';
@@ -55,10 +66,10 @@ export function aclFormulaEditor(options: ACLFormulaOptions) {
  * Change:
  *   session.setUseWrapMode(false);  →  session.setUseWrapMode(true);
  */
-// ✅ Word-wrap enabled for better readability in the ACL editor.
-// Original: session.setUseWrapMode(false);
+// MOD DMH: Enable word wrap in ACE editor for ACLFormulaEditor
 session.setUseWrapMode(true);
 console.log("✅ [CustomPatch] Word-wrap enabled in ACLFormulaEditor");
+// end MOD DMH
 
 
   // Implement placeholder text since the version of ACE we use doesn't support one.

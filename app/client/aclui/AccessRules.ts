@@ -1,4 +1,16 @@
 /**
+ * AccessRules.ts
+ * 
+ * Manages the Grist Access Rules UI, including rule creation, display, and syncing logic.
+ * Handles user attributes, special rules, and granular permission sets.
+ *
+ * 🔧 MOD DMH — May 2025:
+ * - Sorts access rules table list alphabetically for improved UX
+ * - Replaces unsorted `rules.getAllTableIds()` with `.slice().sort(...)` in `update()`
+ * - Commented for PR clarity with `// MOD DMH` and `// end MOD DMH` tags
+ */
+
+/**
  * UI for managing granular ACLs.
  */
 import {aclColumnList} from 'app/client/aclui/ACLColumnList';

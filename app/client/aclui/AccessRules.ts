@@ -266,25 +266,20 @@ export class AccessRules extends Disposable {
      * // MOD DMH
      * 🔧 Custom Patch: Alphabetically sort access control table rules
      *
-     * 📌 Purpose:
-     *   Grist's default `getAllTableIds()` returns tables in backend or creation order,
-     *   which may be inconsistent or hard to follow. This patch ensures that the table
-     *   rules in the ACL UI are shown in **alphabetical order by tableId**.
      *
-     * 🧠 Implementation:
+     *  Implementation:
      *   - Adds `.slice().sort(...)` to alphabetize without mutating original array.
      *   - Keeps filtering and mapping logic unchanged.
      *   - Includes a `console.log` line for runtime confirmation of patch.
      *
-     * 🛠️ Replaced:
+     * Replaced:
      *   rules.getAllTableIds()
      *     .filter(...)
      *     .map(...)
      * 
-     * 💡 Tip: Use `grep sorted` or search 🔤 to find this section quickly.
      */
 
-    // 🔁 Original:
+    // Original:
     // this._tableRules.set(
     //   rules.getAllTableIds()
     //     .filter(tableId => (tableId !== SPECIAL_RULES_TABLE_ID))
@@ -292,7 +287,7 @@ export class AccessRules extends Disposable {
     //         tableId, this, rules.getAllColumnRuleSets(tableId), rules.getTableDefaultRuleSet(tableId)))
     // );
 
-    // ✅ Patched version with alphabetical sort:
+    // Patched version with alphabetical sort:
     this._tableRules.set(
       rules.getAllTableIds()
         .slice().sort((a, b) => a.localeCompare(b))   // MOD DMH: Alphabetical sorting
@@ -300,7 +295,8 @@ export class AccessRules extends Disposable {
         .map(tableId => TableRules.create(this._tableRules,
             tableId, this, rules.getAllColumnRuleSets(tableId), rules.getTableDefaultRuleSet(tableId)))
     );
-    console.log("[Patch] ✅ Table rules sorted alphabetically by tableId");  // MOD DMH
+    console.log("[Patch] ✅ Table rules sorted alphabetically by tableId");  
+    // MOD DMH
 
     const withDefaultRules = ['SeedRule'];
     const separateRules = ['SchemaEdit', 'FullCopies', 'AccessRules'];

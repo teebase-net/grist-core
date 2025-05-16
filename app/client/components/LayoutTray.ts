@@ -1,3 +1,25 @@
+/**
+ * LayoutTray.ts
+ * 
+ * 📦 Patch: Floating Expand-on-Hover Layout Tray
+ * 📄 File: /app/client/components/LayoutTray.ts
+ * 📅 Applied: May 2025
+ * 👤 Author: You (DMH)
+ *
+ * Summary:
+ * - Replaces the standard LayoutTray bar with a small green bar that expands on hover.
+ * - Tray is hidden when empty, collapsed to 3px when containing widgets but not hovered.
+ * - Expands smoothly to 45px when hovered.
+ * - Special behavior: if tray contains a widget titled "🔍 SEARCH", the search input is auto-focused when expanded.
+ *
+ * Modified Blocks:
+ * - Import of `ViewSectionRec` for search detection
+ * - `buildPopup()` override for search auto-focus
+ * - `buildDom()` override for tray wrapper/float behavior
+ * - Custom tray + wrapper styles for hover and visibility
+ * - Layout padding tweaks for visual alignment
+ */
+
 // Make sure TypeScript treats this as a module
 export {};
 
@@ -124,7 +146,7 @@ export class LayoutTray extends DisposableWithEvents {
 
 /* -------------------------------------------
   /*Builds a popup for a maximized section. */
-// MOD DMH & ChatGPT
+// MOD DMH
 public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, close: () => void) {
   const section = Observable.create<number|null>(owner, null);
 
@@ -1195,7 +1217,6 @@ const cssVirtualZone = styled('div', `
   inset: 0;
 `);
 
-
 const cssFloaterWrapper = styled('div', `
   height: 40px;     
   width: 140px;
@@ -1211,22 +1232,19 @@ const cssFloaterWrapper = styled('div', `
   }
 `);
 
+// MOD DMH
 const cssVFull = styled('div', `
   position: relative;
   display: contents;   // ✅ Removes wrapper layout impact entirely
 `);
 
 
-// MOD DMH - Add wrapper around the collapsed tray to expand the hover-sensitive area
 const cssCollapsedTrayWrapper = styled('div', `
   position: relative;
-  height: 14px;          // 4px green bar + 10px hover area
+  height: 13px;          // 3px green bar + 10px hover area
   z-index: 100;
 `);
 
-// end MOD DMH
-
-// MOD DMH - Modify behaviour of Tray
 // The actual collapsed tray content (green line initially) that expands on mouse hover/focus
 const cssCollapsedTray = styled('div.collapsed_layout', `
   display: flex;

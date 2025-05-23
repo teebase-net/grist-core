@@ -1,6 +1,6 @@
 /**
  * LayoutTray.ts
- * 
+ *
  * 📦 Patch: Floating Expand-on-Hover Layout Tray
  * 📄 File: /app/client/components/LayoutTray.ts
  * 📅 Applied: May 2025
@@ -40,7 +40,7 @@ import {Computed, Disposable, dom, IDisposable, IDisposableOwner,
         makeTestId, obsArray, Observable, styled} from 'grainjs';
 import isEqual from 'lodash/isEqual';
 // MOD DMH - to make search button open automatically
-import { ViewSectionRec } from 'app/client/models/DocModel';   
+import { ViewSectionRec } from 'app/client/models/DocModel';
 // end MOD DMH
 
 console.log("✅ [Custom Patch] Floating LayoutTray.ts v0.2");
@@ -169,7 +169,7 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
   }));
 
   return dom.domComputed(section, (id) => {
-    if (!id) return null;
+    if (!id) { return null; }
 
     const viewSections = this.viewLayout.viewModel.viewSections.peek();
     const vs = viewSections.all().find((s: ViewSectionRec) => s.getRowId() === id);
@@ -177,13 +177,13 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
 
     if (title === "🔍 SEARCH") {
       setTimeout(() => {
-        const input = document.querySelector('input[placeholder="Search in document"]') as HTMLInputElement | null;
-        if (input) {
+        const input = document.querySelector('input[placeholder="Search in document"]');
+        if (input instanceof HTMLInputElement) {
           input.focus();
           input.select();
           console.log("✅ [Patch] Focused search input for 🔍 SEARCH popup.");
         } else {
-          console.warn("⚠️ [Patch] Search input not found.");
+          console.warn("⚠️ [Patch] Search input not found or incorrect type.");
         }
       }, 300);
     }

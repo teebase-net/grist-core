@@ -77,8 +77,12 @@ export class CodeEditorPanel extends DisposableWithEvents {
         }
         if (current.length) blocks.push(current);
         const sorted = blocks.sort((a, b) => {
-          const nameA = a.find(l => l.trim().startsWith("class")) ?? "";
-          const nameB = b.find(l => l.trim().startsWith("class")) ?? "";
+          const nameA = a.find(l => {
+            return l.trim().startsWith("class");
+          }) ?? "";
+          const nameB = b.find(l => {
+            return l.trim().startsWith("class");
+          }) ?? "";
           return nameA.localeCompare(nameB);
         });
         const pretty = sorted.map(b => b.join("\n")).join("\n\n");

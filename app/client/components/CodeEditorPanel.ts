@@ -67,7 +67,7 @@ export class CodeEditorPanel extends DisposableWithEvents {
         const lines = schema.split("\n");
         const blocks: string[][] = [];
         let current: string[] = [];
-        for (let line of lines) {
+        for (const line of lines) {
           if (line.startsWith("@grist.UserTable")) {
             if (current.length) blocks.push(current);
             current = [line];

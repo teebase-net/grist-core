@@ -1,3 +1,4 @@
+/* global window document MutationObserver */
 /**
  * index.js
  * 

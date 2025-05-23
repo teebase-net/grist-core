@@ -70,6 +70,10 @@ export class LayoutTray extends DisposableWithEvents {
   // Whether we are active (have a dotted border, that indicates we are ready to receive a drop)
   public active = Signal.create(this, false);
 
+  // MOD DMH - signal to track if tray is empty
+  public isEmpty: Computed<boolean>;
+  // end MOD DMH
+  
   private _rootElement: HTMLElement;
 
   constructor(public viewLayout: ViewLayout) {
@@ -77,6 +81,10 @@ export class LayoutTray extends DisposableWithEvents {
 
     // Create a proxy for the LayoutEditor. It will mimic the same interface as CollapsedLeaf.
     const externalLeaf = ExternalLeaf.create(this, this);
+
+    // MOD DMH - Computed signal to track if tray is empty (layout has no collapsed sections)
+    this.isEmpty = Computed.create(this, use => use(this.layout.count) === 0);
+    // end MOD DMH
 
     // Build layout using saved settings.
     this.layout.buildLayout(this.viewLayout.viewModel.collapsedSections.peek());
@@ -190,25 +198,21 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
     );
   });
 }
-
 // end MOD DMH
 
-
-
-// MOD DMH
+// MOD DMH - build tray DOM with dynamic styling based on emptiness
 public buildDom() {
   return this._rootElement = cssVFull(
-    dom.maybe(use => use(this.layout.count) > 0, () =>
-      cssCollapsedTrayWrapper(
-        dom.cls('collapsed-tray-wrapper'),  // 👈 Required for hover effect to work
-        cssCollapsedTray(
-          testId('editor'),
-          cssCollapsedTray.cls('-is-active', this.active.state),
-          cssCollapsedTray.cls('-is-target', this.over.state),
-          syncHover(this.hovering),
-          dom.create(CollapsedDropZone, this),
-          this.layout.buildDom(),
-        )
+    cssCollapsedTrayWrapper(
+      dom.cls('collapsed-tray-wrapper'),  // 👈 Required for hover effect to work
+      cssCollapsedTray(
+        testId('editor'),
+        cssCollapsedTray.cls('-is-empty', this.isEmpty),
+        cssCollapsedTray.cls('-is-active', this.active.state),
+        cssCollapsedTray.cls('-is-target', this.over.state),
+        syncHover(this.hovering),
+        dom.create(CollapsedDropZone, this),
+        this.layout.buildDom(),
       )
     )
   );
@@ -1252,6 +1256,11 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   overflow: hidden;
   height: 3px;
   background-color: #16b378;        // ✅ Green line color
+    // MOD DMH - match background color when empty
+    &-is-empty {
+      background-color: ${theme.pageBg};
+    }
+    // end MOD DMH
   transition: height 0.3s ease;
   position: absolute;
   z-index: 101;  /* ⬅️ Just slightly higher, to ensure it's topmost */

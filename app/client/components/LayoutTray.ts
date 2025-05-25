@@ -73,7 +73,6 @@ export class LayoutTray extends DisposableWithEvents {
   // MOD DMH - signal to track if tray is empty
   public isEmpty: Computed<boolean>;
   // end MOD DMH
-  
   private _rootElement: HTMLElement;
 
   constructor(public viewLayout: ViewLayout) {

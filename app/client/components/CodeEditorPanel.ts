@@ -1,3 +1,15 @@
+/**
+ * CodeEditorPanel.ts
+ * 
+ * Renders the "Code View" panel in Grist for displaying the schema of the current document.
+ * Uses highlight.js to provide syntax highlighting for Python-style Grist schema output.
+ *
+ * 🔧 MOD DMH — May 2025:
+ * - Adds alphabetical sorting of @grist.UserTable blocks by class name for improved readability
+ * - Replaces `this._schema.set(schema)` with custom sort logic
+ * - Marked with `// MOD DMH` and `// end MOD DMH` for traceability
+ */
+
 import {GristDoc} from 'app/client/components/GristDoc';
 import {reportError} from 'app/client/models/errors';
 import {DisposableWithEvents} from 'app/common/DisposableWithEvents';
@@ -63,7 +75,7 @@ export class CodeEditorPanel extends DisposableWithEvents {
         this._schema.set(schema);
         */
 
-        // 🔧 [Custom Patch] Sort @grist.UserTable blocks alphabetically by class name (v0.3)
+        // MOD DMH - 🔧 [Custom Patch] Sort @grist.UserTable blocks alphabetically by class name
         const lines = schema.split("\n");
         const blocks: string[][] = [];
         let current: string[] = [];

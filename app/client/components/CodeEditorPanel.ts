@@ -77,7 +77,7 @@ export class CodeEditorPanel extends DisposableWithEvents {
             current.push(line);
           }
         }
-        if (current.length) {blocks.push(current);}
+        if (current.length) { blocks.push(current); }
         const sorted = blocks.sort((a, b) => {
           const nameA = a.find(l => {
             return l.trim().startsWith("class");

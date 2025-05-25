@@ -1,7 +1,7 @@
 /* global window document MutationObserver */
 /**
  * index.js
- * 
+ *
  * Custom patch script injected by Grist app.js
  *
  * 🔧 MOD DMH — May 2025:

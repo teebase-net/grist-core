@@ -69,7 +69,9 @@ export class CodeEditorPanel extends DisposableWithEvents {
         let current: string[] = [];
         for (const line of lines) {
           if (line.startsWith("@grist.UserTable")) {
-            if (current.length) blocks.push(current);
+            if (current.length) {
+              blocks.push(current);
+            }
             current = [line];
           } else {
             current.push(line);

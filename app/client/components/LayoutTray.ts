@@ -1258,14 +1258,16 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   overflow: hidden;
   height: 3px;
   background-color: #16b378;        // ✅ Green line color
-    // MOD DMH - match background color when empty
-    &-is-empty {
-      background-color: ${theme.pageBg};
-    }
-    // end MOD DMH
+
+  // MOD DMH - match background color when empty
+  &-is-empty {
+    background-color: ${theme.pageBg};
+  }
+  // end MOD DMH
+
   transition: height 0.3s ease;
   position: absolute;
-  z-index: 101;  /* ⬅️ Just slightly higher, to ensure it's topmost */
+  z-index: 101;  /* ⬅️ Slightly higher than default layout layers */
   top: 0;
   left: 0;
   right: 0;
@@ -1274,8 +1276,8 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   pointer-events: none;
 
-  .collapsed-tray-wrapper:hover &,
-  .collapsed-tray-wrapper:focus-within & {
+  // MOD DMH: Use class for hover-triggered expansion instead of pseudo-selector
+  &.hovered {
     pointer-events: auto;
     height: 45px;
     background-color: #f7f7f7;
@@ -1284,6 +1286,7 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
     border: none !important;             // ✅ Fixes grey border
     border-radius: 0 !important;         // ✅ Removes rounded corners
   }
+  // end MOD DMH
 
   &-is-active {
     outline: 2px dashed ${theme.widgetBorder};
@@ -1298,7 +1301,26 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
     display: none;
   }
 `);
+
 // end MOD DMH
+
+
+// MOD DMH: JS-based hover control for tray expansion
+const expand = Observable.create(owner, false);
+
+return cssCollapsedTrayWrapper(
+  dom.on('mouseenter', () => expand.set(true)),
+  dom.on('mouseleave', () => expand.set(false)),
+
+  cssCollapsedTray.className(observable.map(expand, e => e ? `${cssCollapsedTray.className} hovered` : cssCollapsedTray.className)),
+
+  ... // your tray contents
+);
+// end MOD DMH
+
+
+
+
 
 const cssRow = styled('div', `display: flex`);
 

@@ -1,4 +1,4 @@
-30/**
+/**
  * GridView.js
  *
  * Implements the main grid view component in Grist, responsible for rendering table data,
@@ -83,8 +83,7 @@ const SHORT_CLICK_IN_MS = 500;
 // size of the plus width ()
 const PLUS_WIDTH = 40;
 // size of the row number field (we assume 4rem, 1rem = 13px in grist)
-
-const ROW_NUMBER_WIDTH = 30;    // DMH MOD was 52px
+const ROW_NUMBER_WIDTH = 30;    // DMG MOD was 52px
 
 
 /**
@@ -1251,17 +1250,9 @@ GridView.prototype.buildDom = function() {
 
       // COL HEADER BOX
       dom('div.gridview_stick-top.flexhbox',   // Sticks to top, flexbox makes child enclose its contents
-        // dom('div.gridview_corner_spacer'),   - original
-        // MOD DMH — force corner spacer to retain width in case flexbox causes collapse
-        dom('div.gridview_corner_spacer',
-          kd.style('width', ROW_NUMBER_WIDTH + 'px'),
-          kd.style('minWidth', ROW_NUMBER_WIDTH + 'px'),
-          kd.style('flex', 'none'),
-          kd.style('display', 'block')
-        ),
-        // end MOD DMH
+        dom('div.gridview_corner_spacer'),
 
-          self.header = dom('div.gridview_data_header.flexhbox', // main header, flexbox floats contents onto a line
+        self.header = dom('div.gridview_data_header.flexhbox', // main header, flexbox floats contents onto a line
 
           dom('div.column_names.record',
             kd.style('minWidth', '100%'),

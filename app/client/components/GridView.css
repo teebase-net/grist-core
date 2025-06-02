@@ -439,3 +439,12 @@
   height: 17px;
   flex-shrink: 100;
 }
+
+/* ===== MOD DMH: Fix column header misalignment when horizontal scroll active ===== */
+
+.gridview_data_header .column_names.record {
+  min-width: unset !important;
+}
+
+/* end MOD DMH */
+

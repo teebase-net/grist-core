@@ -43,7 +43,7 @@ import isEqual from 'lodash/isEqual';
 import { ViewSectionRec } from 'app/client/models/DocModel';
 // end MOD DMH
 
-console.log("✅ [Custom Patch] Floating LayoutTray.ts v0.2");
+console.log("✅ [Custom Patch] Floating LayoutTray.ts v0.3");
 
 const testId = makeTestId('test-layoutTray-');
 

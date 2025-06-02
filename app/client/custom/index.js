@@ -19,7 +19,7 @@
 
 "use strict";
 
-console.log("[Custom Patch] index.js loaded ✅ v0.7");
+console.log("[Custom Patch] index.js loaded ✅ v0.8");
 
 (function () {
   const docId = window.gristDoc?.docId || window.location.pathname.split('/')[1];
@@ -110,21 +110,22 @@ console.log("[Custom Patch] index.js loaded ✅ v0.7");
     }
   }
 
-  async function controlShareIcon() {
-    const allowed = await hasExportDataPermission();
-    if (allowed === null) return;
+async function controlShareIcon() {
+  const allowed = await hasExportDataPermission();
+  if (allowed === null) return;
 
-    const toggle = () => {
-      document.querySelectorAll('.tour-share-icon').forEach(el => {
-        el.style.display = allowed ? '' : 'none';
-      });
-    };
+  const toggle = () => {
+    document.querySelectorAll('.test-tb-share').forEach(el => {
+      el.style.display = allowed ? '' : 'none';
+    });
+  };
 
-    new MutationObserver(toggle).observe(document.body, { childList: true, subtree: true });
-    toggle();
+  new MutationObserver(toggle).observe(document.body, { childList: true, subtree: true });
+  toggle();
 
-    console.log(`[Custom Patch] Share icon = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
-  }
+  console.log(`[Custom Patch] Share icon = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
+}
+
 
 
   /**

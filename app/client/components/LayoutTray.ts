@@ -204,11 +204,15 @@ public buildDom() {
   return this._rootElement = cssVFull(
     cssCollapsedTrayWrapper(
       dom.cls('collapsed-tray-wrapper'),  // 👈 Required for hover effect to work
+      dom.on('mouseenter', () => this.hovering.set(true)),
+      dom.on('mouseleave', () => this.hovering.set(false)),
+
       cssCollapsedTray(
         testId('editor'),
         cssCollapsedTray.cls('-is-empty', this.isEmpty),
         cssCollapsedTray.cls('-is-active', this.active.state),
         cssCollapsedTray.cls('-is-target', this.over.state),
+        cssCollapsedTray.cls('hovered', this.hovering),  // ✅ hover class for expansion
         syncHover(this.hovering),
         dom.create(CollapsedDropZone, this),
         this.layout.buildDom(),
@@ -217,6 +221,7 @@ public buildDom() {
   );
 }
 // end MOD DMH
+
 
   public buildContentDom(id: string|number) {
     return buildCollapsedSectionDom({
@@ -1303,28 +1308,6 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
 `);
 
 // end MOD DMH
-
-
-// MOD DMH: JS-based hover control for tray expansion
-const expand = Observable.create(owner, false);
-
-return cssCollapsedTrayWrapper(
-  dom.on('mouseenter', () => expand.set(true)),
-  dom.on('mouseleave', () => expand.set(false)),
-
-  // Toggle .hovered class when hovered
-  cssCollapsedTray.className(observable.map(
-    expand, 
-    e => e ? `${cssCollapsedTray.className} hovered` : cssCollapsedTray.className
-  )),
-
-  // ... tray contents go here
-);
-// end MOD DMH
-
-
-
-
 
 
 const cssRow = styled('div', `display: flex`);

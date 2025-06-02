@@ -1312,11 +1312,16 @@ return cssCollapsedTrayWrapper(
   dom.on('mouseenter', () => expand.set(true)),
   dom.on('mouseleave', () => expand.set(false)),
 
-  cssCollapsedTray.className(observable.map(expand, e => e ? `${cssCollapsedTray.className} hovered` : cssCollapsedTray.className)),
+  // Toggle .hovered class when hovered
+  cssCollapsedTray.className(observable.map(
+    expand, 
+    e => e ? `${cssCollapsedTray.className} hovered` : cssCollapsedTray.className
+  )),
 
-  ... // your tray contents
+  // ... tray contents go here
 );
 // end MOD DMH
+
 
 
 

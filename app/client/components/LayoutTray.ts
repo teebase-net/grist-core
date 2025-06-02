@@ -203,7 +203,7 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
 public buildDom() {
   return this._rootElement = cssVFull(
     cssCollapsedTrayWrapper(
-      dom.cls('collapsed-tray-wrapper'),  // 👈 Required for hover effect to work
+      dom.cls('collapsed-tray-wrapper'),  // 👈 Required for hover effect
       dom.on('mouseenter', () => this.hovering.set(true)),
       dom.on('mouseleave', () => this.hovering.set(false)),
 
@@ -212,7 +212,7 @@ public buildDom() {
         cssCollapsedTray.cls('-is-empty', this.isEmpty),
         cssCollapsedTray.cls('-is-active', this.active.state),
         cssCollapsedTray.cls('-is-target', this.over.state),
-        cssCollapsedTray.cls('hovered', this.hovering),  // ✅ hover class for expansion
+        cssCollapsedTray.cls('hovered', this.hovering),
         syncHover(this.hovering),
         dom.create(CollapsedDropZone, this),
         this.layout.buildDom(),
@@ -221,6 +221,7 @@ public buildDom() {
   );
 }
 // end MOD DMH
+
 
 
   public buildContentDom(id: string|number) {

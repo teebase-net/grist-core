@@ -1218,6 +1218,7 @@ class VRect {
 const cssVirtualZone = styled('div', `
   position: absolute;
   inset: 0;
+  pointer-events: none;  // MOD DMH: allows tray to detect hover
 `);
 
 const cssFloaterWrapper = styled('div', `

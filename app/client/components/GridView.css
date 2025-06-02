@@ -11,9 +11,13 @@
 ===================================================================================
 */
 
-.gridview_data_pane {
-  --gridview-rownum-width: 30px;  /* MOD DMH */
+// MOD DMH
+:root {
+  --gridview-rownum-width: 30px;
+}
+// end MOD DMH
 
+.gridview_data_pane {
   background-color: var(--grist-theme-table-body-bg, white);
   position: relative;
   width: 100%;

@@ -154,25 +154,26 @@ console.log("[Custom Patch] index.js loaded ✅ v0.7");
    * │ Load handlers after Grist page has rendered                         │
    * └─────────────────────────────────────────────────────────────────────┘
    */
-window.addEventListener('load', () => {
-  controlAddColumnButtons();
+  window.addEventListener('load', () => {
+    controlAddColumnButtons();
 
-  // Retry logic for icons that may render late
-  const retryUntil = (fn, selector, maxRetries = 10, delay = 1000) => {
-    let tries = 0;
-    const check = async () => {
-      if (document.querySelector(selector) || tries >= maxRetries) {
-        fn();
-      } else {
-        tries++;
-        setTimeout(check, delay);
-      }
+    // Retry logic for icons that may render late
+    const retryUntil = (fn, selector, maxRetries = 20, delay = 1000) => {
+      let tries = 0;
+      const check = async () => {
+        const el = document.querySelector(selector);
+        console.log(`[Custom Patch] Attempt ${tries + 1}/${maxRetries} — ${selector} ${el ? '✅ Found' : '❌ Not found'}`);
+        if (el || tries >= maxRetries) {
+          fn();
+        } else {
+          tries++;
+          setTimeout(check, delay);
+        }
+      };
+      check();
     };
-    check();
-  };
 
-  retryUntil(controlShareIcon, '.tour-share-icon');
-  retryUntil(controlExportButtons, '.test-download-section');
-});
+    retryUntil(controlShareIcon, '.tour-share-icon');
+    retryUntil(controlExportButtons, '.test-download-section');
+  });
 
-})();

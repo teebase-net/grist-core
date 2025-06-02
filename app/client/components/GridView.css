@@ -441,10 +441,12 @@
 }
 
 /* ===== MOD DMH: Fix column header misalignment when horizontal scroll active ===== */
-
 .gridview_data_header .column_names.record {
-  min-width: unset !important;
+  width: fit-content !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  flex-shrink: 1 !important;
 }
-
 /* end MOD DMH */
+
 

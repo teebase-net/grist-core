@@ -21,7 +21,7 @@
   background-color: var(--grist-theme-table-body-bg, white);
   position: relative;
   width: 100%;
-  overflow: hidden;
+  overflow: visible;    // MOD DMH
   flex-grow: 1;
   /* make sure that this element is at the back of the stack */
   z-index: 0;

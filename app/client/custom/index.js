@@ -154,9 +154,25 @@ console.log("[Custom Patch] index.js loaded ✅ v0.7");
    * │ Load handlers after Grist page has rendered                         │
    * └─────────────────────────────────────────────────────────────────────┘
    */
-  window.addEventListener('load', () => {
-    setTimeout(controlAddColumnButtons, 1500);
-    setTimeout(controlShareIcon, 1500);
-    setTimeout(controlExportButtons, 1500);
-  });
+window.addEventListener('load', () => {
+  controlAddColumnButtons();
+
+  // Retry logic for icons that may render late
+  const retryUntil = (fn, selector, maxRetries = 10, delay = 1000) => {
+    let tries = 0;
+    const check = async () => {
+      if (document.querySelector(selector) || tries >= maxRetries) {
+        fn();
+      } else {
+        tries++;
+        setTimeout(check, delay);
+      }
+    };
+    check();
+  };
+
+  retryUntil(controlShareIcon, '.tour-share-icon');
+  retryUntil(controlExportButtons, '.test-download-section');
+});
+
 })();

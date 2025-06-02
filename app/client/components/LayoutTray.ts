@@ -203,17 +203,14 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
 public buildDom() {
   return this._rootElement = cssVFull(
     cssCollapsedTrayWrapper(
-      dom.cls('collapsed-tray-wrapper'),  // 👈 Required for hover effect
-      dom.on('mouseenter', () => this.hovering.set(true)),
-      dom.on('mouseleave', () => this.hovering.set(false)),
-
+      dom.cls('collapsed-tray-wrapper'),  // 👈 Required for hover zone
       cssCollapsedTray(
         testId('editor'),
         cssCollapsedTray.cls('-is-empty', this.isEmpty),
         cssCollapsedTray.cls('-is-active', this.active.state),
         cssCollapsedTray.cls('-is-target', this.over.state),
-        cssCollapsedTray.cls('hovered', this.hovering),
-        syncHover(this.hovering),
+        dom.cls('hovered', () => this.hovering.get()),  // ✅ Correct for Signal<boolean>
+        syncHover(this.hovering),                      // ✅ Updates when section becomes active
         dom.create(CollapsedDropZone, this),
         this.layout.buildDom(),
       )
@@ -221,6 +218,7 @@ public buildDom() {
   );
 }
 // end MOD DMH
+
 
 
 

@@ -1245,7 +1245,7 @@ const cssVFull = styled('div', `
 const cssCollapsedTrayWrapper = styled('div', `
   position: relative;
   height: 13px;          // 3px green bar + 10px hover area
-  z-index: 100;
+  z-index: 200;  // ⬅️ Just enough to ensure it sits above .gridview_data_pane
 `);
 
 // The actual collapsed tray content (green line initially) that expands on mouse hover/focus

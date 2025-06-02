@@ -84,7 +84,7 @@ const SHORT_CLICK_IN_MS = 500;
 const PLUS_WIDTH = 40;
 // size of the row number field (we assume 4rem, 1rem = 13px in grist)
 
-const ROW_NUMBER_WIDTH = 30;    // DMH MOD was 52px
+const ROW_NUMBER_WIDTH = 52;    // DMH MOD was 52px
 
 
 /**

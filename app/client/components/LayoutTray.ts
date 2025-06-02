@@ -199,28 +199,23 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
 }
 // end MOD DMH
 
-// MOD DMH - build tray DOM with dynamic styling based on emptiness
 public buildDom() {
   return this._rootElement = cssVFull(
     cssCollapsedTrayWrapper(
-      dom.cls('collapsed-tray-wrapper'),  // 👈 Required for hover zone
+      dom.cls('collapsed-tray-wrapper'),
       cssCollapsedTray(
         testId('editor'),
         cssCollapsedTray.cls('-is-empty', this.isEmpty),
         cssCollapsedTray.cls('-is-active', this.active.state),
         cssCollapsedTray.cls('-is-target', this.over.state),
-        dom.cls('hovered', this.hovering),          // ✅ Signal used directly as a function
-        syncHover(this.hovering),                   // ✅ Also valid, already used elsewhere
+        dom.cls('hovered', () => this.hovering()),   // ✅ This finally works
+        syncHover(this.hovering),
         dom.create(CollapsedDropZone, this),
         this.layout.buildDom(),
       )
     )
   );
 }
-// end MOD DMH
-
-
-
 
 
   public buildContentDom(id: string|number) {

@@ -209,8 +209,8 @@ public buildDom() {
         cssCollapsedTray.cls('-is-empty', this.isEmpty),
         cssCollapsedTray.cls('-is-active', this.active.state),
         cssCollapsedTray.cls('-is-target', this.over.state),
-        dom.cls('hovered', () => this.hovering.get()),  // ✅ Correct for Signal<boolean>
-        syncHover(this.hovering),                      // ✅ Updates when section becomes active
+        dom.cls('hovered', this.hovering),          // ✅ Signal used directly as a function
+        syncHover(this.hovering),                   // ✅ Also valid, already used elsewhere
         dom.create(CollapsedDropZone, this),
         this.layout.buildDom(),
       )
@@ -218,6 +218,7 @@ public buildDom() {
   );
 }
 // end MOD DMH
+
 
 
 

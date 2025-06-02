@@ -1252,13 +1252,16 @@ GridView.prototype.buildDom = function() {
       // COL HEADER BOX
       dom('div.gridview_stick-top.flexhbox',   // Sticks to top, flexbox makes child enclose its contents
         // dom('div.gridview_corner_spacer'),   - original
-        // MOD DMH — force corner spacer width in DOM to match ROW_NUMBER_WIDTH
+        // MOD DMH — force corner spacer to retain width in case flexbox causes collapse
         dom('div.gridview_corner_spacer',
-          kd.style('width', ROW_NUMBER_WIDTH + 'px')
+          kd.style('width', ROW_NUMBER_WIDTH + 'px'),
+          kd.style('minWidth', ROW_NUMBER_WIDTH + 'px'),
+          kd.style('flex', 'none'),
+          kd.style('display', 'block')
         ),
         // end MOD DMH
 
-        self.header = dom('div.gridview_data_header.flexhbox', // main header, flexbox floats contents onto a line
+          self.header = dom('div.gridview_data_header.flexhbox', // main header, flexbox floats contents onto a line
 
           dom('div.column_names.record',
             kd.style('minWidth', '100%'),

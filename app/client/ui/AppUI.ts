@@ -3,7 +3,7 @@
  *
  * 📦 Patch: Replace Toast Notifications with Modal Alerts
  * 📜 File: /app/client/ui/AppUI.ts
- * 🗕️ Applied: June 2025
+ * 🕕️ Applied: June 2025
  * 👤 Author: DMH
  *
  * Summary:
@@ -41,7 +41,8 @@ import {WelcomePage} from 'app/client/ui/WelcomePage';
 import {testId} from 'app/client/ui2018/cssVars';
 import {getPageTitleSuffix} from 'app/common/gristUrls';
 import {getGristConfig} from 'app/common/urlUtils';
-import {Computed, dom, IDisposable, IDisposableOwner, Observable, replaceContent, subscribe, styled} from 'grainjs';
+import {Computed, dom, IDisposable, IDisposableOwner, Observable, replaceContent, subscribe} from 'grainjs';
+import {styled} from 'app/client/ui2018/styled';
 
 // MOD DMH - Patch begins
 export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable {
@@ -136,6 +137,7 @@ const cssModal = styled('div', `
   }
 `);
 // end MOD DMH
+
 
 
 // ------- Below here is unchanged  -------------------------------------------------

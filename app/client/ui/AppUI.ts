@@ -2,13 +2,13 @@
  * AppUI.ts
  *
  * 📦 Patch: Replace Toast Notifications with Modal Alerts
- * 📄 File: /app/client/ui/AppUI.ts
- * 📅 Applied: June 2025
+ * 📜 File: /app/client/ui/AppUI.ts
+ * 🗕️ Applied: June 2025
  * 👤 Author: DMH
  *
  * Summary:
  * - Overrides default Grist toast system (NotifyUI) with a modal-style notification.
- * - Modal appears centered, has desktop-style background with black text, and a dismiss button.
+ * - Modal appears centered, matches desktop theme, includes a dismiss button.
  * - Only the notification rendering is affected. No upstream Grist logic is changed.
  *
  * Modified Sections:
@@ -33,10 +33,6 @@ import {HomeModelImpl} from 'app/client/models/HomeModel';
 import {App} from 'app/client/ui/App';
 import {AppHeader} from 'app/client/ui/AppHeader';
 // import {buildSnackbarDom} from 'app/client/ui/NotifyUI';  // MOD DMH
-import {createForbiddenPage, createNotFoundPage, createOtherErrorPage} from 'app/client/ui/errorPages';
-import {createBottomBarDoc} from 'app/client/ui/BottomBar';
-import {createDocMenu} from 'app/client/ui/DocMenu';
-import {createHomeLeftPane} from 'app/client/ui/HomeLeftPane';
 import {OnboardingPage, shouldShowOnboardingPage} from 'app/client/ui/OnboardingPage';
 import {pagePanels} from 'app/client/ui/PagePanels';
 import {RightPanel} from 'app/client/ui/RightPanel';
@@ -45,10 +41,11 @@ import {WelcomePage} from 'app/client/ui/WelcomePage';
 import {testId} from 'app/client/ui2018/cssVars';
 import {getPageTitleSuffix} from 'app/common/gristUrls';
 import {getGristConfig} from 'app/common/urlUtils';
-import {Computed, dom, IDisposable, IDisposableOwner, Observable, replaceContent, subscribe} from 'grainjs';
+import {Computed, dom, IDisposable, IDisposableOwner, Observable, replaceContent, subscribe, styled} from 'grainjs';
 
+// MOD DMH - Patch begins
 export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable {
-  // MOD DMH - insert modal container once at the top level
+  // MOD DMH - inject modal container
   const modalContainer = cssModalContainer();
   document.body.appendChild(modalContainer);
   // end MOD DMH
@@ -56,7 +53,7 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
   const content = dom.maybe(topAppModel.appObs, (appModel) => {
     return [
       createMainPage(appModel, appObj),
-      buildModalDom(appModel.notifier, appModel),   // MOD DMH
+      buildModalDom(appModel.notifier),  // MOD DMH
     ];
   });
 
@@ -75,9 +72,10 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
   }
   return {dispose};
 }
+// end MOD DMH
 
 // MOD DMH - modal version of toast
-function buildModalDom(notifier: any, appModel: AppModel) {
+function buildModalDom(notifier: any) {
   const visible = Observable.create(null, false);
   const message = Observable.create(null, '');
   const type = Observable.create(null, 'info');
@@ -93,7 +91,7 @@ function buildModalDom(notifier: any, appModel: AppModel) {
       dom.cls('error', use => type.get() === 'error'),
       dom.cls('info', use => type.get() === 'info'),
       dom('div',
-        dom('p', dom.text(use => message.get())),  // ✅ FIXED
+        dom('p', message.get()),
         dom('button', 'OK', dom.on('click', () => visible.set(false)))
       )
     )
@@ -101,7 +99,7 @@ function buildModalDom(notifier: any, appModel: AppModel) {
 }
 // end MOD DMH
 
-// MOD DMH - Global modal container style
+// MOD DMH - modal container div to center modal
 const cssModalContainer = () =>
   dom('div', dom.style('position', 'fixed'), dom.style('top', '0'), dom.style('left', '0'),
     dom.style('width', '100%'), dom.style('height', '100%'), dom.style('zIndex', '9999'),
@@ -111,7 +109,7 @@ const cssModalContainer = () =>
 // end MOD DMH
 
 // MOD DMH - Modal styling
-const cssModal = styled('div', `   // ✅ FIXED from dom.styled → styled
+const cssModal = styled('div', `
   background: black;
   color: white;
   padding: 24px;
@@ -122,8 +120,10 @@ const cssModal = styled('div', `   // ✅ FIXED from dom.styled → styled
   font-size: 16px;
   max-width: 90vw;
   text-align: center;
+
   &.error { border: 2px solid red; }
   &.info { border: 2px solid #007bff; }
+
   & button {
     margin-top: 16px;
     padding: 6px 12px;
@@ -136,7 +136,6 @@ const cssModal = styled('div', `   // ✅ FIXED from dom.styled → styled
   }
 `);
 // end MOD DMH
-
 
 
 // ------- Below here is unchanged  -------------------------------------------------

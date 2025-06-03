@@ -1,122 +1,65 @@
-/**
- * AppUI.ts
- *
- * 🏦 Patch: Replace Toast Notifications with Modal Alerts
- * 📜 File: /app/client/ui/AppUI.ts
- * 🴵️ Applied: June 2025
- * 👤 Author: DMH
- *
- * Summary:
- * - Overrides default Grist toast system (NotifyUI) with a modal-style notification.
- * - Modal appears centered, matches desktop theme, includes a dismiss button.
- * - Only the notification rendering is affected. No upstream Grist logic is changed.
- */
-
+import {buildDocumentBanners, buildHomeBanners} from 'app/client/components/Banners';
+import {ViewAsBanner} from 'app/client/components/ViewAsBanner';
+import {domAsync} from 'app/client/lib/domAsync';
+import {
+  loadAccountPage,
+  loadActivationPage,
+  loadAdminPanel,
+  loadAuditLogsPage,
+  loadBillingPage,
+} from 'app/client/lib/imports';
+import {createSessionObs, isBoolean, isNumber} from 'app/client/lib/sessionObs';
 import {AppModel, TopAppModel} from 'app/client/models/AppModel';
+import {DocPageModelImpl} from 'app/client/models/DocPageModel';
+import {HomeModelImpl} from 'app/client/models/HomeModel';
 import {App} from 'app/client/ui/App';
-import {Computed, dom, IDisposable, IDisposableOwner, Observable, styled} from 'grainjs';
+import {AppHeader} from 'app/client/ui/AppHeader';
+import {createBottomBarDoc} from 'app/client/ui/BottomBar';
+import {createDocMenu} from 'app/client/ui/DocMenu';
+import {createForbiddenPage, createNotFoundPage, createOtherErrorPage} from 'app/client/ui/errorPages';
+import {createHomeLeftPane} from 'app/client/ui/HomeLeftPane';
+import {buildSnackbarDom} from 'app/client/ui/NotifyUI';
+import {OnboardingPage, shouldShowOnboardingPage} from 'app/client/ui/OnboardingPage';
+import {pagePanels} from 'app/client/ui/PagePanels';
+import {RightPanel} from 'app/client/ui/RightPanel';
+import {createTopBarDoc, createTopBarHome} from 'app/client/ui/TopBar';
+import {WelcomePage} from 'app/client/ui/WelcomePage';
+import {testId} from 'app/client/ui2018/cssVars';
+import {getPageTitleSuffix} from 'app/common/gristUrls';
+import {getGristConfig} from 'app/common/urlUtils';
+import {Computed, dom, IDisposable, IDisposableOwner, Observable, replaceContent, subscribe} from 'grainjs';
 
-/**
- * MOD DMH - createAppUI override
- * Replaces default Grist toast notifications with custom modal handler
- */
+// When integrating into the old app, we might in theory switch between new-style and old-style
+// content. This function allows disposing the created content by old-style code.
+// TODO once #newui is gone, we don't need to worry about this being disposable.
+// appObj is the App object from app/client/ui/App.ts
 export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable {
-  const modalContainer = cssModalContainer();
-  document.body.appendChild(modalContainer);
-
   const content = dom.maybe(topAppModel.appObs, (appModel) => {
     return [
-      createMainPage(appModel, appObj), // existing main layout
-      buildModalDom(topAppModel.notifier), // MOD DMH - modal notifications
+      createMainPage(appModel, appObj),
+      buildSnackbarDom(appModel.notifier, appModel),
     ];
   });
-
   dom.update(document.body, content, {
-    style: 'font-family: inherit; font-size: inherit; line-height: inherit;',
+    // Cancel out bootstrap's overrides.
+    style: 'font-family: inherit; font-size: inherit; line-height: inherit;'
   });
 
   function dispose() {
+    // Return value of dom.maybe() / dom.domComputed() is a pair of markers with a function that
+    // replaces content between them when an observable changes. It's uncommon to dispose the set
+    // with the markers, and grainjs doesn't provide a helper, but we can accomplish it by
+    // disposing the markers. They will automatically trigger the disposal of the included
+    // content. This avoids the need to wrap the contents in another layer of a dom element.
     const [beginMarker, endMarker] = content;
+    replaceContent(beginMarker, endMarker, null);
     dom.domDispose(beginMarker);
     dom.domDispose(endMarker);
     document.body.removeChild(beginMarker);
     document.body.removeChild(endMarker);
-    modalContainer.remove(); // clean up modal
   }
   return {dispose};
 }
-
-// MOD DMH - build modal popup bound to notifier
-function buildModalDom(notifier: any) {
-  const visible = Observable.create(null, false);
-  const message = Observable.create(null, '');
-  const type = Observable.create(null, 'info');
-
-  notifier.addHandler((note: any) => {
-    message.set(note.text || '');
-    type.set(note.type || 'info');
-    visible.set(true);
-  });
-
-  return dom.maybe(visible, () =>
-    cssModal(
-      dom.cls('error', () => type.get() === 'error'),
-      dom.cls('info', () => type.get() === 'info'),
-      dom('div',
-        dom('p', message.get()),
-        dom('button', 'OK', dom.on('click', () => visible.set(false)))
-      )
-    )
-  );
-}
-
-// MOD DMH - container div to center modal
-const cssModalContainer = () =>
-  dom('div',
-    dom.style('position', 'fixed'),
-    dom.style('top', '0'),
-    dom.style('left', '0'),
-    dom.style('width', '100%'),
-    dom.style('height', '100%'),
-    dom.style('zIndex', '9999'),
-    dom.style('pointerEvents', 'none'),
-    dom.style('display', 'flex'),
-    dom.style('alignItems', 'center'),
-    dom.style('justifyContent', 'center'),
-    dom.style('padding', '20px')
-  );
-
-// MOD DMH - modal style block
-const cssModal = styled('div', `
-  background: black;
-  color: white;
-  padding: 24px;
-  border-radius: 8px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.5);
-  pointer-events: auto;
-  z-index: 10000;
-  font-size: 16px;
-  max-width: 90vw;
-  text-align: center;
-
-  &.error { border: 2px solid red; }
-  &.info { border: 2px solid #007bff; }
-
-  & button {
-    margin-top: 16px;
-    padding: 6px 12px;
-    font-size: 14px;
-    cursor: pointer;
-    background: #fff;
-    color: #000;
-    border: none;
-    border-radius: 4px;
-  }
-`);
-
-
-
-// ------- Below here is unchanged  -------------------------------------------------
 
 function createMainPage(appModel: AppModel, appObj: App) {
   if (!appModel.currentOrg && appModel.needsOrg.get()) {

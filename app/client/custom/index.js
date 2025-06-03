@@ -22,7 +22,19 @@
 console.log("[Custom Patch] index.js loaded ✅ v0.8");
 
 (function () {
-  const docId = window.gristDoc?.docId || window.location.pathname.split('/')[1];
+  function extractDocId() {
+    if (window.gristDoc?.docId) return window.gristDoc.docId;
+
+    const parts = window.location.pathname.split('/');
+    const docIndex = parts.indexOf('p');
+    if (docIndex > -1 && parts.length > docIndex + 1) {
+      return parts[docIndex + 1];  // GRIST_ORG_IN_PATH=true
+    }
+    return parts[1];  // fallback
+  }
+
+  const docId = extractDocId();
+
 
   /**
    * ┌─────────────────────────────────────────────────────────────────────┐

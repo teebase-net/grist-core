@@ -27,7 +27,7 @@ import {
   loadBillingPage,
 } from 'app/client/lib/imports';
 import {createSessionObs, isBoolean, isNumber} from 'app/client/lib/sessionObs';
-import {Notifier} from 'app/client/lib/Notifier'; // MOD DMH
+// import {Notifier} from 'app/client/lib/Notifier'; // MOD DMH
 import {AppModel, TopAppModel} from 'app/client/models/AppModel';
 import {DocPageModelImpl} from 'app/client/models/DocPageModel';
 import {HomeModelImpl} from 'app/client/models/HomeModel';
@@ -51,7 +51,7 @@ import {
   createDocMenu,
   createBottomBarDoc,
   createHomeLeftPane
-} from 'app/client/ui/errorpages';
+} from 'app/client/ui/errorPages';
 // end MOD DMH
 
 
@@ -89,7 +89,7 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
 
 
 // MOD DMH - modal version of toast
-function buildModalDom(notifier: Notifier, appModel: AppModel) {
+function buildModalDom(notifier: any, appModel: AppModel) {
   const visible = Observable.create(null, false);
   const message = Observable.create(null, '');
   const type = Observable.create(null, 'info');

@@ -43,6 +43,13 @@ import {testId} from 'app/client/ui2018/cssVars';
 import {getPageTitleSuffix} from 'app/common/gristUrls';
 import {getGristConfig} from 'app/common/urlUtils';
 import {Computed, dom, IDisposable, IDisposableOwner, Observable, replaceContent, styled, subscribe} from 'grainjs';
+// MOD DMH - Add missing imports for error and layout components
+import {createNotFoundPage, createForbiddenPage, createOtherErrorPage} from 'app/client/ui/errorPages';
+import {createHomeLeftPane} from 'app/client/ui/HomeLeftPane';
+import {createDocMenu} from 'app/client/ui/DocMenu';
+import {createBottomBarDoc} from 'app/client/ui/BottomBar';
+// end MOD DMH
+
 
 export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable {
   // MOD DMH: insert global modal container

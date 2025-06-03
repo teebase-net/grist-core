@@ -76,15 +76,15 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
   return {dispose};
 }
 
-// MOD DMH - Replaces buildSnackbarDom with a modal version
+// MOD DMH - modal version of toast
 function buildModalDom(notifier: any, appModel: AppModel) {
   const visible = Observable.create(null, false);
   const message = Observable.create(null, '');
-  const type = Observable.create(null, 'error');
+  const type = Observable.create(null, 'info');
 
   notifier.addHandler((note: any) => {
     message.set(note.text || '');
-    type.set(note.type || 'error');
+    type.set(note.type || 'info');
     visible.set(true);
   });
 
@@ -93,7 +93,7 @@ function buildModalDom(notifier: any, appModel: AppModel) {
       dom.cls('error', use => type.get() === 'error'),
       dom.cls('info', use => type.get() === 'info'),
       dom('div',
-        dom('p', message),
+        dom('p', dom.text(use => message.get())),  // ✅ FIXED
         dom('button', 'OK', dom.on('click', () => visible.set(false)))
       )
     )
@@ -103,28 +103,20 @@ function buildModalDom(notifier: any, appModel: AppModel) {
 
 // MOD DMH - Global modal container style
 const cssModalContainer = () =>
-  dom('div',
-    dom.style('position', 'fixed'),
-    dom.style('top', '0'),
-    dom.style('left', '0'),
-    dom.style('width', '100%'),
-    dom.style('height', '100%'),
-    dom.style('zIndex', '9999'),
-    dom.style('pointerEvents', 'none'),
-    dom.style('display', 'flex'),
-    dom.style('alignItems', 'center'),
-    dom.style('justifyContent', 'center'),
-    dom.style('padding', '20px')
+  dom('div', dom.style('position', 'fixed'), dom.style('top', '0'), dom.style('left', '0'),
+    dom.style('width', '100%'), dom.style('height', '100%'), dom.style('zIndex', '9999'),
+    dom.style('pointerEvents', 'none'), dom.style('display', 'flex'), dom.style('alignItems', 'center'),
+    dom.style('justifyContent', 'center'), dom.style('padding', '20px')
   );
 // end MOD DMH
 
 // MOD DMH - Modal styling
-const cssModal = dom.styled('div', `
-  background: var(--grist-theme-page-bg, white);
-  color: black;
+const cssModal = styled('div', `   // ✅ FIXED from dom.styled → styled
+  background: black;
+  color: white;
   padding: 24px;
   border-radius: 8px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.25);
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
   pointer-events: auto;
   z-index: 10000;
   font-size: 16px;
@@ -144,6 +136,7 @@ const cssModal = dom.styled('div', `
   }
 `);
 // end MOD DMH
+
 
 
 // ------- Below here is unchanged  -------------------------------------------------

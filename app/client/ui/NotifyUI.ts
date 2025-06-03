@@ -207,7 +207,8 @@ export function buildSnackbarDom(notifier: Notifier, appModel: AppModel|null): E
       const toast = toastList[0];
       if (!toast) { return null; }
 
-      const visible = dom.observable(true);
+      import {Observable} from 'grainjs';  // ✅ ensure this is in your imports if not already
+      const visible = Observable.create(null, true);
       const iconElem = notificationIcon(toast);
       const hasIcon = Boolean(iconElem);
 
@@ -238,7 +239,7 @@ const cssCenteredToast = styled('div', `
   top: 0; left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: ${vars.notificationZIndex + 10};
+  z-index: 1100;
   display: flex;
   justify-content: center;
   align-items: center;

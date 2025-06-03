@@ -80,15 +80,15 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
   return {dispose};
 }
 
-// MOD DMH: Modal replacement for NotifyUI toast
-function buildModalDom(notifier: any, appModel: AppModel) {
+// MOD DMH - Replaces buildSnackbarDom with a modal version
+function buildModalDom(notifier: Observable<any>, appModel: AppModel) {
   const visible = Observable.create(null, false);
   const message = Observable.create(null, '');
   const type = Observable.create(null, 'error');
 
-  notifier.addHandler((note: any) => {
-    message.set(note.text || '');
-    type.set(note.type || 'error');
+  subscribe(notifier, (use, note: any) => {
+    message.set(note?.text || '');
+    type.set(note?.type || 'error');
     visible.set(true);
   });
 

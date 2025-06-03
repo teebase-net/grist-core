@@ -27,7 +27,7 @@ import {
   loadBillingPage,
 } from 'app/client/lib/imports';
 import {createSessionObs, isBoolean, isNumber} from 'app/client/lib/sessionObs';
-import {Notifier} from 'app/client/lib/Notifier'; // MOD DMH
+// import {Notifier} from 'app/client/lib/Notifier'; // MOD DMH
 import {AppModel, TopAppModel} from 'app/client/models/AppModel';
 import {DocPageModelImpl} from 'app/client/models/DocPageModel';
 import {HomeModelImpl} from 'app/client/models/HomeModel';
@@ -43,6 +43,16 @@ import {testId} from 'app/client/ui2018/cssVars';
 import {getPageTitleSuffix} from 'app/common/gristUrls';
 import {getGristConfig} from 'app/common/urlUtils';
 import {Computed, dom, IDisposable, IDisposableOwner, Observable, replaceContent, styled, subscribe} from 'grainjs';
+// MOD DMH - Needed for fallback error views
+import {
+  createForbiddenPage,
+  createNotFoundPage,
+  createOtherErrorPage,
+  createDocMenu,
+  createBottomBarDoc,
+  createHomeLeftPane
+} from 'app/client/ui/ErrorPages';
+// end MOD DMH
 
 
 // MOD DMH - createAppUI with modal patch

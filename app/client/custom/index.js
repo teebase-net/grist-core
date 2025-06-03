@@ -5,126 +5,173 @@
  * Custom patch script injected by Grist app.js
  *
  * 🔧 MOD DMH — June 2025:
- * - 1. Conditionally hides the “+ Add Column” button unless the current user has
- *   `Unlock_Structure = true` in the `SysUsers` table.
- * - 2. Conditionally hides the Share icon unless the current user has
- *   `Export_Data = true` in the `SysUsers` table.
- * - 3. Conditionally hides the Download links via the ellipsis icon unless the current user has
- *   `Export_Data = true` in the `SysUsers` table.
- * - Skips gracefully if table or fields are missing.
- *
- * File: /app/client/custom/index.js
- * Version: v1.2.1
+ * - v1.3.0: Triggers permission control logic only after doc is fully loaded by hooking into GristWSConnection.onmessage.
+ * - Hides:
+ *   • “+ Add Column” unless SysUsers.Unlock_Structure = true
+ *   • Share icon unless SysUsers.Export_Data = true
+ *   • Download buttons unless SysUsers.Export_Data = true
+ * - Skips gracefully if user or table not found.
  */
 
 "use strict";
 
-console.log("[Custom Patch] index.js loaded ✅ v1.2.1");
+console.log("[Custom Patch] index.js loaded ✅ v1.3.0");
 
-// Wait for docId with a resilient polling loop (15s timeout)
-async function waitForDocId(timeout = 15000, interval = 100) {
-  const start = Date.now();
-  while (Date.now() - start < timeout) {
-    const docId = window.gristDoc?.docId;
-    if (docId && typeof docId === 'string') {
-      console.log("[Custom Patch] ✅ docId found:", docId);
-      return docId;
-    }
-    await new Promise(resolve => setTimeout(resolve, interval));
-  }
-  console.warn("[Custom Patch] ❌ Timed out waiting for gristDoc.docId");
-  return null;
-}
+/**
+ * ┌─────────────────────────────────────────────────────────────────────┐
+ * │ Unlock_Structure permission check                                   │
+ * └─────────────────────────────────────────────────────────────────────┘
+ */
+async function hasUnlockStructure(docId) {
+  try {
+    const profile = await fetch('/api/profile/user', { credentials: 'include' }).then(r => r.json());
+    const res = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: 'include' });
 
-(async function () {
-  const docId = await waitForDocId();
-  if (!docId) {
-    console.warn("[Custom Patch] ❌ Could not retrieve docId — permission features not activated.");
-    return;
-  }
-
-  async function hasPermission(field) {
-    try {
-      const profile = await fetch('/api/profile/user', { credentials: 'include' }).then(r => r.json());
-      const res = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: 'include' });
-
-      if (!res.ok) {
-        console.warn(`SysUsers table missing — skipping ${field} control.`);
-        return null;
-      }
-
-      const data = await res.json();
-      if (!data?.id?.length || !data?.Email || !data?.[field]) {
-        console.warn(`Required fields missing — skipping ${field} control.`);
-        return null;
-      }
-
-      const user = Array.from({ length: data.id.length }, (_, i) => ({
-        Email: data.Email[i],
-        [field]: data[field][i]
-      })).find(u =>
-        u.Email?.trim().toLowerCase() === profile.email?.trim().toLowerCase()
-      );
-
-      return user?.[field] === true;
-    } catch (err) {
-      console.warn(`${field} check failed — skipping ${field} control.`, err);
+    if (!res.ok) {
+      console.warn("SysUsers table missing — skipping structure control.");
       return null;
     }
+
+    const data = await res.json();
+    if (!data?.id?.length || !data?.Email || !data?.Unlock_Structure) {
+      console.warn("Required fields missing — skipping structure control.");
+      return null;
+    }
+
+    const user = Array.from({ length: data.id.length }, (_, i) => ({
+      Email: data.Email[i],
+      Unlock_Structure: data.Unlock_Structure[i]
+    })).find(u =>
+      u.Email?.trim().toLowerCase() === profile.email?.trim().toLowerCase()
+    );
+
+    return user?.Unlock_Structure === true;
+  } catch (err) {
+    console.warn("Unlock_Structure check failed — skipping structure control.", err);
+    return null;
   }
+}
 
-  async function controlAddColumnButtons() {
-    const allowed = await hasPermission('Unlock_Structure');
-    if (allowed === null) return;
+/**
+ * ┌─────────────────────────────────────────────────────────────────────┐
+ * │ Export_Data permission check                                        │
+ * └─────────────────────────────────────────────────────────────────────┘
+ */
+async function hasExportDataPermission(docId) {
+  try {
+    const profile = await fetch('/api/profile/user', { credentials: 'include' }).then(r => r.json());
+    const res = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: 'include' });
 
-    const toggle = () => {
-      document.querySelectorAll('.mod-add-column').forEach(el => {
-        el.style.display = allowed ? '' : 'none';
-      });
-    };
+    if (!res.ok) {
+      console.warn("SysUsers table missing — skipping export control.");
+      return null;
+    }
 
-    new MutationObserver(toggle).observe(document.body, { childList: true, subtree: true });
-    toggle();
+    const data = await res.json();
+    if (!data?.id?.length || !data?.Email || !data?.Export_Data) {
+      console.warn("Required fields missing — skipping export control.");
+      return null;
+    }
 
-    console.log(`[Custom Patch] Unlock_Structure = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
+    const user = Array.from({ length: data.id.length }, (_, i) => ({
+      Email: data.Email[i],
+      Export_Data: data.Export_Data[i]
+    })).find(u =>
+      u.Email?.trim().toLowerCase() === profile.email?.trim().toLowerCase()
+    );
+
+    return user?.Export_Data === true;
+  } catch (err) {
+    console.warn("Export_Data check failed — skipping export control.", err);
+    return null;
   }
+}
 
-  async function controlShareIcon() {
-    const allowed = await hasPermission('Export_Data');
-    if (allowed === null) return;
-
-    const toggle = () => {
-      document.querySelectorAll('.test-tb-share').forEach(el => {
-        el.style.display = allowed ? '' : 'none';
-      });
-    };
-
-    new MutationObserver(toggle).observe(document.body, { childList: true, subtree: true });
-    toggle();
-
-    console.log(`[Custom Patch] Share icon = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
-  }
-
-  async function controlExportButtons() {
-    const allowed = await hasPermission('Export_Data');
-    if (allowed === null) return;
-
-    const toggle = () => {
-      document.querySelectorAll('.test-download-section').forEach(el => {
-        el.style.display = allowed ? '' : 'none';
-      });
-    };
-
-    new MutationObserver(toggle).observe(document.body, { childList: true, subtree: true });
-    toggle();
-
-    console.log(`[Custom Patch] Export_Data for download links = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
-  }
-
-  // Start all checks once the page has fully loaded
-  window.addEventListener('load', () => {
-    controlAddColumnButtons();
-    controlShareIcon();
-    controlExportButtons();
+/**
+ * ┌─────────────────────────────────────────────────────────────────────┐
+ * │ DOM togglers                                                        │
+ * └─────────────────────────────────────────────────────────────────────┘
+ */
+function toggleElements(selector, allowed) {
+  document.querySelectorAll(selector).forEach(el => {
+    el.style.display = allowed ? '' : 'none';
   });
-})();
+}
+
+function observeAndToggle(selector, allowed) {
+  const toggle = () => toggleElements(selector, allowed);
+  new MutationObserver(toggle).observe(document.body, { childList: true, subtree: true });
+  toggle();
+}
+
+/**
+ * ┌─────────────────────────────────────────────────────────────────────┐
+ * │ Main control handlers                                               │
+ * └─────────────────────────────────────────────────────────────────────┘
+ */
+async function controlAddColumnButtons(docId) {
+  const allowed = await hasUnlockStructure(docId);
+  if (allowed === null) return;
+  observeAndToggle('.mod-add-column', allowed);
+  console.log(`[Custom Patch] Unlock_Structure = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
+}
+
+async function controlShareIcon(docId) {
+  const allowed = await hasExportDataPermission(docId);
+  if (allowed === null) return;
+  observeAndToggle('.test-tb-share', allowed);
+  console.log(`[Custom Patch] Share icon = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
+}
+
+async function controlExportButtons(docId) {
+  const allowed = await hasExportDataPermission(docId);
+  if (allowed === null) return;
+  observeAndToggle('.test-download-section', allowed);
+  console.log(`[Custom Patch] Export_Data for downloads = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
+}
+
+function runAllControls(docId) {
+  controlAddColumnButtons(docId);
+  controlShareIcon(docId);
+  controlExportButtons(docId);
+}
+
+/**
+ * ┌─────────────────────────────────────────────────────────────────────┐
+ * │ Hook into Grist WebSocket openDoc lifecycle                         │
+ * └─────────────────────────────────────────────────────────────────────┘
+ */
+if (window.GristWSConnection?.prototype?.onmessage) {
+  const originalOnMessage = window.GristWSConnection.prototype.onmessage;
+
+  window.GristWSConnection.prototype.onmessage = function(event) {
+    originalOnMessage.call(this, event);
+
+    let msg;
+    try {
+      msg = JSON.parse(event.data);
+    } catch {
+      return;
+    }
+
+    if (msg?.result?.doc && msg?.result?.docId) {
+      console.log("[Custom Patch] ✅ Detected openDoc — activating permission logic");
+      runAllControls(msg.result.docId);
+    }
+  };
+} else {
+  console.warn("[Custom Patch] ⚠️ GristWSConnection not found — cannot hook openDoc");
+}
+
+/**
+ * ┌─────────────────────────────────────────────────────────────────────┐
+ * │ Backup fallback: run after window load                              │
+ * └─────────────────────────────────────────────────────────────────────┘
+ */
+window.addEventListener('load', () => {
+  const docId = window.gristDoc?.docId || window.location.pathname.split('/')[1];
+  if (docId) {
+    console.log("[Custom Patch] ⏳ window.onload fallback triggered");
+    runAllControls(docId);
+  }
+});

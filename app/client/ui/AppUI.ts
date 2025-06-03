@@ -1,9 +1,9 @@
 /**
  * AppUI.ts
  *
- * 🏦 Patch: Replace Toast Notifications with Modal Alerts
+ * 📦 Patch: Replace Toast Notifications with Modal Alerts
  * 📜 File: /app/client/ui/AppUI.ts
- * 🖕️ Applied: June 2025
+ * 🗵️ Applied: June 2025
  * 👤 Author: DMH
  *
  * Summary:
@@ -41,11 +41,8 @@ import {WelcomePage} from 'app/client/ui/WelcomePage';
 import {testId} from 'app/client/ui2018/cssVars';
 import {getPageTitleSuffix} from 'app/common/gristUrls';
 import {getGristConfig} from 'app/common/urlUtils';
-import {Computed, dom, IDisposable, IDisposableOwner, Observable, replaceContent, subscribe, styled} from 'grainjs';
-import {createNotFoundPage, createForbiddenPage, createOtherErrorPage} from 'app/client/ui/errorPages';
-import {createHomeLeftPane} from 'app/client/ui/HomeLeftPane';
-import {createDocMenu} from 'app/client/ui/DocMenu';
-import {createBottomBarDoc} from 'app/client/ui/BottomBar';
+import {Computed, dom, IDisposable, IDisposableOwner, Observable} from 'grainjs';
+import {styled} from 'app/client/ui2018/styled';
 
 // MOD DMH - Patch begins
 export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable {
@@ -57,7 +54,7 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
   const content = dom.maybe(topAppModel.appObs, (appModel) => {
     return [
       createMainPage(appModel, appObj),
-      buildModalDom(appModel.notifier),  // MOD DMH
+      buildModalDom(topAppModel.notifier),  // MOD DMH - updated source
     ];
   });
 
@@ -67,7 +64,6 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
 
   function dispose() {
     const [beginMarker, endMarker] = content;
-    replaceContent(beginMarker, endMarker, null);
     dom.domDispose(beginMarker);
     dom.domDispose(endMarker);
     document.body.removeChild(beginMarker);
@@ -92,8 +88,8 @@ function buildModalDom(notifier: any) {
 
   return dom.maybe(visible, () =>
     cssModal(
-      dom.cls('error', use => type.get() === 'error'),
-      dom.cls('info', use => type.get() === 'info'),
+      dom.cls('error', () => type.get() === 'error'),
+      dom.cls('info', () => type.get() === 'info'),
       dom('div',
         dom('p', message.get()),
         dom('button', 'OK', dom.on('click', () => visible.set(false)))
@@ -140,8 +136,6 @@ const cssModal = styled('div', `
   }
 `);
 // end MOD DMH
-
-
 
 
 // ------- Below here is unchanged  -------------------------------------------------

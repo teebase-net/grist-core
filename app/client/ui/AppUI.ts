@@ -105,8 +105,8 @@ const cssModalContainer = () =>
 
 // MOD DMH - Modal styling
 const cssModal = dom.styled('div', `
-  background: black;
-  color: white;
+  background: var(--grist-theme-page-bg, white);   // MOD DMH: Match desktop background
+  color: black;                                    // MOD DMH: Use black text
   padding: 24px;
   border-radius: 8px;
   box-shadow: 0 0 15px rgba(0,0,0,0.5);
@@ -115,8 +115,10 @@ const cssModal = dom.styled('div', `
   font-size: 16px;
   max-width: 90vw;
   text-align: center;
-  &.error { border: 2px solid red; }
-  &.info { border: 2px solid #007bff; }
+
+  &.error { border: 2px solid red; }               // MOD DMH: Error variant
+  &.info { border: 2px solid #007bff; }            // MOD DMH: Info variant
+
   & button {
     margin-top: 16px;
     padding: 6px 12px;
@@ -128,6 +130,7 @@ const cssModal = dom.styled('div', `
     border-radius: 4px;
   }
 `);
+
 
 function createMainPage(appModel: AppModel, appObj: App) {
   if (!appModel.currentOrg && appModel.needsOrg.get()) {

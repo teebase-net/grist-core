@@ -247,6 +247,15 @@ const cssCenteredToast = styled('div', `
   pointer-events: none;
 `);
 
+const cssIconWrapper = styled('div', `
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  width: 24px;
+  height: 24px;
+`);
+
 const cssCenteredBox = styled('div', `
   display: flex;
   align-items: center;

@@ -9,39 +9,41 @@
  *   `Unlock_Structure = true` in the `SysUsers` table.
  * - 2. Conditionally hides the Share icon unless the current user has
  *   `Export_Data = true` in the `SysUsers` table.
-  * - 3. Conditionally hides the Download links via the elipse icon unless the current user has
+ * - 3. Conditionally hides the Download links via the elipse icon unless the current user has
  *   `Export_Data = true` in the `SysUsers` table.
  * - Skips gracefully if table or fields are missing.
  *
  * File: /app/client/custom/index.js
- * Version: v0.7
+ * Version: v0.9.1
  */
 
 "use strict";
 
-console.log("[Custom Patch] index.js loaded ✅ v0.9");
+console.log("[Custom Patch] index.js loaded ✅ v1.0");
 
 (function () {
-  function extractDocId() {
-    if (window.gristDoc?.docId) return window.gristDoc.docId;
+  async function waitForDocId(maxWait = 5000) {
+    const interval = 100;
+    let waited = 0;
 
-    const parts = window.location.pathname.split('/');
-    const docIndex = parts.indexOf('p');
-    if (docIndex > -1 && parts.length > docIndex + 1) {
-      return parts[docIndex + 1];  // GRIST_ORG_IN_PATH=true
+    while (waited < maxWait) {
+      if (window.gristDoc?.docId) {
+        return window.gristDoc.docId;
+      }
+      await new Promise(resolve => setTimeout(resolve, interval));
+      waited += interval;
     }
-    return parts[1];  // fallback
+
+    console.warn("Timed out waiting for docId.");
+    return null;
   }
-
-  const docId = extractDocId();
-
 
   /**
    * ┌─────────────────────────────────────────────────────────────────────┐
    * │ Control “Add Column” button based on Unlock_Structure field         │
    * └─────────────────────────────────────────────────────────────────────┘
    */
-  async function hasUnlockStructure() {
+  async function hasUnlockStructure(docId) {
     try {
       const profile = await fetch('/api/profile/user', { credentials: 'include' }).then(r => r.json());
       const res = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: 'include' });
@@ -71,8 +73,8 @@ console.log("[Custom Patch] index.js loaded ✅ v0.9");
     }
   }
 
-  async function controlAddColumnButtons() {
-    const allowed = await hasUnlockStructure();
+  async function controlAddColumnButtons(docId) {
+    const allowed = await hasUnlockStructure(docId);
     if (allowed === null) return;
 
     const toggle = () => {
@@ -92,7 +94,7 @@ console.log("[Custom Patch] index.js loaded ✅ v0.9");
    * │ Control Share Icon visibility based on Export_Data field            │
    * └─────────────────────────────────────────────────────────────────────┘
    */
-  async function hasExportDataPermission() {
+  async function hasExportDataPermission(docId) {
     try {
       const profile = await fetch('/api/profile/user', { credentials: 'include' }).then(r => r.json());
       const res = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: 'include' });
@@ -122,31 +124,29 @@ console.log("[Custom Patch] index.js loaded ✅ v0.9");
     }
   }
 
-async function controlShareIcon() {
-  const allowed = await hasExportDataPermission();
-  if (allowed === null) return;
+  async function controlShareIcon(docId) {
+    const allowed = await hasExportDataPermission(docId);
+    if (allowed === null) return;
 
-  const toggle = () => {
-    document.querySelectorAll('.test-tb-share').forEach(el => {
-      el.style.display = allowed ? '' : 'none';
-    });
-  };
+    const toggle = () => {
+      document.querySelectorAll('.test-tb-share').forEach(el => {
+        el.style.display = allowed ? '' : 'none';
+      });
+    };
 
-  new MutationObserver(toggle).observe(document.body, { childList: true, subtree: true });
-  toggle();
+    new MutationObserver(toggle).observe(document.body, { childList: true, subtree: true });
+    toggle();
 
-  console.log(`[Custom Patch] Share icon = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
-}
-
-
+    console.log(`[Custom Patch] Share icon = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
+  }
 
   /**
    * ┌─────────────────────────────────────────────────────────────────────┐
    * │ Control download links based on Export_Data field                   │
    * └─────────────────────────────────────────────────────────────────────┘
    */
-  async function controlExportButtons() {
-    const allowed = await hasExportDataPermission();
+  async function controlExportButtons(docId) {
+    const allowed = await hasExportDataPermission(docId);
     if (allowed === null) return;
 
     const toggle = () => {
@@ -161,35 +161,18 @@ async function controlShareIcon() {
     console.log(`[Custom Patch] Export_Data for download links = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
   }
 
-
   /**
    * ┌─────────────────────────────────────────────────────────────────────┐
    * │ Load handlers after Grist page has rendered                         │
    * └─────────────────────────────────────────────────────────────────────┘
    */
   window.addEventListener('load', () => {
-    controlAddColumnButtons();
-    controlShareIcon();
-    controlExportButtons();
-
-    // Retry logic for icons that may render late
-    //const retryUntil = (fn, selector, maxRetries = 20, delay = 1000) => {
-    //  let tries = 0;
-    //  const check = async () => {
-    //    const el = document.querySelector(selector);
-    //    console.log(`[Custom Patch] Attempt ${tries + 1}/${maxRetries} — ${selector} ${el ? '✅ Found' : '❌ Not found'}`);
-    //    if (el || tries >= maxRetries) {
-    //      fn();
-    //    } else {
-    //      tries++;
-    //      setTimeout(check, delay);
-    //    }
-    //  };
-    //  check();
-    //};
-
-    //retryUntil(controlShareIcon, '.tour-share-icon');
-    //retryUntil(controlExportButtons, '.test-download-section');
+    waitForDocId().then(docId => {
+      if (!docId) return;
+      controlAddColumnButtons(docId);
+      controlShareIcon(docId);
+      controlExportButtons(docId);
+    });
   });
 
-  })();
+})();

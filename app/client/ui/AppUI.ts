@@ -7,32 +7,21 @@
  * 👤 Author: DMH
  *
  * Summary:
- * - Replaces Grist's default toast system with modal-style notification alerts.
- * - Modal appears centered, styled to match desktop theme, includes dismiss button.
- * - Does not modify upstream Grist logic or routing behavior.
+ * - Overrides default Grist toast system (NotifyUI) with a modal-style notification.
+ * - Modal appears centered, matches desktop theme, includes a dismiss button.
+ * - Only the notification rendering is affected. No upstream Grist logic is changed.
  *
  * Modified Sections:
- * - createAppUI(): injects modal system and mounts container
- * - Replaces buildSnackbarDom() toast calls with buildModalDom()
+ * - `createAppUI()` → added global modal container
+ * - `buildSnackbarDom()` replacement → replaces toast with modal
  */
 
-import {buildDocumentBanners, buildHomeBanners} from 'app/client/components/Banners';
-import {ViewAsBanner} from 'app/client/components/ViewAsBanner';
-import {domAsync} from 'app/client/lib/domAsync';
-import {
-  loadAccountPage,
-  loadActivationPage,
-  loadAdminPanel,
-  loadAuditLogsPage,
-  loadBillingPage,
-} from 'app/client/lib/imports';
-import {createSessionObs, isBoolean, isNumber} from 'app/client/lib/sessionObs';
+// MOD DMH
 import {AppModel, TopAppModel} from 'app/client/models/AppModel';
 import {DocPageModelImpl} from 'app/client/models/DocPageModel';
 import {HomeModelImpl} from 'app/client/models/HomeModel';
 import {App} from 'app/client/ui/App';
 import {AppHeader} from 'app/client/ui/AppHeader';
-// import {buildSnackbarDom} from 'app/client/ui/NotifyUI';  // MOD DMH - disabled toast
 import {OnboardingPage, shouldShowOnboardingPage} from 'app/client/ui/OnboardingPage';
 import {pagePanels} from 'app/client/ui/PagePanels';
 import {RightPanel} from 'app/client/ui/RightPanel';
@@ -42,26 +31,20 @@ import {testId} from 'app/client/ui2018/cssVars';
 import {getPageTitleSuffix} from 'app/common/gristUrls';
 import {getGristConfig} from 'app/common/urlUtils';
 import {Computed, dom, IDisposable, IDisposableOwner, Observable, replaceContent, styled, subscribe} from 'grainjs';
-
-// MOD DMH - Needed for fallback error views
-import {
-  createForbiddenPage,
-  createNotFoundPage,
-  createOtherErrorPage
-} from 'app/client/ui/ErrorPages';
+import {createSessionObs, isBoolean, isNumber} from 'app/client/lib/sessionObs';
 // end MOD DMH
 
+// ------- Below is the patched modal system -------
 // MOD DMH - createAppUI with modal patch
 export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable {
-  // MOD DMH - inject modal container
+  // Inject modal container
   const modalContainer = cssModalContainer();
   document.body.appendChild(modalContainer);
-  // end MOD DMH
 
   const content = dom.maybe(topAppModel.appObs, (appModel) => {
     return [
       createMainPage(appModel, appObj),
-      buildModalDom(appModel),  // MOD DMH: replace toast with modal
+      buildModalDom(appModel.notifier as any, appModel),  // Replaces toast with modal
     ];
   });
 
@@ -76,7 +59,7 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
     dom.domDispose(endMarker);
     document.body.removeChild(beginMarker);
     document.body.removeChild(endMarker);
-    modalContainer.remove();  // MOD DMH
+    modalContainer.remove();
   }
 
   return {dispose};
@@ -84,12 +67,12 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
 // end MOD DMH
 
 // MOD DMH - modal version of toast
-function buildModalDom(appModel: AppModel) {
+function buildModalDom(notifier: any, appModel: AppModel) {
   const visible = Observable.create(null, false);
   const message = Observable.create(null, '');
   const type = Observable.create(null, 'info');
 
-  (appModel.notifier as any).addHandler((note: any) => {
+  notifier.addHandler((note: any) => {
     message.set(note.text || '');
     type.set(note.type || 'info');
     visible.set(true);
@@ -145,7 +128,6 @@ const cssModal = styled('div', `
   }
 `);
 // end MOD DMH
-
 
 // ------- Below here is unchanged  -------------------------------------------------
 

@@ -8,12 +8,12 @@
  *
  * Summary:
  * - Overrides default Grist toast system (NotifyUI) with a modal-style notification.
- * - Modal appears centered, has black background with white text, and includes a dismiss button.
- * - Only the notification rendering is affected. No upstream Grist logic is changed.
+ * - Modal appears centered, matches page background, has black text, and includes an OK button.
+ * - No upstream Grist logic is changed.
  *
  * Modified Sections:
  * - `createAppUI()` → added global modal container
- * - `buildSnackbarDom()` replacement → replaces toast with modal
+ * - `buildSnackbarDom()` replacement → uses modal rendering instead of toast
  */
 
 import {buildDocumentBanners, buildHomeBanners} from 'app/client/components/Banners';
@@ -32,7 +32,7 @@ import {DocPageModelImpl} from 'app/client/models/DocPageModel';
 import {HomeModelImpl} from 'app/client/models/HomeModel';
 import {App} from 'app/client/ui/App';
 import {AppHeader} from 'app/client/ui/AppHeader';
-// import {buildSnackbarDom} from 'app/client/ui/NotifyUI';  // MOD DMH - commented out
+// import {buildSnackbarDom} from 'app/client/ui/NotifyUI';  // MOD DMH
 import {OnboardingPage, shouldShowOnboardingPage} from 'app/client/ui/OnboardingPage';
 import {pagePanels} from 'app/client/ui/PagePanels';
 import {RightPanel} from 'app/client/ui/RightPanel';
@@ -41,17 +41,28 @@ import {WelcomePage} from 'app/client/ui/WelcomePage';
 import {testId} from 'app/client/ui2018/cssVars';
 import {getPageTitleSuffix} from 'app/common/gristUrls';
 import {getGristConfig} from 'app/common/urlUtils';
-import {Computed, dom, IDisposable, IDisposableOwner, Observable, replaceContent, subscribe} from 'grainjs';
+import {
+  Computed, dom, IDisposable, IDisposableOwner, Observable, replaceContent, subscribe, styled
+} from 'grainjs';
+// MOD DMH - Needed for page layout rendering
+import {createBottomBarDoc} from 'app/client/ui/BottomBar';
+import {createDocMenu} from 'app/client/ui/DocMenu';
+import {
+  createForbiddenPage,
+  createNotFoundPage,
+  createOtherErrorPage,
+} from 'app/client/ui/errorPages';
+import {createHomeLeftPane} from 'app/client/ui/HomeLeftPane';  // end MOD DMH
 
+// MOD DMH - Create modal container and attach to DOM
 export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable {
-  // MOD DMH - insert modal container once at the top level
-  const modalContainer = cssModalContainer();
-  document.body.appendChild(modalContainer);
+  const modalContainer = cssModalContainer();  // MOD DMH
+  document.body.appendChild(modalContainer);   // MOD DMH
 
   const content = dom.maybe(topAppModel.appObs, (appModel) => {
     return [
       createMainPage(appModel, appObj),
-      buildModalDom(appModel.notifier, appModel),   // MOD DMH
+      buildModalDom(appModel.notifier, appModel),  // MOD DMH
     ];
   });
 
@@ -70,8 +81,9 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
   }
   return {dispose};
 }
+// end MOD DMH
 
-// MOD DMH - Replaces buildSnackbarDom with a modal version
+// MOD DMH - Modal replacement for notifier
 function buildModalDom(notifier: any, appModel: AppModel) {
   const visible = Observable.create(null, false);
   const message = Observable.create(null, '');
@@ -88,25 +100,35 @@ function buildModalDom(notifier: any, appModel: AppModel) {
       dom.cls('error', use => type.get() === 'error'),
       dom.cls('info', use => type.get() === 'info'),
       dom('div',
-        dom('p', message),
+        dom('p', use => message.get()),
         dom('button', 'OK', dom.on('click', () => visible.set(false)))
       )
     )
   );
 }
+// end MOD DMH
 
-// MOD DMH - Global modal container style
+// MOD DMH - Fullscreen modal container styling
 const cssModalContainer = () =>
-  dom('div', dom.style('position', 'fixed'), dom.style('top', '0'), dom.style('left', '0'),
-    dom.style('width', '100%'), dom.style('height', '100%'), dom.style('zIndex', '9999'),
-    dom.style('pointerEvents', 'none'), dom.style('display', 'flex'), dom.style('alignItems', 'center'),
-    dom.style('justifyContent', 'center'), dom.style('padding', '20px')
+  dom('div',
+    dom.style('position', 'fixed'),
+    dom.style('top', '0'),
+    dom.style('left', '0'),
+    dom.style('width', '100%'),
+    dom.style('height', '100%'),
+    dom.style('zIndex', '9999'),
+    dom.style('pointerEvents', 'none'),
+    dom.style('display', 'flex'),
+    dom.style('alignItems', 'center'),
+    dom.style('justifyContent', 'center'),
+    dom.style('padding', '20px')
   );
+// end MOD DMH
 
-// MOD DMH - Modal styling
-const cssModal = dom.styled('div', `
-  background: var(--grist-theme-page-bg, white);   // MOD DMH: Match desktop background
-  color: black;                                    // MOD DMH: Use black text
+// MOD DMH - Styled modal alert box
+const cssModal = styled('div', `
+  background: var(--grist-theme-page-bg, white);
+  color: black;
   padding: 24px;
   border-radius: 8px;
   box-shadow: 0 0 15px rgba(0,0,0,0.5);
@@ -116,8 +138,8 @@ const cssModal = dom.styled('div', `
   max-width: 90vw;
   text-align: center;
 
-  &.error { border: 2px solid red; }               // MOD DMH: Error variant
-  &.info { border: 2px solid #007bff; }            // MOD DMH: Info variant
+  &.error { border: 2px solid red; }
+  &.info { border: 2px solid #007bff; }
 
   & button {
     margin-top: 16px;
@@ -130,7 +152,10 @@ const cssModal = dom.styled('div', `
     border-radius: 4px;
   }
 `);
+// end MOD DMH
 
+
+// Below here is unchanged
 
 function createMainPage(appModel: AppModel, appObj: App) {
   if (!appModel.currentOrg && appModel.needsOrg.get()) {

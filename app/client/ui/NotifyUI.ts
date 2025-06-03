@@ -188,14 +188,90 @@ function buildNotifyDropdown(ctl: IOpenController, notifier: Notifier, appModel:
     testId('dropdown'),
   );
 }
+// Original
+//export function buildSnackbarDom(notifier: Notifier, appModel: AppModel|null): Element {
+//  const {progressItems, toasts} = notifier.getStateForUI();
+//  return cssSnackbarWrapper(testId('snackbar-wrapper'),
+//    dom.forEach(progressItems, item => buildProgressDom(item)),
+//    dom.forEach(toasts, toast => buildNotificationDom(toast, {appModel})),
+//  );
+//}
 
+// Begin MOD DMH --------------------------------------------------------------
+// MOD DMH - Replaces toasts with a centered modal-style notification
 export function buildSnackbarDom(notifier: Notifier, appModel: AppModel|null): Element {
   const {progressItems, toasts} = notifier.getStateForUI();
   return cssSnackbarWrapper(testId('snackbar-wrapper'),
     dom.forEach(progressItems, item => buildProgressDom(item)),
-    dom.forEach(toasts, toast => buildNotificationDom(toast, {appModel})),
+    dom.maybe(toasts, (toastList) => {
+      const toast = toastList[0];
+      if (!toast) { return null; }
+
+      const visible = dom.observable(true);
+      const iconElem = notificationIcon(toast);
+      const hasIcon = Boolean(iconElem);
+
+      return cssCenteredToast(
+        cssCenteredBox(
+          dom.cls(`-${toast.options.level}`),
+          hasIcon ? iconElem : null,
+          cssToastBody(
+            toast.options.title ? cssToastTitle(toast.options.title) : null,
+            cssToastText(testId('toast-message'), toast.options.message),
+            cssToastActions(
+              dom('button', 'OK', dom.on('click', () => {
+                toast.dispose();
+                visible.set(false);
+              }))
+            )
+          )
+        ),
+        dom.style('display', use => use(visible) ? 'flex' : 'none')
+      );
+    })
   );
 }
+
+// MOD DMH - Centered modal-style toast container
+const cssCenteredToast = styled('div', `
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: ${vars.notificationZIndex + 10};
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+`);
+
+const cssCenteredBox = styled('div', `
+  background: black;
+  color: white;
+  padding: 24px;
+  border-radius: 8px;
+  pointer-events: auto;
+  max-width: 90vw;
+  font-size: 16px;
+  text-align: center;
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+  &.error { border: 2px solid red; }
+  &.info { border: 2px solid #007bff; }
+  &.success { border: 2px solid green; }
+  &.warning { border: 2px solid orange; }
+  & button {
+    margin-top: 16px;
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    background: #fff;
+    color: #000;
+    border: none;
+    border-radius: 4px;
+  }
+`);
+
+// end MOD DMH --------------------------------------------------------------
 
 function buildConnectStateButton(state: ConnectState): Element {
   switch (state) {

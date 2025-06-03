@@ -4,7 +4,7 @@
  *
  * Custom patch script injected by Grist app.js
  *
- * 🔧 MOD DMH — May 2025:
+ * 🔧 MOD DMH — June 2025:
  * - 1. Conditionally hides the “+ Add Column” button unless the current user has
  *   `Unlock_Structure = true` in the `SysUsers` table.
  * - 2. Conditionally hides the Share icon unless the current user has
@@ -14,35 +14,31 @@
  * - Skips gracefully if table or fields are missing.
  *
  * File: /app/client/custom/index.js
- * Version: v0.9.1
+ * Version: v1.0.1
  */
 
 "use strict";
 
-console.log("[Custom Patch] index.js loaded ✅ v1.0");
+console.log("[Custom Patch] index.js loaded ✅ v1.0.1");
 
 (function () {
-  async function waitForDocId(maxWait = 5000) {
+  async function waitForDocId(maxWait = 10000) {
     const interval = 100;
     let waited = 0;
 
     while (waited < maxWait) {
-      if (window.gristDoc?.docId) {
-        return window.gristDoc.docId;
+      const docId = window?.gristDoc?.docId;
+      if (docId && typeof docId === "string" && docId.length > 5) {
+        return docId;
       }
       await new Promise(resolve => setTimeout(resolve, interval));
       waited += interval;
     }
 
-    console.warn("Timed out waiting for docId.");
+    console.warn("[Custom Patch] ❌ Timed out waiting for docId — skipping permission controls.");
     return null;
   }
 
-  /**
-   * ┌─────────────────────────────────────────────────────────────────────┐
-   * │ Control “Add Column” button based on Unlock_Structure field         │
-   * └─────────────────────────────────────────────────────────────────────┘
-   */
   async function hasUnlockStructure(docId) {
     try {
       const profile = await fetch('/api/profile/user', { credentials: 'include' }).then(r => r.json());
@@ -89,11 +85,6 @@ console.log("[Custom Patch] index.js loaded ✅ v1.0");
     console.log(`[Custom Patch] Unlock_Structure = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
   }
 
-  /**
-   * ┌─────────────────────────────────────────────────────────────────────┐
-   * │ Control Share Icon visibility based on Export_Data field            │
-   * └─────────────────────────────────────────────────────────────────────┘
-   */
   async function hasExportDataPermission(docId) {
     try {
       const profile = await fetch('/api/profile/user', { credentials: 'include' }).then(r => r.json());
@@ -140,11 +131,6 @@ console.log("[Custom Patch] index.js loaded ✅ v1.0");
     console.log(`[Custom Patch] Share icon = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
   }
 
-  /**
-   * ┌─────────────────────────────────────────────────────────────────────┐
-   * │ Control download links based on Export_Data field                   │
-   * └─────────────────────────────────────────────────────────────────────┘
-   */
   async function controlExportButtons(docId) {
     const allowed = await hasExportDataPermission(docId);
     if (allowed === null) return;
@@ -161,18 +147,15 @@ console.log("[Custom Patch] index.js loaded ✅ v1.0");
     console.log(`[Custom Patch] Export_Data for download links = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
   }
 
-  /**
-   * ┌─────────────────────────────────────────────────────────────────────┐
-   * │ Load handlers after Grist page has rendered                         │
-   * └─────────────────────────────────────────────────────────────────────┘
-   */
   window.addEventListener('load', () => {
     waitForDocId().then(docId => {
-      if (!docId) return;
+      if (!docId) {
+        console.warn("[Custom Patch] ❌ No valid docId — permission features not activated.");
+        return;
+      }
       controlAddColumnButtons(docId);
       controlShareIcon(docId);
       controlExportButtons(docId);
     });
   });
-
 })();

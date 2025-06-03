@@ -27,7 +27,7 @@ import {
   loadBillingPage,
 } from 'app/client/lib/imports';
 import {createSessionObs, isBoolean, isNumber} from 'app/client/lib/sessionObs';
-// import {Notifier} from 'app/client/lib/Notifier'; // MOD DMH
+import {Notifier} from 'app/client/lib/Notifier'; // MOD DMH
 import {AppModel, TopAppModel} from 'app/client/models/AppModel';
 import {DocPageModelImpl} from 'app/client/models/DocPageModel';
 import {HomeModelImpl} from 'app/client/models/HomeModel';
@@ -51,7 +51,7 @@ import {
   createDocMenu,
   createBottomBarDoc,
   createHomeLeftPane
-} from 'app/client/ui/ErrorPages';
+} from 'app/client/ui/errorpages';
 // end MOD DMH
 
 

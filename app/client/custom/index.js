@@ -11,31 +11,26 @@
  *   `Export_Data = true` in the `SysUsers` table.
  * - 3. Conditionally hides the Download links via the elipse icon unless the current user has
  *   `Export_Data = true` in the `SysUsers` table.
+ * - 4. Conditionally disables copy (keyboard + mouse) if Export_Data is false
  * - Skips gracefully if table or fields are missing.
  *
  * File: /app/client/custom/index.js
- * Version: v1.0.1
+ * Version: v1.1.0
  */
 
 "use strict";
 
-console.log("[Custom Patch] index.js loaded ✅ v1.0.1");
+console.log("[Custom Patch] index.js loaded ✅ v1.1.0");
 
 (function () {
-  async function waitForDocId(maxWait = 10000) {
-    const interval = 100;
-    let waited = 0;
-
-    while (waited < maxWait) {
-      const docId = window?.gristDoc?.docId;
-      if (docId && typeof docId === "string" && docId.length > 5) {
-        return docId;
-      }
-      await new Promise(resolve => setTimeout(resolve, interval));
-      waited += interval;
+  function extractDocIdFromPath() {
+    const parts = window.location.pathname.split('/');
+    const index = parts.indexOf('p');
+    if (index > -1 && parts.length > index + 1) {
+      return parts[index + 1];  // GRIST_ORG_IN_PATH=true
+    } else if (parts.length >= 2) {
+      return parts[1];  // fallback for non-org path
     }
-
-    console.warn("[Custom Patch] ❌ Timed out waiting for docId — skipping permission controls.");
     return null;
   }
 
@@ -145,17 +140,44 @@ console.log("[Custom Patch] index.js loaded ✅ v1.0.1");
     toggle();
 
     console.log(`[Custom Patch] Export_Data for download links = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
+    applyCopyProtection(!allowed);
   }
 
+  function applyCopyProtection(disable) {
+    if (disable) {
+      document.body.classList.add('no-copy');
+      document.addEventListener('copy', preventCopy, true);
+    } else {
+      document.body.classList.remove('no-copy');
+      document.removeEventListener('copy', preventCopy, true);
+    }
+  }
+
+  function preventCopy(e) {
+    console.warn("🔒 Copy blocked by custom patch.");
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  // Inject CSS to block mouse selection if copy is disabled
+  const style = document.createElement('style');
+  style.textContent = `
+    body.no-copy * {
+      user-select: none !important;
+    }
+  `;
+  document.head.appendChild(style);
+
   window.addEventListener('load', () => {
-    waitForDocId().then(docId => {
+    setTimeout(() => {
+      const docId = extractDocIdFromPath();
       if (!docId) {
-        console.warn("[Custom Patch] ❌ No valid docId — permission features not activated.");
+        console.warn("[Custom Patch] ❌ Could not determine docId — permission features not activated.");
         return;
       }
       controlAddColumnButtons(docId);
       controlShareIcon(docId);
       controlExportButtons(docId);
-    });
+    }, 1000);
   });
 })();

@@ -1,3 +1,21 @@
+/**
+ * AppUI.ts
+ *
+ * 📦 Patch: Replace Toast Notifications with Modal Alerts
+ * 📄 File: /app/client/ui/AppUI.ts
+ * 📅 Applied: June 2025
+ * 👤 Author: DMH
+ *
+ * Summary:
+ * - Overrides default Grist toast system (NotifyUI) with a modal-style notification.
+ * - Modal appears centered, has black background with white text, and includes a dismiss button.
+ * - Only the notification rendering is affected. No upstream Grist logic is changed.
+ *
+ * Modified Sections:
+ * - `createAppUI()` → added global modal container
+ * - `buildSnackbarDom()` replacement → replaces toast with modal
+ */
+
 import {buildDocumentBanners, buildHomeBanners} from 'app/client/components/Banners';
 import {ViewAsBanner} from 'app/client/components/ViewAsBanner';
 import {domAsync} from 'app/client/lib/domAsync';
@@ -14,11 +32,7 @@ import {DocPageModelImpl} from 'app/client/models/DocPageModel';
 import {HomeModelImpl} from 'app/client/models/HomeModel';
 import {App} from 'app/client/ui/App';
 import {AppHeader} from 'app/client/ui/AppHeader';
-import {createBottomBarDoc} from 'app/client/ui/BottomBar';
-import {createDocMenu} from 'app/client/ui/DocMenu';
-import {createForbiddenPage, createNotFoundPage, createOtherErrorPage} from 'app/client/ui/errorPages';
-import {createHomeLeftPane} from 'app/client/ui/HomeLeftPane';
-import {buildSnackbarDom} from 'app/client/ui/NotifyUI';
+// import {buildSnackbarDom} from 'app/client/ui/NotifyUI';  // MOD DMH - commented out
 import {OnboardingPage, shouldShowOnboardingPage} from 'app/client/ui/OnboardingPage';
 import {pagePanels} from 'app/client/ui/PagePanels';
 import {RightPanel} from 'app/client/ui/RightPanel';
@@ -29,37 +43,91 @@ import {getPageTitleSuffix} from 'app/common/gristUrls';
 import {getGristConfig} from 'app/common/urlUtils';
 import {Computed, dom, IDisposable, IDisposableOwner, Observable, replaceContent, subscribe} from 'grainjs';
 
-// When integrating into the old app, we might in theory switch between new-style and old-style
-// content. This function allows disposing the created content by old-style code.
-// TODO once #newui is gone, we don't need to worry about this being disposable.
-// appObj is the App object from app/client/ui/App.ts
 export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable {
+  // MOD DMH - insert modal container once at the top level
+  const modalContainer = cssModalContainer();
+  document.body.appendChild(modalContainer);
+
   const content = dom.maybe(topAppModel.appObs, (appModel) => {
     return [
       createMainPage(appModel, appObj),
-      buildSnackbarDom(appModel.notifier, appModel),
+      buildModalDom(appModel.notifier, appModel),   // MOD DMH
     ];
   });
+
   dom.update(document.body, content, {
-    // Cancel out bootstrap's overrides.
     style: 'font-family: inherit; font-size: inherit; line-height: inherit;'
   });
 
   function dispose() {
-    // Return value of dom.maybe() / dom.domComputed() is a pair of markers with a function that
-    // replaces content between them when an observable changes. It's uncommon to dispose the set
-    // with the markers, and grainjs doesn't provide a helper, but we can accomplish it by
-    // disposing the markers. They will automatically trigger the disposal of the included
-    // content. This avoids the need to wrap the contents in another layer of a dom element.
     const [beginMarker, endMarker] = content;
     replaceContent(beginMarker, endMarker, null);
     dom.domDispose(beginMarker);
     dom.domDispose(endMarker);
     document.body.removeChild(beginMarker);
     document.body.removeChild(endMarker);
+    modalContainer.remove();  // MOD DMH
   }
   return {dispose};
 }
+
+// MOD DMH - Replaces buildSnackbarDom with a modal version
+function buildModalDom(notifier: any, appModel: AppModel) {
+  const visible = Observable.create(null, false);
+  const message = Observable.create(null, '');
+  const type = Observable.create(null, 'error');
+
+  notifier.addHandler((note: any) => {
+    message.set(note.text || '');
+    type.set(note.type || 'error');
+    visible.set(true);
+  });
+
+  return dom.maybe(visible, () =>
+    cssModal(
+      dom.cls('error', use => type.get() === 'error'),
+      dom.cls('info', use => type.get() === 'info'),
+      dom('div',
+        dom('p', message),
+        dom('button', 'OK', dom.on('click', () => visible.set(false)))
+      )
+    )
+  );
+}
+
+// MOD DMH - Global modal container style
+const cssModalContainer = () =>
+  dom('div', dom.style('position', 'fixed'), dom.style('top', '0'), dom.style('left', '0'),
+    dom.style('width', '100%'), dom.style('height', '100%'), dom.style('zIndex', '9999'),
+    dom.style('pointerEvents', 'none'), dom.style('display', 'flex'), dom.style('alignItems', 'center'),
+    dom.style('justifyContent', 'center'), dom.style('padding', '20px')
+  );
+
+// MOD DMH - Modal styling
+const cssModal = dom.styled('div', `
+  background: black;
+  color: white;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+  pointer-events: auto;
+  z-index: 10000;
+  font-size: 16px;
+  max-width: 90vw;
+  text-align: center;
+  &.error { border: 2px solid red; }
+  &.info { border: 2px solid #007bff; }
+  & button {
+    margin-top: 16px;
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    background: #fff;
+    color: #000;
+    border: none;
+    border-radius: 4px;
+  }
+`);
 
 function createMainPage(appModel: AppModel, appObj: App) {
   if (!appModel.currentOrg && appModel.needsOrg.get()) {

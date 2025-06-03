@@ -200,37 +200,40 @@ function buildNotifyDropdown(ctl: IOpenController, notifier: Notifier, appModel:
 
 // Begin MOD DMH --------------------------------------------------------------
 // MOD DMH - Replaces toasts with a centered modal-style notification
-export function buildSnackbarDom(notifier: Notifier, appModel: AppModel|null): Element {
-  const {progressItems, toasts} = notifier.getStateForUI();
-  return cssSnackbarWrapper(testId('snackbar-wrapper'),
-    dom.forEach(progressItems, item => buildProgressDom(item)),
-    dom.maybe(toasts, (toastList) => {
-      const toast = toastList[0];
-      if (!toast) { return null; }
+export function buildSnackbarDom(notifier: Notifier): DomElement {
+  const visible = Observable.create(null, false);
+  const message = Observable.create(null, '');
+  const type = Observable.create(null, 'info');
 
-      const visible = Observable.create(null, true);
+  notifier.addHandler((note: any) => {
+    message.set(note.text || '');
+    type.set(note.type || 'info');
+    visible.set(true);
+  });
 
-      return cssCenteredToast(
-        cssCenteredBox(
-          dom.cls(`-${toast.options.level}`),
-          dom('div', cssIconWrapper(), icon('Notification')),  // ✅ Fixed icon
-          cssToastBody(
-            toast.options.title ? cssToastTitle(toast.options.title) : null,
-            cssToastText(testId('toast-message'), toast.options.message),
-            cssToastActions(
-              dom('button', 'OK',
-                dom.style('font-weight', 'bold'),
-                dom.on('click', () => {
-                  toast.dispose();
-                  visible.set(false);
-                })
-              )
-            )
-          ),
-          dom.style('display', use => use(visible) ? 'flex' : 'none')
-        )
-      );
-    })
+  return dom.maybe(visible, () =>
+    dom('div',
+      dom.style('position', 'fixed'),
+      dom.style('top', '0'),
+      dom.style('left', '0'),
+      dom.style('width', '100vw'),
+      dom.style('height', '100vh'),
+      dom.style('zIndex', '1100'),
+      dom.style('display', 'flex'),
+      dom.style('alignItems', 'center'),
+      dom.style('justifyContent', 'center'),
+      dom('div',
+        dom.style('background', '#f5f0e6'),
+        dom.style('padding', '24px'),
+        dom.style('border', '2px solid #000'),
+        dom.style('color', '#000'),
+        dom.style('textAlign', 'center'),
+        dom('div', '🔔 ', dom.text(() => message.get())),
+        dom('br'),
+        dom('br'),
+        dom('button', 'OK', dom.on('click', () => visible.set(false)))
+      )
+    )
   );
 }
 

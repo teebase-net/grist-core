@@ -1,5 +1,4 @@
-"use strict";
-
+/* eslint-env browser */
 /*===================================================================================
   Custom Patch: Conditional UI control based on `Export_Data` permission in SysUsers
   File: custom/index.js
@@ -11,6 +10,8 @@
 
   Version: v1.2
 ===================================================================================*/
+
+"use strict";
 
 console.log("[Custom Patch] index.js loaded ✅ v1.2");
 

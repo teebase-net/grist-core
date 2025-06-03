@@ -15,22 +15,27 @@
  * - Skips gracefully if table or fields are missing.
  *
  * File: /app/client/custom/index.js
- * Version: v1.1.0
+ * Version: v1.1.1
  */
 
 "use strict";
 
-console.log("[Custom Patch] index.js loaded ✅ v1.1.0");
+console.log("[Custom Patch] index.js loaded ✅ v1.1.1");
 
 (function () {
-  function extractDocIdFromPath() {
-    const parts = window.location.pathname.split('/');
-    const index = parts.indexOf('p');
-    if (index > -1 && parts.length > index + 1) {
-      return parts[index + 1];  // GRIST_ORG_IN_PATH=true
-    } else if (parts.length >= 2) {
-      return parts[1];  // fallback for non-org path
+
+  async function waitForDocId(timeout = 10000) {
+    const interval = 100;
+    let waited = 0;
+    while (waited < timeout) {
+      const docId = window?.gristDoc?.docId;
+      if (docId && typeof docId === 'string' && docId.length > 10) {
+        return docId;
+      }
+      await new Promise(r => setTimeout(r, interval));
+      waited += interval;
     }
+    console.warn("[Custom Patch] ❌ Timed out waiting for gristDoc.docId");
     return null;
   }
 
@@ -169,15 +174,14 @@ console.log("[Custom Patch] index.js loaded ✅ v1.1.0");
   document.head.appendChild(style);
 
   window.addEventListener('load', () => {
-    setTimeout(() => {
-      const docId = extractDocIdFromPath();
+    waitForDocId().then(docId => {
       if (!docId) {
-        console.warn("[Custom Patch] ❌ Could not determine docId — permission features not activated.");
+        console.warn("[Custom Patch] ❌ Could not retrieve docId — permission features not activated.");
         return;
       }
       controlAddColumnButtons(docId);
       controlShareIcon(docId);
       controlExportButtons(docId);
-    }, 1000);
+    });
   });
 })();

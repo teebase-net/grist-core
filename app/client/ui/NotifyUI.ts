@@ -13,6 +13,7 @@ import {menuCssClass} from 'app/client/ui2018/menus';
 import {commonUrls, isFeatureEnabled} from 'app/common/gristUrls';
 import {dom, makeTestId, styled} from 'grainjs';
 import {cssMenu, defaultMenuOptions, IOpenController, setPopupToCreateDom} from 'popweasel';
+import {Observable} from 'grainjs';  // MOD DMH
 
 const t = makeT('NotifyUI');
 
@@ -207,7 +208,6 @@ export function buildSnackbarDom(notifier: Notifier, appModel: AppModel|null): E
       const toast = toastList[0];
       if (!toast) { return null; }
 
-      import {Observable} from 'grainjs';  // ✅ ensure this is in your imports if not already
       const visible = Observable.create(null, true);
       const iconElem = notificationIcon(toast);
       const hasIcon = Boolean(iconElem);

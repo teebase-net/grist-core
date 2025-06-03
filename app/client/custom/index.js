@@ -157,25 +157,27 @@ async function controlShareIcon() {
    */
   window.addEventListener('load', () => {
     controlAddColumnButtons();
+    controlShareIcon();
+    controlExportButtons();
 
     // Retry logic for icons that may render late
-    const retryUntil = (fn, selector, maxRetries = 20, delay = 1000) => {
-      let tries = 0;
-      const check = async () => {
-        const el = document.querySelector(selector);
-        console.log(`[Custom Patch] Attempt ${tries + 1}/${maxRetries} — ${selector} ${el ? '✅ Found' : '❌ Not found'}`);
-        if (el || tries >= maxRetries) {
-          fn();
-        } else {
-          tries++;
-          setTimeout(check, delay);
-        }
-      };
-      check();
-    };
+    //const retryUntil = (fn, selector, maxRetries = 20, delay = 1000) => {
+    //  let tries = 0;
+    //  const check = async () => {
+    //    const el = document.querySelector(selector);
+    //    console.log(`[Custom Patch] Attempt ${tries + 1}/${maxRetries} — ${selector} ${el ? '✅ Found' : '❌ Not found'}`);
+    //    if (el || tries >= maxRetries) {
+    //      fn();
+    //    } else {
+    //      tries++;
+    //      setTimeout(check, delay);
+    //    }
+    //  };
+    //  check();
+    //};
 
-    retryUntil(controlShareIcon, '.tour-share-icon');
-    retryUntil(controlExportButtons, '.test-download-section');
+    //retryUntil(controlShareIcon, '.tour-share-icon');
+    //retryUntil(controlExportButtons, '.test-download-section');
   });
 
   })();

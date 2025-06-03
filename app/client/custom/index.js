@@ -19,7 +19,7 @@
 
 "use strict";
 
-console.log("[Custom Patch] index.js loaded ✅ v0.8");
+console.log("[Custom Patch] index.js loaded ✅ v0.9");
 
 (function () {
   function extractDocId() {

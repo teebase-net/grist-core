@@ -202,8 +202,11 @@ function buildNotifyDropdown(ctl: IOpenController, notifier: Notifier, appModel:
 // MOD DMH - Replaces toasts with a centered modal-style notification
 export function buildSnackbarDom(notifier: Notifier, appModel: AppModel|null): Element {
   const {progressItems, toasts} = notifier.getStateForUI();
-  return cssSnackbarWrapper(testId('snackbar-wrapper'),
-    dom.forEach(progressItems, item => buildProgressDom(item)),
+
+  return dom('div',
+    cssSnackbarWrapper(testId('snackbar-wrapper'),
+      dom.forEach(progressItems, item => buildProgressDom(item))  // ✅ bottom right
+    ),
     dom.maybe(toasts, (toastList) => {
       const toast = toastList[0];
       if (!toast) { return null; }
@@ -212,7 +215,7 @@ export function buildSnackbarDom(notifier: Notifier, appModel: AppModel|null): E
       const iconElem = notificationIcon(toast);
       const hasIcon = Boolean(iconElem);
 
-      return cssCenteredToast(
+      return cssCenteredToast(  // ✅ modal-style only for standard toast
         cssCenteredBox(
           dom.cls(`-${toast.options.level}`),
           hasIcon ? iconElem : null,
@@ -232,6 +235,7 @@ export function buildSnackbarDom(notifier: Notifier, appModel: AppModel|null): E
     })
   );
 }
+
 
 // MOD DMH - Centered modal-style toast container
 const cssCenteredToast = styled('div', `

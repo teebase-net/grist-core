@@ -267,30 +267,6 @@ const cssCenteredBox = styled('div', `
   &.warning { border-color: orange; }
 `);
 
-const cssLeftIcon = styled(icon, `
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  margin-right: 12px;
-  --icon-color: black;
-`);
-
-const cssToastContent = styled('div', `
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-`);
-
-const cssToastText = styled('div', `
-  margin-bottom: 16px;
-  text-align: center;
-`);
-
-const cssToastActions = styled('div', `
-  display: flex;
-  justify-content: center;
-`);
-
 // end MOD DMH --------------------------------------------------------------
 
 function buildConnectStateButton(state: ConnectState): Element {

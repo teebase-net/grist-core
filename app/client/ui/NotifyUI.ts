@@ -202,23 +202,23 @@ function buildNotifyDropdown(ctl: IOpenController, notifier: Notifier, appModel:
 // MOD DMH - Replaces toasts with a centered modal-style notification
 export function buildSnackbarDom(notifier: Notifier, appModel: AppModel|null): Element {
   const {progressItems, toasts} = notifier.getStateForUI();
-
-  return dom('div',
-    cssSnackbarWrapper(testId('snackbar-wrapper'),
-      dom.forEach(progressItems, item => buildProgressDom(item))  // ✅ bottom right
-    ),
+  return cssSnackbarWrapper(testId('snackbar-wrapper'),
+    dom.forEach(progressItems, item => buildProgressDom(item)),
     dom.maybe(toasts, (toastList) => {
       const toast = toastList[0];
       if (!toast) { return null; }
 
       const visible = Observable.create(null, true);
-      const iconElem = notificationIcon(toast);
-      const hasIcon = Boolean(iconElem);
 
-      return cssCenteredToast(  // ✅ modal-style only for standard toast
+      const iconElem = dom('span',
+        {style: 'font-size: 28px; margin-bottom: 12px; display: block;'},
+        '🔔'
+      );
+
+      return cssCenteredToast(
         cssCenteredBox(
           dom.cls(`-${toast.options.level}`),
-          hasIcon ? iconElem : null,
+          iconElem,
           cssToastBody(
             toast.options.title ? cssToastTitle(toast.options.title) : null,
             cssToastText(testId('toast-message'), toast.options.message),
@@ -251,25 +251,32 @@ const cssCenteredToast = styled('div', `
 `);
 
 const cssCenteredBox = styled('div', `
-  background: ${theme.mainPanelBg};   /* ✅ Official Grist background */
-  color: ${theme.text};               /* ✅ Official Grist text color */
+  background: #fdf7e2;  /* ✅ Warm beige */
+  color: black;
   padding: 24px;
-  border: 2px solid black;            /* ✅ Black border */
+  border: 2px solid black;
+  border-radius: 0;  /* ✅ Sharp corners */
   pointer-events: auto;
   max-width: 90vw;
   font-size: 16px;
   text-align: center;
-  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+  box-shadow: 0 0 15px rgba(0,0,0,0.2);
+
+  &.error { border-color: red; }
+  &.info { border-color: #007bff; }
+  &.success { border-color: green; }
+  &.warning { border-color: orange; }
 
   & button {
-    display: block;
-    margin: 16px auto 0 auto;
+    margin-top: 16px;
     padding: 6px 12px;
     font-size: 14px;
+    font-weight: bold;  /* ✅ Bold OK button */
     cursor: pointer;
     background: #fff;
     color: #000;
     border: none;
+    border-radius: 4px;
   }
 `);
 

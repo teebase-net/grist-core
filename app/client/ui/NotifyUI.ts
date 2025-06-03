@@ -210,34 +210,29 @@ export function buildSnackbarDom(notifier: Notifier, appModel: AppModel|null): E
 
       const visible = Observable.create(null, true);
 
-      const iconElem = dom('span',
-        {style: 'font-size: 28px; margin-bottom: 12px; display: block;'},
-        '🔔'
-      );
-
       return cssCenteredToast(
+        dom.style('display', use => use(visible) ? 'flex' : 'none'),
         cssCenteredBox(
           dom.cls(`-${toast.options.level}`),
-          iconElem,
-          cssToastBody(
-            toast.options.title ? cssToastTitle(toast.options.title) : null,
+          cssLeftIcon('Bell'),  // 24px icon on the left
+          cssToastContent(
             cssToastText(testId('toast-message'), toast.options.message),
             cssToastActions(
-              dom('button', 'OK', dom.on('click', () => {
-                toast.dispose();
-                visible.set(false);
-              }))
+              dom('button', 'OK',
+                dom.style('font-weight', 'bold'),
+                dom.on('click', () => {
+                  toast.dispose();
+                  visible.set(false);
+                })
+              )
             )
           )
-        ),
-        dom.style('display', use => use(visible) ? 'flex' : 'none')
+        )
       );
     })
   );
 }
 
-
-// MOD DMH - Centered modal-style toast container
 const cssCenteredToast = styled('div', `
   position: fixed;
   top: 0; left: 0;
@@ -251,33 +246,47 @@ const cssCenteredToast = styled('div', `
 `);
 
 const cssCenteredBox = styled('div', `
-  background: #fdf7e2;  /* ✅ Warm beige */
+  display: flex;
+  align-items: center;
+  background: #fdf6e3;  /* ☀️ Subtle beige */
   color: black;
   padding: 24px;
   border: 2px solid black;
-  border-radius: 0;  /* ✅ Sharp corners */
+  border-radius: 0;
   pointer-events: auto;
   max-width: 90vw;
   font-size: 16px;
-  text-align: center;
+  text-align: left;
   box-shadow: 0 0 15px rgba(0,0,0,0.2);
 
-  &.error { border-color: red; }
-  &.info { border-color: #007bff; }
+  &.error   { border-color: red; }
+  &.info    { border-color: #007bff; }
   &.success { border-color: green; }
   &.warning { border-color: orange; }
+`);
 
-  & button {
-    margin-top: 16px;
-    padding: 6px 12px;
-    font-size: 14px;
-    font-weight: bold;  /* ✅ Bold OK button */
-    cursor: pointer;
-    background: #fff;
-    color: #000;
-    border: none;
-    border-radius: 4px;
-  }
+const cssLeftIcon = styled(icon, `
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin-right: 12px;
+  --icon-color: black;
+`);
+
+const cssToastContent = styled('div', `
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`);
+
+const cssToastText = styled('div', `
+  margin-bottom: 16px;
+  text-align: center;
+`);
+
+const cssToastActions = styled('div', `
+  display: flex;
+  justify-content: center;
 `);
 
 // end MOD DMH --------------------------------------------------------------

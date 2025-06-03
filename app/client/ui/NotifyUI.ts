@@ -247,28 +247,25 @@ const cssCenteredToast = styled('div', `
 `);
 
 const cssCenteredBox = styled('div', `
-  background: black;
-  color: white;
+  background: ${theme.mainPanelBg};   /* ✅ Official Grist background */
+  color: ${theme.text};               /* ✅ Official Grist text color */
   padding: 24px;
-  border-radius: 8px;
+  border: 2px solid black;            /* ✅ Black border */
   pointer-events: auto;
   max-width: 90vw;
   font-size: 16px;
   text-align: center;
   box-shadow: 0 0 15px rgba(0,0,0,0.5);
-  &.error { border: 2px solid red; }
-  &.info { border: 2px solid #007bff; }
-  &.success { border: 2px solid green; }
-  &.warning { border: 2px solid orange; }
+
   & button {
-    margin-top: 16px;
+    display: block;
+    margin: 16px auto 0 auto;
     padding: 6px 12px;
     font-size: 14px;
     cursor: pointer;
     background: #fff;
     color: #000;
     border: none;
-    border-radius: 4px;
   }
 `);
 

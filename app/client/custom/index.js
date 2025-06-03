@@ -4,42 +4,49 @@
  *
  * Custom patch script injected by Grist app.js
  *
- * 🔧 MOD DMH — June 2025:
+ * 🔧 MOD DMH — May 2025:
  * - 1. Conditionally hides the “+ Add Column” button unless the current user has
  *   `Unlock_Structure = true` in the `SysUsers` table.
  * - 2. Conditionally hides the Share icon unless the current user has
  *   `Export_Data = true` in the `SysUsers` table.
- * - 3. Conditionally hides the Download links via the elipse icon unless the current user has
+ * - 3. Conditionally hides the Download links via the ellipsis icon unless the current user has
  *   `Export_Data = true` in the `SysUsers` table.
- * - 4. Conditionally disables copy (keyboard + mouse) if Export_Data is false
  * - Skips gracefully if table or fields are missing.
  *
  * File: /app/client/custom/index.js
- * Version: v1.1.1
+ * Version: v1.1.2
  */
 
 "use strict";
 
-console.log("[Custom Patch] index.js loaded ✅ v1.1.1");
+console.log("[Custom Patch] index.js loaded ✅ v1.1.2");
 
-(function () {
-
-  async function waitForDocId(timeout = 10000) {
-    const interval = 100;
-    let waited = 0;
-    while (waited < timeout) {
-      const docId = window?.gristDoc?.docId;
-      if (docId && typeof docId === 'string' && docId.length > 10) {
-        return docId;
+(async function () {
+  // Wait for gristDoc.docId to be available
+  async function waitForDocId(timeout = 5000) {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      if (window.gristDoc?.docId) {
+        return window.gristDoc.docId;
       }
-      await new Promise(r => setTimeout(r, interval));
-      waited += interval;
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
     console.warn("[Custom Patch] ❌ Timed out waiting for gristDoc.docId");
     return null;
   }
 
-  async function hasUnlockStructure(docId) {
+  const docId = await waitForDocId();
+  if (!docId) {
+    console.warn("[Custom Patch] ❌ Could not retrieve docId — permission features not activated.");
+    return;
+  }
+
+  /**
+   * ┌─────────────────────────────────────────────────────────────────────┐
+   * │ Control “Add Column” button based on Unlock_Structure field         │
+   * └─────────────────────────────────────────────────────────────────────┘
+   */
+  async function hasUnlockStructure() {
     try {
       const profile = await fetch('/api/profile/user', { credentials: 'include' }).then(r => r.json());
       const res = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: 'include' });
@@ -69,8 +76,8 @@ console.log("[Custom Patch] index.js loaded ✅ v1.1.1");
     }
   }
 
-  async function controlAddColumnButtons(docId) {
-    const allowed = await hasUnlockStructure(docId);
+  async function controlAddColumnButtons() {
+    const allowed = await hasUnlockStructure();
     if (allowed === null) return;
 
     const toggle = () => {
@@ -85,7 +92,12 @@ console.log("[Custom Patch] index.js loaded ✅ v1.1.1");
     console.log(`[Custom Patch] Unlock_Structure = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
   }
 
-  async function hasExportDataPermission(docId) {
+  /**
+   * ┌─────────────────────────────────────────────────────────────────────┐
+   * │ Control Share Icon visibility based on Export_Data field            │
+   * └─────────────────────────────────────────────────────────────────────┘
+   */
+  async function hasExportDataPermission() {
     try {
       const profile = await fetch('/api/profile/user', { credentials: 'include' }).then(r => r.json());
       const res = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: 'include' });
@@ -115,8 +127,8 @@ console.log("[Custom Patch] index.js loaded ✅ v1.1.1");
     }
   }
 
-  async function controlShareIcon(docId) {
-    const allowed = await hasExportDataPermission(docId);
+  async function controlShareIcon() {
+    const allowed = await hasExportDataPermission();
     if (allowed === null) return;
 
     const toggle = () => {
@@ -131,8 +143,13 @@ console.log("[Custom Patch] index.js loaded ✅ v1.1.1");
     console.log(`[Custom Patch] Share icon = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
   }
 
-  async function controlExportButtons(docId) {
-    const allowed = await hasExportDataPermission(docId);
+  /**
+   * ┌─────────────────────────────────────────────────────────────────────┐
+   * │ Control download links based on Export_Data field                   │
+   * └─────────────────────────────────────────────────────────────────────┘
+   */
+  async function controlExportButtons() {
+    const allowed = await hasExportDataPermission();
     if (allowed === null) return;
 
     const toggle = () => {
@@ -145,43 +162,16 @@ console.log("[Custom Patch] index.js loaded ✅ v1.1.1");
     toggle();
 
     console.log(`[Custom Patch] Export_Data for download links = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
-    applyCopyProtection(!allowed);
   }
 
-  function applyCopyProtection(disable) {
-    if (disable) {
-      document.body.classList.add('no-copy');
-      document.addEventListener('copy', preventCopy, true);
-    } else {
-      document.body.classList.remove('no-copy');
-      document.removeEventListener('copy', preventCopy, true);
-    }
-  }
-
-  function preventCopy(e) {
-    console.warn("🔒 Copy blocked by custom patch.");
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  // Inject CSS to block mouse selection if copy is disabled
-  const style = document.createElement('style');
-  style.textContent = `
-    body.no-copy * {
-      user-select: none !important;
-    }
-  `;
-  document.head.appendChild(style);
-
+  /**
+   * ┌─────────────────────────────────────────────────────────────────────┐
+   * │ Load handlers after Grist page has rendered                         │
+   * └─────────────────────────────────────────────────────────────────────┘
+   */
   window.addEventListener('load', () => {
-    waitForDocId().then(docId => {
-      if (!docId) {
-        console.warn("[Custom Patch] ❌ Could not retrieve docId — permission features not activated.");
-        return;
-      }
-      controlAddColumnButtons(docId);
-      controlShareIcon(docId);
-      controlExportButtons(docId);
-    });
+    controlAddColumnButtons();
+    controlShareIcon();
+    controlExportButtons();
   });
 })();

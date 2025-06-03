@@ -1,161 +1,99 @@
-/* global window document MutationObserver */
-
 "use strict";
 
 /*===================================================================================
-  Custom Patch: Conditional UI based on SysUsers table
-  File: /app/client/custom/index.js
-  Applied: 2025-06
-  Purpose:
-    - Hides “+ Add Column” unless Unlock_Structure = true
-    - Hides Share + Export options unless Export_Data = true
-    - Uses WebSocket intercept to wait for real docId before executing logic
-    - Falls back to window.onload if intercept fails
-
-  Version: v1.3.1
+  Custom Patch: Control visibility of Add Column, Share icon, and Download options
+  File: custom/index.js
+  Version: v1.3.3 — Shows alerts when access is denied
 ===================================================================================*/
 
-console.log("[Custom Patch] index.js loaded ✅ v1.3.1");
+console.log("[Custom Patch] index.js loaded ✅ v1.3.3");
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 🧠 Helpers
-// ─────────────────────────────────────────────────────────────────────────────
+(function () {
+  let capturedDocId = null;
 
-async function getProfile() {
-  try {
-    return await fetch('/api/profile/user', { credentials: 'include' }).then(r => r.json());
-  } catch {
-    return null;
-  }
-}
-
-async function fetchSysUsers(docId) {
-  const res = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: 'include' });
-  if (!res.ok) {
-    console.warn("SysUsers table missing — skipping permission control.");
-    return null;
-  }
-  return res.json();
-}
-
-async function hasPermission(field, docId) {
-  try {
-    const profile = await getProfile();
-    const data = await fetchSysUsers(docId);
-    if (!data || !data.id?.length || !data.Email || !data[field]) return null;
-
-    const user = Array.from({ length: data.id.length }, (_, i) => ({
-      Email: data.Email[i],
-      Flag: data[field][i]
-    })).find(u =>
-      u.Email?.trim().toLowerCase() === profile?.email?.trim().toLowerCase()
-    );
-
-    return user?.Flag === true;
-  } catch (err) {
-    console.warn(`Permission check failed for ${field}`, err);
-    return null;
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 🎯 UI Controllers
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function controlAddColumnButtons(docId) {
-  const allowed = await hasPermission('Unlock_Structure', docId);
-  if (allowed === null) return;
-
-  const toggle = () => {
-    document.querySelectorAll('.mod-add-column').forEach(el => {
-      el.style.display = allowed ? '' : 'none';
-    });
-  };
-
-  new MutationObserver(toggle).observe(document.body, { childList: true, subtree: true });
-  toggle();
-  console.log(`[Custom Patch] Unlock_Structure = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
-}
-
-async function controlShareIcon(docId) {
-  const allowed = await hasPermission('Export_Data', docId);
-  if (allowed === null) return;
-
-  const toggle = () => {
-    document.querySelectorAll('.test-tb-share').forEach(el => {
-      el.style.display = allowed ? '' : 'none';
-    });
-  };
-
-  new MutationObserver(toggle).observe(document.body, { childList: true, subtree: true });
-  toggle();
-  console.log(`[Custom Patch] Share icon = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
-}
-
-async function controlExportButtons(docId) {
-  const allowed = await hasPermission('Export_Data', docId);
-  if (allowed === null) return;
-
-  const toggle = () => {
-    document.querySelectorAll('.test-download-section').forEach(el => {
-      el.style.display = allowed ? '' : 'none';
-    });
-  };
-
-  new MutationObserver(toggle).observe(document.body, { childList: true, subtree: true });
-  toggle();
-  console.log(`[Custom Patch] Export_Data for download links = ${allowed ? '✅ Allowed' : '🚫 Denied'}`);
-}
-
-async function runAllControls(docId) {
-  await controlAddColumnButtons(docId);
-  await controlShareIcon(docId);
-  await controlExportButtons(docId);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 🔌 GristWSConnection Intercept (Option C)
-// ─────────────────────────────────────────────────────────────────────────────
-
-(function waitForGristConnection() {
-  const GristWS = window.GristWSConnection?.prototype;
-  if (!GristWS) {
-    return setTimeout(waitForGristConnection, 50);
-  }
-
-  const originalOnMessage = GristWS.onmessage;
-
-  GristWS.onmessage = function(event) {
-    originalOnMessage.call(this, event);
-
-    let msg;
+  // 🧠 Intercept WebSocket to grab docId from openDoc
+  const originalSend = WebSocket.prototype.send;
+  WebSocket.prototype.send = function (data) {
     try {
-      msg = JSON.parse(event.data);
-    } catch {
-      return;
+      const msg = JSON.parse(data);
+      if (msg?.method === "openDoc" && msg.args?.length) {
+        capturedDocId = msg.args[0];
+        console.log(`[Custom Patch] 📄 docId captured from openDoc: ${capturedDocId}`);
+      }
+    } catch (err) {
+      console.warn("[Custom Patch] ⚠️ WebSocket interception failed", err);
     }
-
-    if (msg?.result?.doc && msg?.result?.docId) {
-      console.log("[Custom Patch] ✅ Detected openDoc — activating permission logic");
-      runAllControls(msg.result.docId);
-    }
+    return originalSend.call(this, data);
   };
 
-  console.log("[Custom Patch] ✅ GristWSConnection hook installed");
-})();
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 🕗 Fallback: run late if all else fails
-// ─────────────────────────────────────────────────────────────────────────────
-
-window.onload = async () => {
-  console.log("[Custom Patch] ⏳ window.onload fallback triggered");
-
-  const docId = window.gristDoc?.docId || window.location.pathname.split('/')[1];
-  if (!docId || docId === "o") {
+  async function getDocId(timeout = 3000) {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      const id = window.gristDoc?.docId || capturedDocId;
+      if (id) return id;
+      await new Promise(r => setTimeout(r, 100));
+    }
     console.warn("[Custom Patch] ❌ Could not retrieve valid docId — skipping fallback.");
-    return;
+    return null;
   }
 
-  await runAllControls(docId);
-};
+  async function getCurrentUserPermissions(docId) {
+    try {
+      const profile = await fetch('/api/profile/user', { credentials: 'include' }).then(r => r.json());
+      const res = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: 'include' });
+      if (!res.ok) throw new Error("SysUsers fetch failed");
+
+      const data = await res.json();
+      const email = profile?.email?.toLowerCase();
+      const userIndex = data.Email?.findIndex(e => e?.toLowerCase() === email);
+      if (userIndex === -1) return { canAdd: false, canExport: false };
+
+      return {
+        canAdd: data.Unlock_Structure?.[userIndex] === true,
+        canExport: data.Export_Data?.[userIndex] === true,
+      };
+    } catch (err) {
+      console.warn("[Custom Patch] ❌ Permission lookup failed", err);
+      return { canAdd: false, canExport: false };
+    }
+  }
+
+  // 🌐 Native Grist-style alert popup (lower-right corner)
+  function showAlert(msg, type = 'error') {
+    const event = new CustomEvent('uiShowToast', {
+      detail: { text: msg, type, timeout: 5000 }
+    });
+    window.dispatchEvent(event);
+  }
+
+  function observeAndHide(selector, visible, messageIfHidden) {
+    const apply = () => {
+      const found = document.querySelectorAll(selector);
+      if (!visible && found.length) {
+        found.forEach(el => el.style.display = 'none');
+        if (messageIfHidden) showAlert(messageIfHidden);
+      } else if (visible) {
+        found.forEach(el => el.style.display = '');
+      }
+    };
+    apply();
+    new MutationObserver(apply).observe(document.body, { childList: true, subtree: true });
+  }
+
+  async function applyVisibilityControls() {
+    const docId = await getDocId();
+    if (!docId) return;
+
+    const perms = await getCurrentUserPermissions(docId);
+    console.log(`[Custom Patch] 🧾 Permissions — Add: ${perms.canAdd}, Export: ${perms.canExport}`);
+
+    observeAndHide('.mod-add-column', perms.canAdd, "❌ You don't have permission to add columns.");
+    observeAndHide('.test-tb-share', perms.canExport, "❌ You don't have permission to share.");
+    observeAndHide('.test-download-section', perms.canExport, "❌ You don't have permission to download data.");
+  }
+
+  window.addEventListener('load', () => {
+    console.log("[Custom Patch] ⏳ window.onload fallback triggered");
+    applyVisibilityControls();
+  });
+})();

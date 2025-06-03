@@ -211,11 +211,11 @@ export function buildSnackbarDom(notifier: Notifier, appModel: AppModel|null): E
       const visible = Observable.create(null, true);
 
       return cssCenteredToast(
-        dom.style('display', use => use(visible) ? 'flex' : 'none'),
         cssCenteredBox(
           dom.cls(`-${toast.options.level}`),
-          cssLeftIcon('Bell'),  // 24px icon on the left
-          cssToastContent(
+          dom('div', cssIconWrapper(), icon('Notification')),  // ✅ Fixed icon
+          cssToastBody(
+            toast.options.title ? cssToastTitle(toast.options.title) : null,
             cssToastText(testId('toast-message'), toast.options.message),
             cssToastActions(
               dom('button', 'OK',
@@ -226,12 +226,14 @@ export function buildSnackbarDom(notifier: Notifier, appModel: AppModel|null): E
                 })
               )
             )
-          )
+          ),
+          dom.style('display', use => use(visible) ? 'flex' : 'none')
         )
       );
     })
   );
 }
+
 
 const cssCenteredToast = styled('div', `
   position: fixed;

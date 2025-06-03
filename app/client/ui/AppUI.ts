@@ -27,7 +27,7 @@ import {
   loadBillingPage,
 } from 'app/client/lib/imports';
 import {createSessionObs, isBoolean, isNumber} from 'app/client/lib/sessionObs';
-// import {Notifier} from 'app/client/lib/Notifier'; // MOD DMH
+import {Notifier} from 'app/client/lib/Notifier';  // MOD DMH
 import {AppModel, TopAppModel} from 'app/client/models/AppModel';
 import {DocPageModelImpl} from 'app/client/models/DocPageModel';
 import {HomeModelImpl} from 'app/client/models/HomeModel';
@@ -47,13 +47,12 @@ import {Computed, dom, IDisposable, IDisposableOwner, Observable, replaceContent
 import {
   createForbiddenPage,
   createNotFoundPage,
-  createOtherErrorPage,
-  createDocMenu,
-  createBottomBarDoc,
-  createHomeLeftPane
+  createOtherErrorPage
 } from 'app/client/ui/errorPages';
+import { createDocMenu } from 'app/client/ui/LeftPane';
+import { createBottomBarDoc } from 'app/client/ui/BottomBar';
+import { createHomeLeftPane } from 'app/client/ui/HomeLeftPane';
 // end MOD DMH
-
 
 // MOD DMH - createAppUI with modal patch
 export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable {
@@ -87,9 +86,8 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
 }
 // end MOD DMH
 
-
 // MOD DMH - modal version of toast
-function buildModalDom(notifier: any, appModel: AppModel) {
+function buildModalDom(notifier: Notifier, appModel: AppModel) {
   const visible = Observable.create(null, false);
   const message = Observable.create(null, '');
   const type = Observable.create(null, 'info');
@@ -150,7 +148,6 @@ const cssModal = styled('div', `
   }
 `);
 // end MOD DMH
-
 
 
 // ------- Below here is unchanged  -------------------------------------------------

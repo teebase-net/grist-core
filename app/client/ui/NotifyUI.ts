@@ -13,7 +13,6 @@ import {menuCssClass} from 'app/client/ui2018/menus';
 import {commonUrls, isFeatureEnabled} from 'app/common/gristUrls';
 import {dom, makeTestId, styled} from 'grainjs';
 import {cssMenu, defaultMenuOptions, IOpenController, setPopupToCreateDom} from 'popweasel';
-import {Observable} from 'grainjs';  // MOD DMH
 
 const t = makeT('NotifyUI');
 
@@ -189,127 +188,14 @@ function buildNotifyDropdown(ctl: IOpenController, notifier: Notifier, appModel:
     testId('dropdown'),
   );
 }
-// Original
-//export function buildSnackbarDom(notifier: Notifier, appModel: AppModel|null): Element {
-//  const {progressItems, toasts} = notifier.getStateForUI();
-//  return cssSnackbarWrapper(testId('snackbar-wrapper'),
-//    dom.forEach(progressItems, item => buildProgressDom(item)),
-//    dom.forEach(toasts, toast => buildNotificationDom(toast, {appModel})),
-//  );
-//}
 
-// Begin MOD DMH --------------------------------------------------------------
-// MOD DMH - Replaces toasts with a centered modal-style notification
-// MOD DMH
-export function buildSnackbarDom(notifier: AppNotifier, appModel: AppModel) {
-  console.log("[Toast Patch] buildSnackbarDom loaded ✅");
-
-  const visible = Observable.create(null, false);
-  const message = Observable.create(null, '');
-  const type = Observable.create(null, 'info');
-
-  notifier.addHandler((msg, msgType = 'info') => {
-    console.log(`[Toast Patch] Showing: ${msg} (${msgType})`);
-    message.set(msg);
-    type.set(msgType);
-    visible.set(true);
-  });
-
-  return dom.maybe(visible, (use) => {
-    const t = use(type);
-    const bgColor =
-      t === 'success' ? '#d4edda' :
-      t === 'error'   ? '#f8d7da' :
-      t === 'warning' ? '#fff3cd' :
-      t === 'custom'  ? '#d1ecf1' :
-                        '#e2e3e5'; // info/default
-
-    const borderColor =
-      t === 'success' ? '#155724' :
-      t === 'error'   ? '#721c24' :
-      t === 'warning' ? '#856404' :
-      t === 'custom'  ? '#0c5460' :
-                        '#383d41'; // info/default
-
-    return dom('div', {
-      style: `
-        position: fixed;
-        top: 0; left: 0; width: 100vw; height: 100vh;
-        z-index: 1100;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        pointer-events: none;
-      `
-    },
-      dom('div', {
-        style: `
-          background: ${bgColor};
-          border: 2px solid ${borderColor};
-          color: #000;
-          padding: 24px;
-          text-align: center;
-          pointer-events: all;
-          font-size: 16px;
-          max-width: 90%;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        `
-      },
-        dom('div', message),
-        dom('div', {style: 'margin-top: 12px;'},
-          dom('button', {style: 'margin-right: 12px;'}, 'OK', dom.on('click', () => visible.set(false))),
-          dom('button', dom.on('click', () => visible.set(false)), '✖')
-        )
-      )
-    );
-  });
+export function buildSnackbarDom(notifier: Notifier, appModel: AppModel|null): Element {
+  const {progressItems, toasts} = notifier.getStateForUI();
+  return cssSnackbarWrapper(testId('snackbar-wrapper'),
+    dom.forEach(progressItems, item => buildProgressDom(item)),
+    dom.forEach(toasts, toast => buildNotificationDom(toast, {appModel})),
+  );
 }
-// end MOD DMH
-
-
-
-const cssCenteredToast = styled('div', `
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 1100;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  pointer-events: none;
-`);
-
-const cssIconWrapper = styled('div', `
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 12px;
-  width: 24px;
-  height: 24px;
-`);
-
-const cssCenteredBox = styled('div', `
-  display: flex;
-  align-items: center;
-  background: #fdf6e3;  /* ☀️ Subtle beige */
-  color: black;
-  padding: 24px;
-  border: 2px solid black;
-  border-radius: 0;
-  pointer-events: auto;
-  max-width: 90vw;
-  font-size: 16px;
-  text-align: left;
-  box-shadow: 0 0 15px rgba(0,0,0,0.2);
-
-  &.error   { border-color: red; }
-  &.info    { border-color: #007bff; }
-  &.success { border-color: green; }
-  &.warning { border-color: orange; }
-`);
-
-// end MOD DMH --------------------------------------------------------------
 
 function buildConnectStateButton(state: ConnectState): Element {
   switch (state) {

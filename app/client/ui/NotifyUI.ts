@@ -200,42 +200,72 @@ function buildNotifyDropdown(ctl: IOpenController, notifier: Notifier, appModel:
 
 // Begin MOD DMH --------------------------------------------------------------
 // MOD DMH - Replaces toasts with a centered modal-style notification
-export function buildSnackbarDom(notifier: Notifier): DomElement {
+// MOD DMH
+export function buildSnackbarDom(notifier: AppNotifier, appModel: AppModel) {
+  console.log("[Toast Patch] buildSnackbarDom loaded ✅");
+
   const visible = Observable.create(null, false);
   const message = Observable.create(null, '');
   const type = Observable.create(null, 'info');
 
-  notifier.addHandler((note: any) => {
-    message.set(note.text || '');
-    type.set(note.type || 'info');
+  notifier.addHandler((msg, msgType = 'info') => {
+    console.log(`[Toast Patch] Showing: ${msg} (${msgType})`);
+    message.set(msg);
+    type.set(msgType);
     visible.set(true);
   });
 
-  return dom.maybe(visible, () =>
-    dom('div',
-      dom.style('position', 'fixed'),
-      dom.style('top', '0'),
-      dom.style('left', '0'),
-      dom.style('width', '100vw'),
-      dom.style('height', '100vh'),
-      dom.style('zIndex', '1100'),
-      dom.style('display', 'flex'),
-      dom.style('alignItems', 'center'),
-      dom.style('justifyContent', 'center'),
-      dom('div',
-        dom.style('background', '#f5f0e6'),
-        dom.style('padding', '24px'),
-        dom.style('border', '2px solid #000'),
-        dom.style('color', '#000'),
-        dom.style('textAlign', 'center'),
-        dom('div', '🔔 ', dom.text(() => message.get())),
-        dom('br'),
-        dom('br'),
-        dom('button', 'OK', dom.on('click', () => visible.set(false)))
+  return dom.maybe(visible, (use) => {
+    const t = use(type);
+    const bgColor =
+      t === 'success' ? '#d4edda' :
+      t === 'error'   ? '#f8d7da' :
+      t === 'warning' ? '#fff3cd' :
+      t === 'custom'  ? '#d1ecf1' :
+                        '#e2e3e5'; // info/default
+
+    const borderColor =
+      t === 'success' ? '#155724' :
+      t === 'error'   ? '#721c24' :
+      t === 'warning' ? '#856404' :
+      t === 'custom'  ? '#0c5460' :
+                        '#383d41'; // info/default
+
+    return dom('div', {
+      style: `
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        z-index: 1100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+      `
+    },
+      dom('div', {
+        style: `
+          background: ${bgColor};
+          border: 2px solid ${borderColor};
+          color: #000;
+          padding: 24px;
+          text-align: center;
+          pointer-events: all;
+          font-size: 16px;
+          max-width: 90%;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        `
+      },
+        dom('div', message),
+        dom('div', {style: 'margin-top: 12px;'},
+          dom('button', {style: 'margin-right: 12px;'}, 'OK', dom.on('click', () => visible.set(false))),
+          dom('button', dom.on('click', () => visible.set(false)), '✖')
+        )
       )
-    )
-  );
+    );
+  });
 }
+// end MOD DMH
+
 
 
 const cssCenteredToast = styled('div', `

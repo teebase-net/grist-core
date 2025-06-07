@@ -3,17 +3,35 @@
 "use strict";
 
 /*===================================================================================
-  Custom Patch: Control visibility of Add Column, Share icon, and Download options
-  File: custom/index.js
-  Version: v1.3.3 — Shows alerts when access is denied
+  Custom Patch: Role-Based UI Access Control for Grist
+
+  Purpose:
+    Restricts visibility and access to sensitive UI actions in Grist (Add Column, Share, Download)
+    based on per-user permissions set in the SysUsers table of the current document.
+    Also displays a 5px pink banner at the top for documents with "DEV -" in the name.
+
+  Features:
+    - Hides “Add Column” (“+”) button if the user does not have Unlock_Structure = true.
+    - Hides “Share” icon if the user does not have Export_Data = true.
+    - Hides “Download/Export” options if the user does not have Export_Data = true.
+    - Permissions are dynamically loaded and enforced every time the page loads.
+    - Shows a 5px high pink banner at the top if document name contains "DEV -".
+
+  Implementation:
+    - Captures the current docId as soon as possible (even if Grist is slow to set it)
+    - Loads the current user's permissions from SysUsers
+    - Uses MutationObservers to continually hide/show elements as the UI updates
+    - Uses the Grist API to get the document name and displays the DEV banner if needed
+
+  Version: v1.4.0
 ===================================================================================*/
 
-console.log("[Custom Patch] index.js loaded ✅ v1.3.3");
+console.log("[Custom Patch] index.js loaded ✅ v1.4.0");
 
 (function () {
   let capturedDocId = null;
 
-  // 🧠 Intercept WebSocket to grab docId from openDoc
+  // === 1. Capture docId from Grist’s WebSocket as soon as it’s available ===
   const originalSend = WebSocket.prototype.send;
   WebSocket.prototype.send = function (data) {
     try {
@@ -28,6 +46,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.3.3");
     return originalSend.call(this, data);
   };
 
+  // === 2. Wait for docId to be available, either from Grist or via WebSocket sniffing ===
   async function getDocId(timeout = 3000) {
     const start = Date.now();
     while (Date.now() - start < timeout) {
@@ -39,6 +58,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.3.3");
     return null;
   }
 
+  // === 3. Load current user's permissions from SysUsers table in the current document ===
   async function getCurrentUserPermissions(docId) {
     try {
       const profile = await fetch('/api/profile/user', { credentials: 'include' }).then(r => r.json());
@@ -48,54 +68,93 @@ console.log("[Custom Patch] index.js loaded ✅ v1.3.3");
       const data = await res.json();
       const email = profile?.email?.toLowerCase();
       const userIndex = data.Email?.findIndex(e => e?.toLowerCase() === email);
-      if (userIndex === -1) return { canAdd: false, canExport: false };
+      if (userIndex === -1) {
+        console.log("[Custom Patch] User not found in SysUsers table. All permissions denied.");
+        return { canAdd: false, canExport: false };
+      }
 
-      return {
-        canAdd: data.Unlock_Structure?.[userIndex] === true,
-        canExport: data.Export_Data?.[userIndex] === true,
-      };
+      const canAdd = data.Unlock_Structure?.[userIndex] === true;
+      const canExport = data.Export_Data?.[userIndex] === true;
+
+      console.log(`[Custom Patch] Permissions for ${email}: Add Column = ${canAdd}, Export = ${canExport}`);
+      return { canAdd, canExport };
     } catch (err) {
       console.warn("[Custom Patch] ❌ Permission lookup failed", err);
       return { canAdd: false, canExport: false };
     }
   }
 
-  // 🌐 Native Grist-style alert popup (lower-right corner)
-  function showAlert(msg, type = 'error') {
-    const event = new CustomEvent('uiShowToast', {
-      detail: { text: msg, type, timeout: 5000 }
-    });
-    window.dispatchEvent(event);
-  }
-
-  function observeAndHide(selector, visible, messageIfHidden) {
+  // === 4. Observe the DOM for specific UI elements and hide/show based on permissions ===
+  function observeAndHide(selector, visible, label) {
     const apply = () => {
       const found = document.querySelectorAll(selector);
       if (!visible && found.length) {
         found.forEach(el => el.style.display = 'none');
-        if (messageIfHidden) showAlert(messageIfHidden);
-      } else if (visible) {
+        console.log(`[Custom Patch] Hiding ${label} (${selector}) due to permission restriction.`);
+      } else if (visible && found.length) {
         found.forEach(el => el.style.display = '');
+        console.log(`[Custom Patch] Showing ${label} (${selector}) as user has permission.`);
       }
     };
     apply();
     new MutationObserver(apply).observe(document.body, { childList: true, subtree: true });
   }
 
+  // === 5. Main logic: Apply all visibility controls after permissions are loaded ===
   async function applyVisibilityControls() {
     const docId = await getDocId();
     if (!docId) return;
 
     const perms = await getCurrentUserPermissions(docId);
-    console.log(`[Custom Patch] 🧾 Permissions — Add: ${perms.canAdd}, Export: ${perms.canExport}`);
 
-    observeAndHide('.mod-add-column', perms.canAdd, "❌ You don't have permission to add columns.");
-    observeAndHide('.test-tb-share', perms.canExport, "❌ You don't have permission to share.");
-    observeAndHide('.test-download-section', perms.canExport, "❌ You don't have permission to download data.");
+    // --- HIDE/SHOW ADD COLUMN BUTTON ---
+    observeAndHide('.mod-add-column', perms.canAdd, 'Add Column Button');
+
+    // --- HIDE/SHOW SHARE ICON ---
+    observeAndHide('.test-tb-share', perms.canExport, 'Share Icon');
+
+    // --- HIDE/SHOW DOWNLOAD/EXPORT OPTIONS ---
+    observeAndHide('.test-download-section', perms.canExport, 'Download/Export Option');
   }
 
+  // === 6. DEV banner: show a 5px banner at top if doc name contains "DEV -" ===
+  async function maybeShowDevBanner() {
+    const docId = await getDocId();
+    if (!docId) return;
+    try {
+      const res = await fetch(`/api/docs/${docId}`, { credentials: 'include' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.name && data.name.includes('DEV -')) {
+        // Insert banner if not already present
+        if (!document.getElementById('custom-global-banner')) {
+          const banner = document.createElement('div');
+          banner.id = 'custom-global-banner';
+          Object.assign(banner.style, {
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '5px',
+            background: '#e91e63',
+            zIndex: '9999'
+          });
+          document.body.prepend(banner);
+          document.body.style.marginTop = '5px';
+          console.log("[Custom Patch] DEV banner displayed (document name includes 'DEV -').");
+        }
+      } else {
+        console.log("[Custom Patch] DEV banner not displayed (document name does not include 'DEV -').");
+      }
+    } catch (err) {
+      console.warn("[Custom Patch] ❌ DEV banner logic failed", err);
+    }
+  }
+
+  // === 7. Run everything on window load ===
   window.addEventListener('load', () => {
     console.log("[Custom Patch] ⏳ window.onload fallback triggered");
     applyVisibilityControls();
+    maybeShowDevBanner();
   });
 })();

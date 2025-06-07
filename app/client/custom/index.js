@@ -8,14 +8,14 @@
   Purpose:
     Restricts visibility and access to sensitive UI actions in Grist (Add Column, Share, Download)
     based on per-user permissions set in the SysUsers table of the current document.
-    Also displays a 5px pink banner at the top for documents with "DEV -" in the name.
+    Also displays a 10px pink banner at the top for documents with "- DEV" in the name.
 
   Features:
     - Hides “Add Column” (“+”) button if the user does not have Unlock_Structure = true.
     - Hides “Share” icon if the user does not have Export_Data = true.
     - Hides “Download/Export” options if the user does not have Export_Data = true.
     - Permissions are dynamically loaded and enforced every time the page loads.
-    - Shows a 5px high pink banner at the top if document name contains "DEV -".
+    - Shows a 10px high pink banner with a message at the top if document name contains "- DEV".
 
   Implementation:
     - Captures the current docId as soon as possible (even if Grist is slow to set it)
@@ -23,10 +23,10 @@
     - Uses MutationObservers to continually hide/show elements as the UI updates
     - Uses the Grist API to get the document name and displays the DEV banner if needed
 
-  Version: v1.4.0
+  Version: v1.4.1
 ===================================================================================*/
 
-console.log("[Custom Patch] index.js loaded ✅ v1.4.0");
+console.log("[Custom Patch] index.js loaded ✅ v1.4.1");
 
 (function () {
   let capturedDocId = null;
@@ -117,7 +117,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.4.0");
     observeAndHide('.test-download-section', perms.canExport, 'Download/Export Option');
   }
 
-  // === 6. DEV banner: show a 5px banner at top if doc name contains "DEV -" ===
+  // === 6. DEV banner: show a 10px banner at top if doc name contains "- DEV" ===
   async function maybeShowDevBanner() {
     const docId = await getDocId();
     if (!docId) return;
@@ -125,26 +125,35 @@ console.log("[Custom Patch] index.js loaded ✅ v1.4.0");
       const res = await fetch(`/api/docs/${docId}`, { credentials: 'include' });
       if (!res.ok) return;
       const data = await res.json();
-      if (data.name && data.name.includes('DEV -')) {
+      if (data.name && data.name.includes('- DEV')) {
         // Insert banner if not already present
         if (!document.getElementById('custom-global-banner')) {
           const banner = document.createElement('div');
           banner.id = 'custom-global-banner';
+          banner.innerText = 'DEV ENVIRONMENT – This is a test document';
           Object.assign(banner.style, {
             position: 'fixed',
             top: '0',
             left: '0',
             width: '100%',
-            height: '5px',
-            background: '#e91e63',
-            zIndex: '9999'
+            height: '10px',
+            background: '#f48fb1',
+            color: '#333',
+            fontWeight: 'bold',
+            fontSize: '10px',
+            textAlign: 'center',
+            lineHeight: '10px',
+            letterSpacing: '1px',
+            zIndex: '9999',
+            overflow: 'hidden',
+            whiteSpace: 'nowrap'
           });
           document.body.prepend(banner);
-          document.body.style.marginTop = '5px';
-          console.log("[Custom Patch] DEV banner displayed (document name includes 'DEV -').");
+          document.body.style.marginTop = '10px';
+          console.log("[Custom Patch] DEV banner displayed (document name includes '- DEV').");
         }
       } else {
-        console.log("[Custom Patch] DEV banner not displayed (document name does not include 'DEV -').");
+        console.log("[Custom Patch] DEV banner not displayed (document name does not include '- DEV').");
       }
     } catch (err) {
       console.warn("[Custom Patch] ❌ DEV banner logic failed", err);

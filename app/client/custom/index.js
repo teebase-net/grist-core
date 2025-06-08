@@ -9,11 +9,14 @@
     Restricts visibility and access to sensitive UI actions in Grist (Add Column, Share, Download)
     based on per-user permissions set in the SysUsers table of the current document.
     Also displays a 10px pink banner at the top for documents with "- DEV" in the name.
+    Hides "Insert column to the left" and "Insert column to the right" menu options
+    in the column header dropdown if user lacks Export_Data permission.
 
   Features:
     - Hides “Add Column” (“+”) button if the user does not have Unlock_Structure = true.
     - Hides “Share” icon if the user does not have Export_Data = true.
     - Hides “Download/Export” options if the user does not have Export_Data = true.
+    - Hides "Insert column to the left/right" menu items in the column menu if user lacks Export_Data = true.
     - Permissions are dynamically loaded and enforced every time the page loads.
     - Shows a 10px high pink banner with a message at the top if document name contains "- DEV".
 
@@ -23,10 +26,10 @@
     - Uses MutationObservers to continually hide/show elements as the UI updates
     - Uses the Grist API to get the document name and displays the DEV banner if needed
 
-  Version: v1.4.1
+  Version: v1.4.2
 ===================================================================================*/
 
-console.log("[Custom Patch] index.js loaded ✅ v1.4.1");
+console.log("[Custom Patch] index.js loaded ✅ v1.4.2");
 
 (function () {
   let capturedDocId = null;
@@ -100,7 +103,35 @@ console.log("[Custom Patch] index.js loaded ✅ v1.4.1");
     new MutationObserver(apply).observe(document.body, { childList: true, subtree: true });
   }
 
-  // === 5. Main logic: Apply all visibility controls after permissions are loaded ===
+  // === 5. Hide "Insert column to the left/right" in column menu if user lacks Export_Data permission ===
+  /**
+   * Hides "Insert column to the left" and "Insert column to the right" menu items
+   * from all Grist column header dropdown menus if `allowed` is false.
+   * Uses MutationObserver to watch for menu re-renders.
+   *
+   * @param {boolean} allowed - Whether the user has Export_Data permission
+   */
+  function hideInsertColumnOptions(allowed) {
+    const hideIfNeeded = () => {
+      document.querySelectorAll('.test-cmd-name').forEach(span => {
+        const label = span.textContent?.trim();
+        if (
+          (label === 'Insert column to the left' || label === 'Insert column to the right') &&
+          !allowed
+        ) {
+          const li = span.closest('li');
+          if (li && li.style.display !== 'none') {
+            li.style.display = 'none';
+            console.log(`[Custom Patch] Hiding column menu option: ${label} (no Export_Data permission)`);
+          }
+        }
+      });
+    };
+    hideIfNeeded();
+    new MutationObserver(hideIfNeeded).observe(document.body, { childList: true, subtree: true });
+  }
+
+  // === 6. Main logic: Apply all visibility controls after permissions are loaded ===
   async function applyVisibilityControls() {
     const docId = await getDocId();
     if (!docId) return;
@@ -115,9 +146,12 @@ console.log("[Custom Patch] index.js loaded ✅ v1.4.1");
 
     // --- HIDE/SHOW DOWNLOAD/EXPORT OPTIONS ---
     observeAndHide('.test-download-section', perms.canExport, 'Download/Export Option');
+
+    // --- HIDE/SHOW INSERT COLUMN MENU OPTIONS ---
+    hideInsertColumnOptions(perms.canExport);
   }
 
-  // === 6. DEV banner: show a 10px banner at top if doc name contains "- DEV" ===
+  // === 7. DEV banner: show a 10px banner at top if doc name contains "- DEV" ===
   async function maybeShowDevBanner() {
     const docId = await getDocId();
     if (!docId) return;
@@ -160,7 +194,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.4.1");
     }
   }
 
-  // === 7. Run everything on window load ===
+  // === 8. Run everything on window load ===
   window.addEventListener('load', () => {
     console.log("[Custom Patch] ⏳ window.onload fallback triggered");
     applyVisibilityControls();

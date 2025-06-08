@@ -146,7 +146,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
         if (span.textContent?.trim() === 'Delete widget') {
           span.style.color = 'red';
           span.style.fontStyle = 'italic';
-          span.style.fontWeight = 'bold';
+          //span.style.fontWeight = 'bold';
           // Optionally add a warning emoji:
           // if (!span.innerText.startsWith('⚠️ ')) span.innerText = "⚠️ " + span.innerText;
         }

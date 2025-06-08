@@ -144,30 +144,32 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
   }
 
   // === 6b. Highlight Card widget background if "Edit" field is true ===
-  // MOD DMH START - Card highlight on "Edit"
+  // MOD DMH START - Card highlight on "Edit" (for .g_record_detail structure)
   function highlightCardEditField() {
     const CARD_BG_HIGHLIGHT = "#FCE4EC";
     const apply = () => {
-      document.querySelectorAll('.test-card-widget').forEach(cardWidget => {
-        cardWidget.querySelectorAll('.test-card-record').forEach(card => {
-          let found = false;
-          card.querySelectorAll('.test-card-field').forEach(field => {
-            const label = field.querySelector('.test-card-label');
-            const value = field.querySelector('.test-card-value');
-            if (label && label.textContent.trim() === 'Edit' && value) {
-              const fieldVal = value.textContent.trim().toLowerCase();
-              if (fieldVal === 'true' || fieldVal === 'yes' || fieldVal === '✓') {
-                found = true;
-              }
+      // Find all cards (g_record_detail)
+      document.querySelectorAll('.g_record_detail').forEach(card => {
+        let found = false;
+        // For each card, scan for all fields
+        card.querySelectorAll('.g_record_detail_el').forEach(fieldEl => {
+          const label = fieldEl.querySelector('.g_record_detail_label');
+          const value = fieldEl.querySelector('.g_record_detail_value');
+          if (label && label.textContent.trim() === 'Edit' && value) {
+            // Boolean fields are rendered as checked/unchecked switch or checkbox
+            // Detect if switch is "on" (true)
+            const switchDiv = value.querySelector('.widget_switch');
+            if (switchDiv && switchDiv.classList.contains('switch_on')) {
+              found = true;
             }
-          });
-          // Set or reset card background
-          if (found) {
-            card.style.backgroundColor = CARD_BG_HIGHLIGHT;
-          } else {
-            card.style.backgroundColor = '';
           }
         });
+        // Set or reset card background
+        if (found) {
+          card.style.backgroundColor = CARD_BG_HIGHLIGHT;
+        } else {
+          card.style.backgroundColor = '';
+        }
       });
     };
     apply();

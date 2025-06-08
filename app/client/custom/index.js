@@ -13,7 +13,6 @@
     in the column header dropdown if user lacks Export_Data permission.
     Highlights all "Delete widget" menu options in all widgets (Card, Table, etc.) in red and italics
     to reduce the risk of accidental selection.
-    Highlights Card widgets where "Edit" field is true.
 
   Features:
     - Hides “Add Column” (“+”) button if the user does not have Unlock_Structure = true.
@@ -21,7 +20,6 @@
     - Hides “Download/Export” options if the user does not have Export_Data = true.
     - Hides "Insert column to the left/right" menu items in the column menu if user lacks Export_Data = true.
     - Styles all "Delete widget" menu options (across all widgets) in red italic bold to make them visually distinct and reduce accidental deletion risk.
-    - Highlights Card widget background with #FCE4EC if "Edit" field is true; removes color if not.
     - Permissions are dynamically loaded and enforced every time the page loads.
     - Shows a 10px high pink banner with a message at the top if document name contains "- DEV".
 
@@ -143,40 +141,6 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
     new MutationObserver(highlight).observe(document.body, { childList: true, subtree: true });
   }
 
-  // === 6b. Highlight Card widget background if "Edit" field is true ===
-  // MOD DMH START - Card highlight on "Edit" (for .g_record_detail structure)
-  function highlightCardEditField() {
-    const CARD_BG_HIGHLIGHT = "#FCE4EC";
-    const apply = () => {
-      // Find all cards (g_record_detail)
-      document.querySelectorAll('.g_record_detail').forEach(card => {
-        let found = false;
-        // For each card, scan for all fields
-        card.querySelectorAll('.g_record_detail_el').forEach(fieldEl => {
-          const label = fieldEl.querySelector('.g_record_detail_label');
-          const value = fieldEl.querySelector('.g_record_detail_value');
-          if (label && label.textContent.trim() === 'Edit' && value) {
-            // Boolean fields are rendered as checked/unchecked switch or checkbox
-            // Detect if switch is "on" (true)
-            const switchDiv = value.querySelector('.widget_switch');
-            if (switchDiv && switchDiv.classList.contains('switch_on')) {
-              found = true;
-            }
-          }
-        });
-        // Set or reset card background
-        if (found) {
-          card.style.backgroundColor = CARD_BG_HIGHLIGHT;
-        } else {
-          card.style.backgroundColor = '';
-        }
-      });
-    };
-    apply();
-    new MutationObserver(apply).observe(document.body, { childList: true, subtree: true });
-  }
-  // MOD DMH END - Card highlight on "Edit"
-
   // === 7. Main logic: Apply all visibility controls after permissions are loaded ===
   async function applyVisibilityControls() {
     const docId = await getDocId();
@@ -198,11 +162,6 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
 
     // --- STYLE ALL "DELETE WIDGET" MENU OPTIONS ---
     highlightDeleteWidget();
-
-    // --- HIGHLIGHT CARDS WITH "Edit" === true ---
-    // MOD DMH
-    highlightCardEditField();
-    // end MOD DMH
   }
 
   // === 8. DEV banner: show a 10px banner at top if doc name contains "- DEV" ===

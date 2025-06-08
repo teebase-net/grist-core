@@ -11,12 +11,15 @@
     Also displays a 10px pink banner at the top for documents with "- DEV" in the name.
     Hides "Insert column to the left" and "Insert column to the right" menu options
     in the column header dropdown if user lacks Export_Data permission.
+    Highlights all "Delete widget" menu options in all widgets (Card, Table, etc.) in red and italics
+    to reduce the risk of accidental selection.
 
   Features:
     - Hides “Add Column” (“+”) button if the user does not have Unlock_Structure = true.
     - Hides “Share” icon if the user does not have Export_Data = true.
     - Hides “Download/Export” options if the user does not have Export_Data = true.
     - Hides "Insert column to the left/right" menu items in the column menu if user lacks Export_Data = true.
+    - Styles all "Delete widget" menu options (across all widgets) in red italic bold to make them visually distinct and reduce accidental deletion risk.
     - Permissions are dynamically loaded and enforced every time the page loads.
     - Shows a 10px high pink banner with a message at the top if document name contains "- DEV".
 
@@ -26,10 +29,10 @@
     - Uses MutationObservers to continually hide/show elements as the UI updates
     - Uses the Grist API to get the document name and displays the DEV banner if needed
 
-  Version: v1.4.2
+  Version: v1.5.0
 ===================================================================================*/
 
-console.log("[Custom Patch] index.js loaded ✅ v1.4.2");
+console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
 
 (function () {
   let capturedDocId = null;
@@ -131,7 +134,29 @@ console.log("[Custom Patch] index.js loaded ✅ v1.4.2");
     new MutationObserver(hideIfNeeded).observe(document.body, { childList: true, subtree: true });
   }
 
-  // === 6. Main logic: Apply all visibility controls after permissions are loaded ===
+  // === 6. Highlight all "Delete widget" menu options across all widgets ===
+  /**
+   * Highlights all "Delete widget" menu options (Card, Table, etc.) in red and italics,
+   * to warn users and help prevent accidental deletion.
+   * Uses MutationObserver to apply the style every time the menu is rendered.
+   */
+  function highlightDeleteWidget() {
+    const highlight = () => {
+      document.querySelectorAll('.test-cmd-name').forEach(span => {
+        if (span.textContent?.trim() === 'Delete widget') {
+          span.style.color = 'red';
+          span.style.fontStyle = 'italic';
+          span.style.fontWeight = 'bold';
+          // Optionally add a warning emoji:
+          // if (!span.innerText.startsWith('⚠️ ')) span.innerText = "⚠️ " + span.innerText;
+        }
+      });
+    };
+    highlight();
+    new MutationObserver(highlight).observe(document.body, { childList: true, subtree: true });
+  }
+
+  // === 7. Main logic: Apply all visibility controls after permissions are loaded ===
   async function applyVisibilityControls() {
     const docId = await getDocId();
     if (!docId) return;
@@ -149,9 +174,12 @@ console.log("[Custom Patch] index.js loaded ✅ v1.4.2");
 
     // --- HIDE/SHOW INSERT COLUMN MENU OPTIONS ---
     hideInsertColumnOptions(perms.canExport);
+
+    // --- STYLE ALL "DELETE WIDGET" MENU OPTIONS ---
+    highlightDeleteWidget();
   }
 
-  // === 7. DEV banner: show a 10px banner at top if doc name contains "- DEV" ===
+  // === 8. DEV banner: show a 10px banner at top if doc name contains "- DEV" ===
   async function maybeShowDevBanner() {
     const docId = await getDocId();
     if (!docId) return;
@@ -194,7 +222,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.4.2");
     }
   }
 
-  // === 8. Run everything on window load ===
+  // === 9. Run everything on window load ===
   window.addEventListener('load', () => {
     console.log("[Custom Patch] ⏳ window.onload fallback triggered");
     applyVisibilityControls();

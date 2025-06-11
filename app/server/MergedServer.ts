@@ -9,11 +9,6 @@ import {FlexServer, FlexServerOptions} from 'app/server/lib/FlexServer';
 import log from 'app/server/lib/log';
 import {getGlobalConfig} from "app/server/lib/globalConfig";
 
-// MOD DMH
-import {Request, Response, NextFunction} from 'express';
-import {parse as parseUrl} from 'url';
-// end MOD DMH
-
 // Allowed server types. We'll start one or a combination based on the value of GRIST_SERVERS
 // environment variable.
 export type ServerType = "home" | "docs" | "static" | "app";
@@ -132,35 +127,6 @@ export class MergedServer {
     ms.flexServer.addAccessMiddleware();
     ms.flexServer.addApiMiddleware();
     ms.flexServer.addBillingMiddleware();
-
-// MOD DMH - allow iframe embedding from same origin based on APP_HOME_URL
-const appHomeUrl = process.env.APP_HOME_URL;
-let allowedOrigin = '';
-
-if (appHomeUrl) {
-  try {
-    const parsed = parseUrl(appHomeUrl);
-    if (parsed.protocol && parsed.host) {
-      allowedOrigin = `${parsed.protocol}//${parsed.host}`;
-    }
-  } catch (err) {
-    console.warn('⚠️ Failed to parse APP_HOME_URL:', err);
-  }
-}
-
-if (allowedOrigin) {
-  ms.flexServer.app.use((req: Request, res: Response, next: NextFunction) => {
-    const origin = req.get('origin') || '';
-    if (origin.startsWith(allowedOrigin)) {
-      res.removeHeader('X-Frame-Options');
-      res.setHeader('Content-Security-Policy', `frame-ancestors 'self' ${allowedOrigin}`);
-    }
-    next();
-  });
-}
-// end MOD DMH
-
-    
     return ms;
   }
 

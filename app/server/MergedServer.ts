@@ -9,6 +9,11 @@ import {FlexServer, FlexServerOptions} from 'app/server/lib/FlexServer';
 import log from 'app/server/lib/log';
 import {getGlobalConfig} from "app/server/lib/globalConfig";
 
+// MOD DMH
+import {Request, Response, NextFunction} from 'express';
+import {parse as parseUrl} from 'url';
+// end MOD DMH
+
 // Allowed server types. We'll start one or a combination based on the value of GRIST_SERVERS
 // environment variable.
 export type ServerType = "home" | "docs" | "static" | "app";
@@ -127,9 +132,6 @@ export class MergedServer {
     ms.flexServer.addAccessMiddleware();
     ms.flexServer.addApiMiddleware();
     ms.flexServer.addBillingMiddleware();
-
-import {Request, Response, NextFunction} from 'express';
-import {parse as parseUrl} from 'url';
 
 // MOD DMH - allow iframe embedding from same origin based on APP_HOME_URL
 const appHomeUrl = process.env.APP_HOME_URL;

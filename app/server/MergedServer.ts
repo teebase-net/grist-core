@@ -128,6 +128,37 @@ export class MergedServer {
     ms.flexServer.addApiMiddleware();
     ms.flexServer.addBillingMiddleware();
 
+import {Request, Response, NextFunction} from 'express';
+import {parse as parseUrl} from 'url';
+
+// MOD DMH - allow iframe embedding from same origin based on APP_HOME_URL
+const appHomeUrl = process.env.APP_HOME_URL;
+let allowedOrigin = '';
+
+if (appHomeUrl) {
+  try {
+    const parsed = parseUrl(appHomeUrl);
+    if (parsed.protocol && parsed.host) {
+      allowedOrigin = `${parsed.protocol}//${parsed.host}`;
+    }
+  } catch (err) {
+    console.warn('⚠️ Failed to parse APP_HOME_URL:', err);
+  }
+}
+
+if (allowedOrigin) {
+  ms.flexServer.app.use((req: Request, res: Response, next: NextFunction) => {
+    const origin = req.get('origin') || '';
+    if (origin.startsWith(allowedOrigin)) {
+      res.removeHeader('X-Frame-Options');
+      res.setHeader('Content-Security-Policy', `frame-ancestors 'self' ${allowedOrigin}`);
+    }
+    next();
+  });
+}
+// end MOD DMH
+
+    
     return ms;
   }
 

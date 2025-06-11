@@ -34,21 +34,6 @@
 
 console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
 
-
-// MOD DMH - allow iframe embedding for same-origin only
-app.use((req, res, next) => {
-  const origin = req.get('origin') || '';
-  if (origin.startsWith('https://dev.teebase.net')) {
-    res.removeHeader('X-Frame-Options');
-    res.removeHeader('Content-Security-Policy');
-  }
-  next();
-});
-// end MOD DMH
-
-
-
-
 (function () {
   let capturedDocId = null;
 

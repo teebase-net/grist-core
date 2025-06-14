@@ -27,28 +27,6 @@
     return origOpenDoc.apply(this, args);
   };
 
-  // === 2. Utility: Wait for DOM element ===
-  function waitForElement(selector, timeout = 5000) {
-    return new Promise((resolve, reject) => {
-      const el = document.querySelector(selector);
-      if (el) return resolve(el);
-
-      const observer = new MutationObserver(() => {
-        const el = document.querySelector(selector);
-        if (el) {
-          observer.disconnect();
-          resolve(el);
-        }
-      });
-
-      observer.observe(document.body, { childList: true, subtree: true });
-      setTimeout(() => {
-        observer.disconnect();
-        reject(`Timeout waiting for ${selector}`);
-      }, timeout);
-    });
-  }
-
   // === 3. Load current user's permissions from SysUsers table in the current document ===
   async function getCurrentUserPermissions(docId) {
     try {

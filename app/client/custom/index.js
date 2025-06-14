@@ -214,3 +214,63 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
     maybeShowDevBanner();
   });
 })();
+
+
+// MOD DMH
+/**
+ * Patch: Hide UI controls for the LabelBlock widget.
+ *
+ * Purpose:
+ * - For widgets loaded from https://widgets.teebase.net/labelblock,
+ *   hide unnecessary UI chrome such as widget title, filter buttons, and layout menu.
+ * - Only applies if:
+ *     a) The current user is NOT an Owner, OR
+ *     b) The document setting `unlock_structure` is false.
+ *
+ * Elements hidden (when applicable):
+ *   1. .test-widget-title-text          → widget title text (e.g. "LABELS Custom")
+ *   2. .test-filter-field               → block filter dropdown
+ *   3. .test-section-menu-sortAndFilter→ filter icon menu
+ *   4. .test-section-menu-viewLayout   → "Dots" menu icon (layout & config)
+ *
+ * Implementation:
+ * - Waits 1500ms after load to ensure DOM is ready.
+ * - Also installs MutationObserver to respond to late-rendered widgets.
+ */
+
+function hideLabelBlockControls() {
+  const isOwner = window.gristDoc?.app?.currentUser?.access === 'owners';
+  const unlockStructure = window.gristDoc?.app?.model?.docInfo?.unlock_structure;
+
+  if (isOwner && unlockStructure) return;
+
+  const labelBlockIframes = [...document.querySelectorAll('iframe[src*="widgets.teebase.net/labelblock"]')];
+
+  for (const iframe of labelBlockIframes) {
+    const widgetBox = iframe.closest('.test-widget');
+    if (!widgetBox) continue;
+
+    // 1. Widget title
+    const titleEl = widgetBox.querySelector('.test-widget-title-text');
+    if (titleEl) titleEl.style.display = 'none';
+
+    // 2. Filter dropdown
+    const filterBtn = widgetBox.querySelector('.test-filter-field');
+    if (filterBtn) filterBtn.style.display = 'none';
+
+    // 3. Filter icon
+    const filterIcon = widgetBox.querySelector('.test-section-menu-sortAndFilter');
+    if (filterIcon) filterIcon.style.display = 'none';
+
+    // 4. Dots menu
+    const layoutMenu = widgetBox.querySelector('.test-section-menu-viewLayout');
+    if (layoutMenu) layoutMenu.style.display = 'none';
+  }
+}
+
+setTimeout(hideLabelBlockControls, 1500);
+
+const observer = new MutationObserver(hideLabelBlockControls);
+observer.observe(document.body, {childList: true, subtree: true});
+// end MOD DMH
+

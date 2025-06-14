@@ -154,39 +154,37 @@ function hideLabelBlockControls() {
     return;
   }
 
-  const labelBlockIframes = [...document.querySelectorAll('iframe[src*="widgets.teebase.net/labelblock"]')];
-  console.log(`[LabelBlock Patch] Found ${labelBlockIframes.length} labelblock widget(s).`);
+  const iframes = [...document.querySelectorAll('iframe[src*="widgets.teebase.net/labelblock"]')];
+  console.log(`[LabelBlock Patch] Found ${iframes.length} labelblock iframe(s).`);
 
-  for (const iframe of labelBlockIframes) {
-    // Climb to outer section wrapper
-    let viewSection = iframe.closest('.viewsection');
-    if (!viewSection) continue;
+  for (const iframe of iframes) {
+    const section = iframe.closest('.view_leaf.viewsection_content');
+    if (!section) {
+      console.warn("[LabelBlock Patch] ⚠️ Couldn't find viewsection container for iframe.");
+      continue;
+    }
 
-    // 1. Widget title
-    const titleEl = viewSection.querySelector('.test-widget-title-text');
-    if (titleEl) {
-      titleEl.style.display = 'none';
+    const title = section.querySelector('.test-widget-title-text');
+    if (title) {
+      title.style.display = 'none';
       console.log("[LabelBlock Patch] ✅ Hiding widget title.");
     }
 
-    // 2. Filter dropdown
-    const filterBtn = viewSection.querySelector('.test-filter-field');
+    const filterBtn = section.querySelector('.test-filter-field');
     if (filterBtn) {
       filterBtn.style.display = 'none';
       console.log("[LabelBlock Patch] ✅ Hiding filter button.");
     }
 
-    // 3. Filter icon
-    const filterIcon = viewSection.querySelector('.test-section-menu-sortAndFilter');
+    const filterIcon = section.querySelector('.test-section-menu-sortAndFilter');
     if (filterIcon) {
       filterIcon.style.display = 'none';
       console.log("[LabelBlock Patch] ✅ Hiding filter icon.");
     }
 
-    // 4. Dots menu
-    const layoutMenu = viewSection.querySelector('.test-section-menu-viewLayout');
-    if (layoutMenu) {
-      layoutMenu.style.display = 'none';
+    const dotsMenu = section.querySelector('.test-section-menu-viewLayout');
+    if (dotsMenu) {
+      dotsMenu.style.display = 'none';
       console.log("[LabelBlock Patch] ✅ Hiding layout (dots) menu.");
     }
   }

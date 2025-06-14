@@ -156,7 +156,10 @@ function hideLabelBlockControls() {
   console.log(`[LabelBlock Patch] Found ${labelBlockIframes.length} labelblock widget(s).`);
 
   for (const iframe of labelBlockIframes) {
-    const widgetBox = iframe.closest('.test-widget');
+    let widgetBox = iframe.parentElement;
+    while (widgetBox && !widgetBox.classList.contains('test-widget')) {
+      widgetBox = widgetBox.parentElement;
+    }
     if (!widgetBox) continue;
 
     // 1. Widget title

@@ -1,3 +1,5 @@
+/* eslint-env browser */
+
 // == Custom Patch: index.js override ==
 // Version: v1.5.2
 // Purpose: Enforce UI restrictions and tweaks based on SysUsers table permissions.

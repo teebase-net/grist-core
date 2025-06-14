@@ -143,39 +143,69 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
   }
 
   // === 7. Hide elements from LabelBlock widgets unless owner with Unlock_Structure ===
-  function hideLabelBlockControls(allowed) {
+function hideLabelBlockControls() {
+  const isOwner = window.gristDoc?.app?.currentUser?.access === 'owners';
+  const unlockStructure = window.gristDoc?.app?.model?.docInfo?.unlock_structure;
 
-    console.log("[LabelBlock Patch] Checking for labelblock widgets...");
-    const labelBlockIframes = [...document.querySelectorAll('iframe[src*="widgets.teebase.net/labelblock"]')];
-    console.log(`[LabelBlock Patch] Found ${labelBlockIframes.length} labelblock widget(s).`);
-
-    const hideIfNeeded = () => {
-      const labelBlockIframes = [...document.querySelectorAll('iframe[src*="widgets.teebase.net/labelblock"]')];
-      for (const iframe of labelBlockIframes) {
-        const widgetBox = iframe.closest('.test-widget');
-        if (!widgetBox) continue;
-
-        // 1. Widget title
-        const titleEl = widgetBox.querySelector('.test-widget-title-text');
-        if (titleEl) titleEl.style.display = allowed ? '' : 'none';
-
-        // 2. Filter dropdown
-        const filterBtn = widgetBox.querySelector('.test-filter-field');
-        if (filterBtn) filterBtn.style.display = allowed ? '' : 'none';
-
-        // 3. Filter icon
-        const filterIcon = widgetBox.querySelector('.test-section-menu-sortAndFilter');
-        if (filterIcon) filterIcon.style.display = allowed ? '' : 'none';
-
-        // 4. Dots menu
-        const layoutMenu = widgetBox.querySelector('.test-section-menu-viewLayout');
-        if (layoutMenu) layoutMenu.style.display = allowed ? '' : 'none';
-      }
-    };
-    hideIfNeeded();
-    new MutationObserver(hideIfNeeded).observe(document.body, { childList: true, subtree: true });
+  if (isOwner && unlockStructure) {
+    console.log("[LabelBlock Patch] 🛑 User is owner with unlock_structure: no hiding applied.");
+    return;
   }
 
+  const labelBlockIframes = [...document.querySelectorAll('iframe[src*="widgets.teebase.net/labelblock"]')];
+  console.log(`[LabelBlock Patch] Found ${labelBlockIframes.length} labelblock widget(s).`);
+
+  for (const iframe of labelBlockIframes) {
+    const widgetBox = iframe.closest('.test-widget');
+    if (!widgetBox) continue;
+
+    // 1. Widget title
+    const titleEl = widgetBox.querySelector('.test-widget-title-text');
+    if (titleEl) {
+      titleEl.style.display = 'none';
+      console.log("[LabelBlock Patch] Hiding widget title.");
+    }
+
+    // 2. Filter dropdown
+    const filterBtn = widgetBox.querySelector('.test-filter-field');
+    if (filterBtn) {
+      filterBtn.style.display = 'none';
+      console.log("[LabelBlock Patch] Hiding filter button.");
+    }
+
+    // 3. Filter icon
+    const filterIcon = widgetBox.querySelector('.test-section-menu-sortAndFilter');
+    if (filterIcon) {
+      filterIcon.style.display = 'none';
+      console.log("[LabelBlock Patch] Hiding filter icon.");
+    }
+
+    // 4. Dots menu
+    const layoutMenu = widgetBox.querySelector('.test-section-menu-viewLayout');
+    if (layoutMenu) {
+      layoutMenu.style.display = 'none';
+      console.log("[LabelBlock Patch] Hiding layout (dots) menu.");
+    }
+  }
+}
+
+// === Polling strategy to wait for iframe to load ===
+(function pollForLabelBlock(retries = 10) {
+  const labelBlockIframes = [...document.querySelectorAll('iframe[src*="widgets.teebase.net/labelblock"]')];
+  console.log(`[LabelBlock Patch] Polling... found ${labelBlockIframes.length} iframe(s).`);
+  if (labelBlockIframes.length > 0) {
+    hideLabelBlockControls();
+  } else if (retries > 0) {
+    setTimeout(() => pollForLabelBlock(retries - 1), 500);
+  } else {
+    console.warn("[LabelBlock Patch] ❌ Timed out waiting for labelblock widget.");
+  }
+})();
+
+// === Fallback: MutationObserver for future widgets ===
+const observer = new MutationObserver(hideLabelBlockControls);
+observer.observe(document.body, { childList: true, subtree: true });
+// end MOD DMH
   // === 8. Main logic: Apply all visibility controls after permissions are loaded ===
   async function applyVisibilityControls() {
     const docId = await getDocId();

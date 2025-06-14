@@ -134,6 +134,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
         if (span.textContent?.trim() === 'Delete widget') {
           span.style.color = 'red';
           span.style.fontStyle = 'italic';
+          span.style.fontWeight = 'bold';
         }
       });
     };
@@ -141,30 +142,51 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
     new MutationObserver(highlight).observe(document.body, { childList: true, subtree: true });
   }
 
-  // === 7. Main logic: Apply all visibility controls after permissions are loaded ===
+  // === 7. Hide elements from LabelBlock widgets unless owner with Unlock_Structure ===
+  function hideLabelBlockControls(allowed) {
+    const hideIfNeeded = () => {
+      const labelBlockIframes = [...document.querySelectorAll('iframe[src*="widgets.teebase.net/labelblock"]')];
+      for (const iframe of labelBlockIframes) {
+        const widgetBox = iframe.closest('.test-widget');
+        if (!widgetBox) continue;
+
+        // 1. Widget title
+        const titleEl = widgetBox.querySelector('.test-widget-title-text');
+        if (titleEl) titleEl.style.display = allowed ? '' : 'none';
+
+        // 2. Filter dropdown
+        const filterBtn = widgetBox.querySelector('.test-filter-field');
+        if (filterBtn) filterBtn.style.display = allowed ? '' : 'none';
+
+        // 3. Filter icon
+        const filterIcon = widgetBox.querySelector('.test-section-menu-sortAndFilter');
+        if (filterIcon) filterIcon.style.display = allowed ? '' : 'none';
+
+        // 4. Dots menu
+        const layoutMenu = widgetBox.querySelector('.test-section-menu-viewLayout');
+        if (layoutMenu) layoutMenu.style.display = allowed ? '' : 'none';
+      }
+    };
+    hideIfNeeded();
+    new MutationObserver(hideIfNeeded).observe(document.body, { childList: true, subtree: true });
+  }
+
+  // === 8. Main logic: Apply all visibility controls after permissions are loaded ===
   async function applyVisibilityControls() {
     const docId = await getDocId();
     if (!docId) return;
 
     const perms = await getCurrentUserPermissions(docId);
 
-    // --- HIDE/SHOW ADD COLUMN BUTTON ---
     observeAndHide('.mod-add-column', perms.canAdd, 'Add Column Button');
-
-    // --- HIDE/SHOW SHARE ICON ---
     observeAndHide('.test-tb-share', perms.canExport, 'Share Icon');
-
-    // --- HIDE/SHOW DOWNLOAD/EXPORT OPTIONS ---
     observeAndHide('.test-download-section', perms.canExport, 'Download/Export Option');
-
-    // --- HIDE/SHOW INSERT COLUMN MENU OPTIONS ---
     hideInsertColumnOptions(perms.canExport);
-
-    // --- STYLE ALL "DELETE WIDGET" MENU OPTIONS ---
     highlightDeleteWidget();
+    hideLabelBlockControls(perms.canAdd);
   }
 
-  // === 8. DEV banner: show a 10px banner at top if doc name contains "- DEV" ===
+  // === 9. DEV banner: show a 10px banner at top if doc name contains "- DEV" ===
   async function maybeShowDevBanner() {
     const docId = await getDocId();
     if (!docId) return;
@@ -173,7 +195,6 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
       if (!res.ok) return;
       const data = await res.json();
       if (data.name && data.name.includes('- DEV')) {
-        // Insert banner if not already present
         if (!document.getElementById('custom-global-banner')) {
           const banner = document.createElement('div');
           banner.id = 'custom-global-banner';
@@ -207,70 +228,10 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
     }
   }
 
-  // === 9. Run everything on window load ===
+  // === 10. Run everything on window load ===
   window.addEventListener('load', () => {
     console.log("[Custom Patch] ⏳ window.onload fallback triggered");
     applyVisibilityControls();
     maybeShowDevBanner();
   });
 })();
-
-
-// MOD DMH
-/**
- * Patch: Hide UI controls for the LabelBlock widget.
- *
- * Purpose:
- * - For widgets loaded from https://widgets.teebase.net/labelblock,
- *   hide unnecessary UI chrome such as widget title, filter buttons, and layout menu.
- * - Only applies if:
- *     a) The current user is NOT an Owner, OR
- *     b) The document setting `unlock_structure` is false.
- *
- * Elements hidden (when applicable):
- *   1. .test-widget-title-text          → widget title text (e.g. "LABELS Custom")
- *   2. .test-filter-field               → block filter dropdown
- *   3. .test-section-menu-sortAndFilter→ filter icon menu
- *   4. .test-section-menu-viewLayout   → "Dots" menu icon (layout & config)
- *
- * Implementation:
- * - Waits 1500ms after load to ensure DOM is ready.
- * - Also installs MutationObserver to respond to late-rendered widgets.
- */
-
-function hideLabelBlockControls() {
-  const isOwner = window.gristDoc?.app?.currentUser?.access === 'owners';
-  const unlockStructure = window.gristDoc?.app?.model?.docInfo?.unlock_structure;
-
-  if (isOwner && unlockStructure) return;
-
-  const labelBlockIframes = [...document.querySelectorAll('iframe[src*="widgets.teebase.net/labelblock"]')];
-
-  for (const iframe of labelBlockIframes) {
-    const widgetBox = iframe.closest('.test-widget');
-    if (!widgetBox) continue;
-
-    // 1. Widget title
-    const titleEl = widgetBox.querySelector('.test-widget-title-text');
-    if (titleEl) titleEl.style.display = 'none';
-
-    // 2. Filter dropdown
-    const filterBtn = widgetBox.querySelector('.test-filter-field');
-    if (filterBtn) filterBtn.style.display = 'none';
-
-    // 3. Filter icon
-    const filterIcon = widgetBox.querySelector('.test-section-menu-sortAndFilter');
-    if (filterIcon) filterIcon.style.display = 'none';
-
-    // 4. Dots menu
-    const layoutMenu = widgetBox.querySelector('.test-section-menu-viewLayout');
-    if (layoutMenu) layoutMenu.style.display = 'none';
-  }
-}
-
-setTimeout(hideLabelBlockControls, 1500);
-
-const observer = new MutationObserver(hideLabelBlockControls);
-observer.observe(document.body, {childList: true, subtree: true});
-// end MOD DMH
-

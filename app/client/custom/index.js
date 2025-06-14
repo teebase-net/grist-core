@@ -148,6 +148,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.1");
 function hideLabelBlockControls() {
   const isOwner = window.gristDoc?.app?.currentUser?.access === 'owners';
   const unlockStructure = window.gristDoc?.app?.model?.docInfo?.unlock_structure;
+
   if (isOwner && unlockStructure) {
     console.log("[LabelBlock Patch] ⛔️ User is owner with unlock_structure: no hiding applied.");
     return;
@@ -157,49 +158,37 @@ function hideLabelBlockControls() {
   console.log(`[LabelBlock Patch] Found ${labelBlockIframes.length} labelblock widget(s).`);
 
   for (const iframe of labelBlockIframes) {
-    const widgetBox = iframe.closest('.test-widget');
-    if (!widgetBox) continue;
+    // Climb to outer section wrapper
+    let viewSection = iframe.closest('.viewsection');
+    if (!viewSection) continue;
 
-    let tries = 0;
-    const MAX_TRIES = 10;
+    // 1. Widget title
+    const titleEl = viewSection.querySelector('.test-widget-title-text');
+    if (titleEl) {
+      titleEl.style.display = 'none';
+      console.log("[LabelBlock Patch] ✅ Hiding widget title.");
+    }
 
-    const hide = () => {
-      let changed = false;
+    // 2. Filter dropdown
+    const filterBtn = viewSection.querySelector('.test-filter-field');
+    if (filterBtn) {
+      filterBtn.style.display = 'none';
+      console.log("[LabelBlock Patch] ✅ Hiding filter button.");
+    }
 
-      const titleEl = widgetBox.querySelector('.test-widget-title-text');
-      if (titleEl && titleEl.style.display !== 'none') {
-        titleEl.style.display = 'none';
-        console.log("[LabelBlock Patch] Hiding widget title.");
-        changed = true;
-      }
+    // 3. Filter icon
+    const filterIcon = viewSection.querySelector('.test-section-menu-sortAndFilter');
+    if (filterIcon) {
+      filterIcon.style.display = 'none';
+      console.log("[LabelBlock Patch] ✅ Hiding filter icon.");
+    }
 
-      const filterBtn = widgetBox.querySelector('.test-filter-field');
-      if (filterBtn && filterBtn.style.display !== 'none') {
-        filterBtn.style.display = 'none';
-        console.log("[LabelBlock Patch] Hiding filter button.");
-        changed = true;
-      }
-
-      const filterIcon = widgetBox.querySelector('.test-section-menu-sortAndFilter');
-      if (filterIcon && filterIcon.style.display !== 'none') {
-        filterIcon.style.display = 'none';
-        console.log("[LabelBlock Patch] Hiding filter icon.");
-        changed = true;
-      }
-
-      const layoutMenu = widgetBox.querySelector('.test-section-menu-viewLayout');
-      if (layoutMenu && layoutMenu.style.display !== 'none') {
-        layoutMenu.style.display = 'none';
-        console.log("[LabelBlock Patch] Hiding layout (dots) menu.");
-        changed = true;
-      }
-
-      if (!changed && tries++ < MAX_TRIES) {
-        setTimeout(hide, 300); // wait and retry
-      }
-    };
-
-    hide();
+    // 4. Dots menu
+    const layoutMenu = viewSection.querySelector('.test-section-menu-viewLayout');
+    if (layoutMenu) {
+      layoutMenu.style.display = 'none';
+      console.log("[LabelBlock Patch] ✅ Hiding layout (dots) menu.");
+    }
   }
 }
 

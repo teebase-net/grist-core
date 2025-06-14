@@ -144,6 +144,11 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
 
   // === 7. Hide elements from LabelBlock widgets unless owner with Unlock_Structure ===
   function hideLabelBlockControls(allowed) {
+
+    console.log("[LabelBlock Patch] Checking for labelblock widgets...");
+    const labelBlockIframes = [...document.querySelectorAll('iframe[src*="widgets.teebase.net/labelblock"]')];
+    console.log(`[LabelBlock Patch] Found ${labelBlockIframes.length} labelblock widget(s).`);
+
     const hideIfNeeded = () => {
       const labelBlockIframes = [...document.querySelectorAll('iframe[src*="widgets.teebase.net/labelblock"]')];
       for (const iframe of labelBlockIframes) {

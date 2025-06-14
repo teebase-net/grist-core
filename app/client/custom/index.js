@@ -19,13 +19,29 @@
   // === 1. Capture Grist document ID from openDoc ===
   let docId = null;
   const origOpenDoc = window.openDoc;
-  window.openDoc = function(...args) {
+  window.openDoc = function (...args) {
     if (args[0]) {
       docId = args[0];
       console.log(`[Custom Patch] 📄 docId captured from openDoc: ${docId}`);
     }
     return origOpenDoc.apply(this, args);
   };
+
+  // === 2. Wait for a DOM element to appear (used for delayed rendering issues) ===
+  function waitForElement(selector, timeout = 5000) {
+    return new Promise((resolve, reject) => {
+      const interval = 50;
+      let elapsed = 0;
+      const check = () => {
+        const el = document.querySelector(selector);
+        if (el) return resolve(el);
+        elapsed += interval;
+        if (elapsed >= timeout) return reject(new Error("Element not found: " + selector));
+        setTimeout(check, interval);
+      };
+      check();
+    });
+  }
 
   // === 3. Load current user's permissions from SysUsers table in the current document ===
   async function getCurrentUserPermissions(docId) {
@@ -136,27 +152,29 @@
       });
     }
 
-    // Run initially and attach MutationObserver
     hideLabelElements();
-    const observer = new MutationObserver(() => {
+    new MutationObserver(() => {
       console.log("[LabelBlock Patch] DOM changed, re-checking for labelblock widgets...");
       hideLabelElements();
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+    }).observe(document.body, { childList: true, subtree: true });
   }
 
   // === 8. Show DEV banner if document name includes "- DEV" ===
-  function showDevBannerIfApplicable() {
-    const nameEl = document.querySelector('.test-doc-name');
-    const name = nameEl?.textContent?.trim();
-    if (name && name.includes('- DEV')) {
-      const banner = document.createElement('div');
-      banner.textContent = 'DEV MODE';
-      banner.style = 'position:fixed;top:0;left:0;right:0;padding:6px;background:#ff4747;color:white;text-align:center;font-weight:bold;z-index:10000;';
-      document.body.appendChild(banner);
-      console.log("[Custom Patch] 🚨 DEV banner displayed.");
-    } else {
-      console.log("[Custom Patch] DEV banner not displayed (document name does not include '- DEV').");
+  async function showDevBannerIfApplicable() {
+    try {
+      const nameEl = await waitForElement('.test-doc-name', 3000);
+      const name = nameEl?.textContent?.trim();
+      if (name && name.includes('- DEV')) {
+        const banner = document.createElement('div');
+        banner.textContent = 'DEV MODE';
+        banner.style = 'position:fixed;top:0;left:0;right:0;padding:6px;background:#ff4747;color:white;text-align:center;font-weight:bold;z-index:10000;';
+        document.body.appendChild(banner);
+        console.log("[Custom Patch] 🚨 DEV banner displayed.");
+      } else {
+        console.log("[Custom Patch] DEV banner not displayed (document name does not include '- DEV').");
+      }
+    } catch (err) {
+      console.warn("[Custom Patch] ❌ Could not evaluate document name for DEV banner:", err);
     }
   }
 
@@ -173,25 +191,12 @@
 
     const perms = await getCurrentUserPermissions(id);
 
-    // --- HIDE/SHOW ADD COLUMN BUTTON ---
     observeAndHide('.mod-add-column', perms.canAdd, 'Add Column Button');
-
-    // --- HIDE/SHOW SHARE ICON ---
     observeAndHide('.test-tb-share', perms.canExport, 'Share Icon');
-
-    // --- HIDE/SHOW DOWNLOAD/EXPORT OPTIONS ---
     observeAndHide('.test-download-section', perms.canExport, 'Download/Export Option');
-
-    // --- HIDE/SHOW INSERT COLUMN MENU OPTIONS ---
     hideInsertColumnOptions(perms.canExport);
-
-    // --- STYLE ALL "DELETE WIDGET" MENU OPTIONS ---
     highlightDeleteWidget();
-
-    // --- LABELBLOCK-SPECIFIC HIDE LOGIC ---
     applyLabelBlockPatch(perms.canAdd);
-
-    // --- DEV BANNER ---
     showDevBannerIfApplicable();
   }
 
@@ -202,7 +207,6 @@
     applyVisibilityControls();
   }
 
-  // --- Fail-safe: Run after full window load too ---
   window.addEventListener('load', () => {
     console.log("[Custom Patch] ⏳ window.onload fallback triggered");
     applyVisibilityControls();

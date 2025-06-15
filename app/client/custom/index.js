@@ -242,6 +242,9 @@ function applyLabelBlockPatch(unlockStructure) {
         continue;
       }
 
+      // Add class for styling override
+      section.classList.add('labelblock-hidden');
+
       // Hide entire viewsection title bar (includes title, layout menu, drag handle)
       const titleBar = section.querySelector('.viewsection_title');
       if (titleBar) {
@@ -260,6 +263,28 @@ function applyLabelBlockPatch(unlockStructure) {
 
   hideLabelElements();
   new MutationObserver(hideLabelElements).observe(document.body, { childList: true, subtree: true });
+
+  // Add global style override once
+  const styleId = 'labelblock-style-override';
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      .labelblock-hidden {
+        border: none !important;
+        box-shadow: none !important;
+        background-color: transparent !important;
+      }
+      .labelblock-hidden::before,
+      .labelblock-hidden::after {
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+    console.log('[LabelBlock Patch] 🧩 Injected global style override for labelblock-hidden');
+  }
 }
+
+  
   
 })();

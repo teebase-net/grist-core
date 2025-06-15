@@ -221,54 +221,45 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
     maybeShowDevBanner();
   });
 
-  // === 10. LabelBlock-specific control hiding based on Unlock_Structure ===
-  function applyLabelBlockPatch(unlockStructure) {
-    const shouldHide = !unlockStructure;
-    if (!shouldHide) {
-      console.log("[LabelBlock Patch] 🛑 Unlock_Structure = true: LabelBlock elements remain visible.");
-      return;
-    }
+// === 10. LabelBlock-specific control hiding based on Unlock_Structure ===
+function applyLabelBlockPatch(unlockStructure) {
+  const shouldHide = !unlockStructure;
+  if (!shouldHide) {
+    console.log("[LabelBlock Patch] 🛑 Unlock_Structure = true: LabelBlock elements remain visible.");
+    return;
+  }
 
-    function hideLabelElements() {
-      const iframes = [...document.querySelectorAll('iframe[src*="labelblock"]')];
-      if (iframes.length === 0) return;
+  function hideLabelElements() {
+    const iframes = [...document.querySelectorAll('iframe[src*="labelblock"]')];
+    if (iframes.length === 0) return;
 
-      console.log(`[LabelBlock Patch] Found ${iframes.length} LabelBlock iframe(s).`);
+    console.log(`[LabelBlock Patch] Found ${iframes.length} LabelBlock iframe(s).`);
 
-      for (const iframe of iframes) {
-        const section = iframe.closest('.view_leaf.viewsection_content');
-        if (!section) {
-          console.warn("[LabelBlock Patch] ⚠️ Couldn't locate container for LabelBlock iframe.");
-          continue;
-        }
+    for (const iframe of iframes) {
+      const section = iframe.closest('.view_leaf.viewsection_content');
+      if (!section) {
+        console.warn("[LabelBlock Patch] ⚠️ Couldn't locate container for LabelBlock iframe.");
+        continue;
+      }
 
-        // Remove grey and green borders from the widget container
-        const viewLeaf = iframe.closest('.view_leaf.viewsection_content');
-        if (viewLeaf) {
-          viewLeaf.style.setProperty('box-shadow', 'none', 'important');
-          viewLeaf.style.setProperty('border-left', 'none', 'important');
-          viewLeaf.style.setProperty('background-color', 'transparent', 'important');
-        }
+      // Hide entire viewsection title bar (includes title, layout menu, drag handle)
+      const titleBar = section.querySelector('.viewsection_title');
+      if (titleBar) {
+        titleBar.style.display = 'none';
+        console.log('[LabelBlock Patch] ✅ Hiding viewsection title bar');
+      }
 
-        const selectors = [
-          '.test-widget-title-text',
-          '.test-filter-field',
-          '.test-section-menu-sortAndFilter',
-          '.test-section-menu-viewLayout',
-          '.test-add-filter-btn'
-        ];
-
-        for (const sel of selectors) {
-          const el = section.querySelector(sel);
-          if (el) {
-            el.style.display = 'none';
-            console.log(`[LabelBlock Patch] ✅ Hiding LabelBlock control: ${sel}`);
-          }
-        }
+      // Hide entire filter bar (includes filter fields and add filter button)
+      const filterBar = section.querySelector('.filter_bar.test-filter-bar');
+      if (filterBar) {
+        filterBar.style.display = 'none';
+        console.log('[LabelBlock Patch] ✅ Hiding filter bar');
       }
     }
-
-    hideLabelElements();
-    new MutationObserver(hideLabelElements).observe(document.body, { childList: true, subtree: true });
   }
+
+  hideLabelElements();
+  new MutationObserver(hideLabelElements).observe(document.body, { childList: true, subtree: true });
+}
+  
 })();

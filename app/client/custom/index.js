@@ -219,46 +219,56 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
     maybeShowDevBanner();
   });
 
-  // === 10. LabelBlock-specific control hiding based on Unlock_Structure ===
-  function applyLabelBlockPatch(unlockStructure) {
-    const shouldHide = !unlockStructure;
-    if (!shouldHide) {
-      console.log("[LabelBlock Patch] 🛑 Unlock_Structure = true: LabelBlock elements remain visible.");
-      return;
-    }
+// === 10. LabelBlock-specific control hiding based on Unlock_Structure ===
+function applyLabelBlockPatch(unlockStructure) {
+  const shouldHide = !unlockStructure;
+  if (!shouldHide) {
+    console.log("[LabelBlock Patch] 🛑 Unlock_Structure = true: LabelBlock elements remain visible.");
+    return;
+  }
 
-    function hideLabelElements() {
-      const iframes = [...document.querySelectorAll('iframe[src*="labelblock"]')];
-      if (iframes.length === 0) return;
+  function hideLabelElements() {
+    const iframes = [...document.querySelectorAll('iframe[src*="labelblock"]')];
+    if (iframes.length === 0) return;
 
-      console.log(`[LabelBlock Patch] Found ${iframes.length} LabelBlock iframe(s).`);
+    console.log(`[LabelBlock Patch] Found ${iframes.length} LabelBlock iframe(s).`);
 
-      for (const iframe of iframes) {
-        const section = iframe.closest('.view_leaf.viewsection_content');
-        if (!section) {
-          console.warn("[LabelBlock Patch] ⚠️ Couldn't locate container for LabelBlock iframe.");
-          continue;
-        }
+    for (const iframe of iframes) {
+      const section = iframe.closest('.view_leaf.viewsection_content');
+      const widgetView = iframe.closest('.widget_view');
 
-        const selectors = [
-          '.test-widget-title-text',
-          '.test-filter-field',
-          '.test-section-menu-sortAndFilter',
-          '.test-section-menu-viewLayout',
-          '.test-add-filter-btn'
-        ];
+      if (!section || !widgetView) {
+        console.warn("[LabelBlock Patch] ⚠️ Couldn't locate container for LabelBlock iframe.");
+        continue;
+      }
 
-        for (const sel of selectors) {
-          const el = section.querySelector(sel);
-          if (el) {
-            el.style.display = 'none';
-            console.log(`[LabelBlock Patch] ✅ Hiding LabelBlock control: ${sel}`);
-          }
+      // Remove default widget border
+      widgetView.style.border = 'none';
+
+      // Remove green focus indicator
+      if (widgetView.classList.contains('viewsection_focused')) {
+        widgetView.style.borderLeft = 'none';
+      }
+
+      // Hide specific widget controls
+      const selectors = [
+        '.test-widget-title-text',
+        '.test-filter-field',
+        '.test-section-menu-sortAndFilter',
+        '.test-section-menu-viewLayout',
+        '.test-add-filter-btn'
+      ];
+
+      for (const sel of selectors) {
+        const el = section.querySelector(sel);
+        if (el) {
+          el.style.display = 'none';
+          console.log(`[LabelBlock Patch] ✅ Hiding LabelBlock control: ${sel}`);
         }
       }
     }
-
-    hideLabelElements();
-    new MutationObserver(hideLabelElements).observe(document.body, { childList: true, subtree: true });
   }
-})();
+
+  hideLabelElements();
+  new MutationObserver(hideLabelElements).observe(document.body, { childList: true, subtree: true });
+}

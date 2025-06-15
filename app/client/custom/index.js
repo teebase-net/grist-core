@@ -243,10 +243,12 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
         }
 
         // Remove grey and green borders from the widget container
-        const widgetView = iframe.closest('.widget_view');
-        if (widgetView) {
-          widgetView.style.border = 'none';         // grey border
-          widgetView.style.borderLeft = 'none';     // green border on focus
+        const viewLeaf = iframe.closest('.view_leaf.viewsection_content');
+        if (viewLeaf) {
+          viewLeaf.style.border = 'none';
+          viewLeaf.style.boxShadow = 'none';
+          viewLeaf.style.outline = 'none';
+          viewLeaf.style.background = 'transparent';
         }
 
         const selectors = [

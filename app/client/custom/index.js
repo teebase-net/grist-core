@@ -272,3 +272,4 @@ function applyLabelBlockPatch(unlockStructure) {
   hideLabelElements();
   new MutationObserver(hideLabelElements).observe(document.body, { childList: true, subtree: true });
 }
+})();

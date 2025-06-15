@@ -245,10 +245,9 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
         // Remove grey and green borders from the widget container
         const viewLeaf = iframe.closest('.view_leaf.viewsection_content');
         if (viewLeaf) {
-          viewLeaf.style.border = 'none';
-          viewLeaf.style.boxShadow = 'none';
-          viewLeaf.style.outline = 'none';
-          viewLeaf.style.background = 'transparent';
+          viewLeaf.style.setProperty('box-shadow', 'none', 'important');
+          viewLeaf.style.setProperty('border-left', 'none', 'important');
+          viewLeaf.style.setProperty('background-color', 'transparent', 'important');
         }
 
         const selectors = [

@@ -44,25 +44,30 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
     style: 'font-family: inherit; font-size: inherit; line-height: inherit;'
   });
 
-  // MOD DMH: Add LabelBlock maximize support using standard Grist modal behavior
-  waitForElement(document, '.custom-widget').then(() => {
-    const widgets = document.querySelectorAll('.custom-widget');
-    widgets.forEach(widget => {
-      const title = widget.querySelector('.test-viewsection-title')?.textContent?.trim();
-      if (!title || !title.toLowerCase().includes('labelblock')) return;
+// MOD DMH: Add LabelBlock maximize support using standard Grist modal behavior
+void waitForElement(document, '.custom-widget').then(() => {
+  const widgets = document.querySelectorAll('.custom-widget');
+  widgets.forEach(widget => {
+    const title = widget.querySelector('.test-viewsection-title')?.textContent?.trim();
+    if (!title || !title.toLowerCase().includes('labelblock')) {
+      return;
+    }
 
-      if ((widget as any)._labelblockBound) return;
-      (widget as any)._labelblockBound = true;
+    if ((widget as any)._labelblockBound) {
+      return;
+    }
+    (widget as any)._labelblockBound = true;
 
-      const maximizeButton = widget.closest('.viewsection_content')?.querySelector('.test-maximize-section') as HTMLElement;
-      if (maximizeButton) {
-        maximizeButton.style.display = 'block';
-        maximizeButton.style.opacity = '1';
-        maximizeButton.style.pointerEvents = 'auto';
-      }
-    });
+    const maximizeButton = widget.closest('.viewsection_content')?.querySelector('.test-maximize-section');
+    if (maximizeButton instanceof HTMLElement) {
+      maximizeButton.style.display = 'block';
+      maximizeButton.style.opacity = '1';
+      maximizeButton.style.pointerEvents = 'auto';
+    }
   });
-  // end MOD DMH
+});
+// end MOD DMH
+
 
   function dispose() {
     const [beginMarker, endMarker] = content;

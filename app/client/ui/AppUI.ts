@@ -49,20 +49,41 @@ void waitForElement(document, '.custom-widget').then(() => {
   const widgets = document.querySelectorAll('.custom-widget');
   widgets.forEach(widget => {
     const title = widget.querySelector('.test-viewsection-title')?.textContent?.trim();
-    if (!title || !title.toLowerCase().includes('labelblock')) {
-      return;
-    }
+    if (!title || !title.toLowerCase().includes('labelblock')) return;
 
-    if ((widget as any)._labelblockBound) {
-      return;
-    }
+    if ((widget as any)._labelblockBound) return;
     (widget as any)._labelblockBound = true;
 
+    // Show and reposition the maximize button
     const maximizeButton = widget.closest('.viewsection_content')?.querySelector('.test-maximize-section');
     if (maximizeButton instanceof HTMLElement) {
       maximizeButton.style.display = 'block';
       maximizeButton.style.opacity = '1';
       maximizeButton.style.pointerEvents = 'auto';
+      maximizeButton.style.position = 'absolute';
+      maximizeButton.style.top = '5px';
+      maximizeButton.style.right = '5px';
+      maximizeButton.style.zIndex = '10';
+      maximizeButton.style.background = 'white';
+      maximizeButton.style.borderRadius = '4px';
+    }
+
+    // Minimize other titlebar elements
+    const headerBar = widget.closest('.viewsection_content')?.querySelector('.viewsection_header') as HTMLElement;
+    if (headerBar) {
+      const titleEl = headerBar.querySelector('.test-viewsection-title') as HTMLElement;
+      const gearIcon = headerBar.querySelector('.test-viewsection-gear') as HTMLElement;
+      const widgetMenu = headerBar.querySelector('.test-section-menu') as HTMLElement;
+
+      if (titleEl) titleEl.style.display = 'none';
+      if (gearIcon) gearIcon.style.display = 'none';
+      if (widgetMenu) widgetMenu.style.display = 'none';
+
+      headerBar.style.background = 'transparent';
+      headerBar.style.border = 'none';
+      headerBar.style.height = '0px';
+      headerBar.style.overflow = 'visible';
+      headerBar.style.position = 'relative';
     }
   });
 });

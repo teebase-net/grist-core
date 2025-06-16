@@ -298,9 +298,44 @@ function applyLabelBlockPatch(unlockStructure) {
     document.head.appendChild(style);
     console.log('[LabelBlock Patch] 🧩 Injected style override for labelblock-hidden');
   }
-
-
 }
+
+// === 11. LabelBlock: show only the maximize button in a transparent toolbar ===
+(function injectLabelBlockMaximizeOnly() {
+  const styleId = 'labelblock-maximize-style';
+  if (document.getElementById(styleId)) return;
+
+  const style = document.createElement('style');
+  style.id = styleId;
+  style.textContent = `
+    /* Force-show only the maximize button inside the widget toolbar */
+    .widget-controls {
+      display: flex !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      border: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      position: absolute !important;
+      top: 32px;         /* Adjust if needed */
+      right: 4px;
+      z-index: 10;
+    }
+
+    /* Hide all other toolbar controls */
+    .widget-controls > :not(.test-maximize) {
+      display: none !important;
+    }
+
+    /* Optional: tighten LabelBlock header spacing */
+    .labelblock-heading {
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+    }
+  `;
+  document.head.appendChild(style);
+  console.log('[LabelBlock Patch] 🧭 Injected style to show only maximize button');
+})();
 
   
   

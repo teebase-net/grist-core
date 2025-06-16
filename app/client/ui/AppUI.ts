@@ -31,8 +31,9 @@ import {Computed, dom, IDisposable, IDisposableOwner, Observable, replaceContent
 
 // MOD DMH: Imports for LabelBlock popup modal
 import { waitForElement } from 'app/client/lib/waitForElement';
-import { showModal } from 'app/client/components/modals';
-import { LabelBlockPopup } from 'app/client/components/widgets/LabelBlockPopup';
+import { showModalDom } from 'app/client/ui2018/modals';
+import { LabelBlockPopup } from 'app/client/ui/LabelBlockPopup';
+
 // end MOD DMH
 
 // When integrating into the old app, we might in theory switch between new-style and old-style

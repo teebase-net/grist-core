@@ -51,20 +51,7 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
     style: 'font-family: inherit; font-size: inherit; line-height: inherit;'
   });
 
-  function dispose() {
-    // Return value of dom.maybe() / dom.domComputed() is a pair of markers with a function that
-    // replaces content between them when an observable changes. It's uncommon to dispose the set
-    // with the markers, and grainjs doesn't provide a helper, but we can accomplish it by
-    // disposing the markers. They will automatically trigger the disposal of the included
-    // content. This avoids the need to wrap the contents in another layer of a dom element.
-    const [beginMarker, endMarker] = content;
-    replaceContent(beginMarker, endMarker, null);
-    dom.domDispose(beginMarker);
-    dom.domDispose(endMarker);
-    document.body.removeChild(beginMarker);
-    document.body.removeChild(endMarker);
-  }
-
+  
   // MOD DMH: Inject LabelBlock click-to-popup logic
   waitForElement(document, '.custom-widget').then(() => {
     const widgets = document.querySelectorAll('.custom-widget');
@@ -79,12 +66,25 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
         const heading = widget.querySelector('.labelblock-heading')?.textContent || 'Untitled';
         const bodyRaw = widget.querySelector('.labelblock-body')?.getAttribute('data-quill') || '{}';
 
-        showModal(dom.create(LabelBlockPopup, { heading, body: bodyRaw, onClose: () => null }));
+        showModalDom(() => LabelBlockPopup({ heading, body: bodyRaw }));
       });
     });
   });
   // end MOD DMH
- 
+  
+  function dispose() {
+    // Return value of dom.maybe() / dom.domComputed() is a pair of markers with a function that
+    // replaces content between them when an observable changes. It's uncommon to dispose the set
+    // with the markers, and grainjs doesn't provide a helper, but we can accomplish it by
+    // disposing the markers. They will automatically trigger the disposal of the included
+    // content. This avoids the need to wrap the contents in another layer of a dom element.
+    const [beginMarker, endMarker] = content;
+    replaceContent(beginMarker, endMarker, null);
+    dom.domDispose(beginMarker);
+    dom.domDispose(endMarker);
+    document.body.removeChild(beginMarker);
+    document.body.removeChild(endMarker);
+  }   
   return {dispose};
 }
 

@@ -164,7 +164,7 @@ function pagePanelsDoc(owner: IDisposableOwner, appModel: AppModel, appObj: App)
     if (gristDoc) { gristDoc.resizeEmitter.emit(); }
   }
 
-  return pagePanels({
+  const layout = pagePanels({
     leftPanel: {
       panelWidth: leftPanelWidth,
       panelOpen: leftPanelOpen,
@@ -185,4 +185,27 @@ function pagePanelsDoc(owner: IDisposableOwner, appModel: AppModel, appObj: App)
     contentBottom: dom.create(createBottomBarDoc, pageModel, leftPanelOpen, rightPanelOpen),
     banner: dom.create(ViewAsBanner, pageModel),
   });
+
+  // ===================================================================================
+  // MOD DMH
+  // Purpose: Support LabelBlock widget postMessage-based modal popup using native
+  // Grist behavior (`window.renderMaximized`). This listener waits for messages
+  // of type "labelblock-expand" and opens a styled modal with provided content.
+  // ===================================================================================
+  window.addEventListener("message", (event) => {
+    const msg = event.data;
+    if (msg?.type === "labelblock-expand" && typeof window.renderMaximized === "function") {
+      const content = document.createElement("div");
+      content.innerHTML = msg.body || "";
+      content.style.padding = "24px";
+      content.style.fontSize = "1rem";
+      content.style.lineHeight = "1.5";
+      window.renderMaximized({ title: msg.heading || "LabelBlock", content });
+    }
+  });
+  // end MOD DMH
+  // ===================================================================================
+
+  return layout;
 }
+

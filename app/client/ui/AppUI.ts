@@ -79,7 +79,7 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
         const heading = widget.querySelector('.labelblock-heading')?.textContent || 'Untitled';
         const bodyRaw = widget.querySelector('.labelblock-body')?.getAttribute('data-quill') || '{}';
 
-        showModal(<LabelBlockPopup heading={heading} body={bodyRaw} onClose={() => null} />);
+        showModal(dom.create(LabelBlockPopup, { heading, body: bodyRaw, onClose: () => null }));
       });
     });
   });

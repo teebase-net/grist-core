@@ -29,17 +29,10 @@ import {getPageTitleSuffix} from 'app/common/gristUrls';
 import {getGristConfig} from 'app/common/urlUtils';
 import {Computed, dom, IDisposable, IDisposableOwner, Observable, replaceContent, subscribe} from 'grainjs';
 
-// MOD DMH: Imports for LabelBlock popup modal
+// MOD DMH: Imports for LabelBlock
 import { waitForElement } from 'app/client/lib/waitForElement';
-import { showModalDom } from 'app/client/ui2018/modals';
-import { LabelBlockPopup } from 'app/client/ui/LabelBlockPopup';
-
 // end MOD DMH
 
-// When integrating into the old app, we might in theory switch between new-style and old-style
-// content. This function allows disposing the created content by old-style code.
-// TODO once #newui is gone, we don't need to worry about this being disposable.
-// appObj is the App object from app/client/ui/App.ts
 export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable {
   const content = dom.maybe(topAppModel.appObs, (appModel) => {
     return [
@@ -48,11 +41,10 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
     ];
   });
   dom.update(document.body, content, {
-    // Cancel out bootstrap's overrides.
     style: 'font-family: inherit; font-size: inherit; line-height: inherit;'
   });
 
-  // MOD DMH: Inject LabelBlock click-to-popup logic
+  // MOD DMH: Add LabelBlock maximize support using standard Grist modal behavior
   waitForElement(document, '.custom-widget').then(() => {
     const widgets = document.querySelectorAll('.custom-widget');
     widgets.forEach(widget => {
@@ -62,28 +54,24 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
       if ((widget as any)._labelblockBound) return;
       (widget as any)._labelblockBound = true;
 
-      widget.addEventListener('click', () => {
-        const heading = widget.querySelector('.labelblock-heading')?.textContent || 'Untitled';
-        const bodyRaw = widget.querySelector('.labelblock-body')?.getAttribute('data-quill') || '{}';
-        showModalDom(() => LabelBlockPopup({ heading, body: bodyRaw, onClose: () => null }));
-      });
+      const maximizeButton = widget.closest('.viewsection_content')?.querySelector('.test-maximize-section');
+      if (maximizeButton) {
+        maximizeButton.style.display = 'block';
+        maximizeButton.style.opacity = '1';
+        maximizeButton.style.pointerEvents = 'auto';
+      }
     });
   });
-  // end MOD DMH  
-  
+  // end MOD DMH
+
   function dispose() {
-    // Return value of dom.maybe() / dom.domComputed() is a pair of markers with a function that
-    // replaces content between them when an observable changes. It's uncommon to dispose the set
-    // with the markers, and grainjs doesn't provide a helper, but we can accomplish it by
-    // disposing the markers. They will automatically trigger the disposal of the included
-    // content. This avoids the need to wrap the contents in another layer of a dom element.
     const [beginMarker, endMarker] = content;
     replaceContent(beginMarker, endMarker, null);
     dom.domDispose(beginMarker);
     dom.domDispose(endMarker);
     document.body.removeChild(beginMarker);
     document.body.removeChild(endMarker);
-  }   
+  }
   return {dispose};
 }
 
@@ -93,9 +81,6 @@ function createMainPage(appModel: AppModel, appObj: App) {
     if (err && err.status === 404) {
       return createNotFoundPage(appModel);
     } else if (err && (err.status === 401 || err.status === 403)) {
-      // Generally give access denied error.
-      // The exception is for document pages, where we want to allow access to documents
-      // shared publicly without being shared specifically with the current user.
       if (appModel.pageType.get() !== 'doc') {
         return createForbiddenPage(appModel);
       }
@@ -132,7 +117,6 @@ function pagePanelsHome(owner: IDisposableOwner, appModel: AppModel, app: App) {
   const pageModel = HomeModelImpl.create(owner, appModel, app.clientScope);
   const leftPanelOpen = Observable.create(owner, true);
 
-  // Set document title to strings like "Home - Grist" or "Org Name - Grist".
   owner.autoDispose(subscribe(pageModel.currentPage, pageModel.currentWS, (use, page, ws) => {
     const name = (
       page === 'trash' ? 'Trash' :
@@ -159,8 +143,6 @@ function pagePanelsHome(owner: IDisposableOwner, appModel: AppModel, app: App) {
 
 function pagePanelsDoc(owner: IDisposableOwner, appModel: AppModel, appObj: App) {
   const pageModel = DocPageModelImpl.create(owner, appObj, appModel);
-  // To simplify manual inspection in the common case, keep the most recently created
-  // DocPageModel available as a global variable.
   (window as any).gristDocPageModel = pageModel;
   appObj.pageModel = pageModel;
   const leftPanelOpen = createSessionObs<boolean>(owner, "leftPanelOpen", true, isBoolean);
@@ -168,23 +150,14 @@ function pagePanelsDoc(owner: IDisposableOwner, appModel: AppModel, appObj: App)
   const leftPanelWidth = createSessionObs<number>(owner, "leftPanelWidth", 240, isNumber);
   const rightPanelWidth = createSessionObs<number>(owner, "rightPanelWidth", 240, isNumber);
 
-  // The RightPanel component gets created only when an instance of GristDoc is set in pageModel.
-  // use.owner is a feature of grainjs to make the new RightPanel owned by the computed itself:
-  // each time the gristDoc observable changes (and triggers the callback), the previously-created
-  // instance of RightPanel will get disposed.
   const rightPanel = Computed.create(owner, pageModel.gristDoc, (use, gristDoc) =>
     gristDoc ? RightPanel.create(use.owner, gristDoc, rightPanelOpen) : null);
 
-  // Set document title to strings like "DocName - Grist"
   owner.autoDispose(subscribe(pageModel.currentDocTitle, (use, docName) => {
-    // If the document hasn't loaded yet, don't update the title; since the HTML document already has
-    // a title element with the document's name, there's no need for further action.
     if (!pageModel.currentDoc.get()) { return; }
-
     document.title = `${docName}${getPageTitleSuffix(getGristConfig())}`;
   }));
 
-  // Called after either panel is closed, opened, or resized.
   function onResize() {
     const gristDoc = pageModel.gristDoc.get();
     if (gristDoc) { gristDoc.resizeEmitter.emit(); }

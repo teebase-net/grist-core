@@ -29,6 +29,12 @@ import {getPageTitleSuffix} from 'app/common/gristUrls';
 import {getGristConfig} from 'app/common/urlUtils';
 import {Computed, dom, IDisposable, IDisposableOwner, Observable, replaceContent, subscribe} from 'grainjs';
 
+// MOD DMH: Imports for LabelBlock popup modal
+import { waitForElement } from 'app/client/lib/waitForElement';
+import { showModal } from 'app/client/components/modals';
+import { LabelBlockPopup } from 'app/client/components/widgets/LabelBlockPopup';
+// end MOD DMH
+
 // When integrating into the old app, we might in theory switch between new-style and old-style
 // content. This function allows disposing the created content by old-style code.
 // TODO once #newui is gone, we don't need to worry about this being disposable.
@@ -58,6 +64,27 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
     document.body.removeChild(beginMarker);
     document.body.removeChild(endMarker);
   }
+
+  // MOD DMH: Inject LabelBlock click-to-popup logic
+  waitForElement(document, '.custom-widget').then(() => {
+    const widgets = document.querySelectorAll('.custom-widget');
+    widgets.forEach(widget => {
+      const title = widget.querySelector('.test-viewsection-title')?.textContent?.trim();
+      if (!title || !title.toLowerCase().includes('labelblock')) return;
+
+      if ((widget as any)._labelblockBound) return;
+      (widget as any)._labelblockBound = true;
+
+      widget.addEventListener('click', () => {
+        const heading = widget.querySelector('.labelblock-heading')?.textContent || 'Untitled';
+        const bodyRaw = widget.querySelector('.labelblock-body')?.getAttribute('data-quill') || '{}';
+
+        showModal(<LabelBlockPopup heading={heading} body={bodyRaw} onClose={() => null} />);
+      });
+    });
+  });
+  // end MOD DMH
+ 
   return {dispose};
 }
 

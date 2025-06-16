@@ -52,7 +52,6 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
     style: 'font-family: inherit; font-size: inherit; line-height: inherit;'
   });
 
-  
   // MOD DMH: Inject LabelBlock click-to-popup logic
   waitForElement(document, '.custom-widget').then(() => {
     const widgets = document.querySelectorAll('.custom-widget');
@@ -66,12 +65,11 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
       widget.addEventListener('click', () => {
         const heading = widget.querySelector('.labelblock-heading')?.textContent || 'Untitled';
         const bodyRaw = widget.querySelector('.labelblock-body')?.getAttribute('data-quill') || '{}';
-
-        showModalDom(() => LabelBlockPopup({ heading, body: bodyRaw }));
+        showModalDom(() => LabelBlockPopup({ heading, body: bodyRaw, onClose: () => null }));
       });
     });
   });
-  // end MOD DMH
+  // end MOD DMH  
   
   function dispose() {
     // Return value of dom.maybe() / dom.domComputed() is a pair of markers with a function that

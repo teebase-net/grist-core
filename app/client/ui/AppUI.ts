@@ -54,7 +54,7 @@ export function createAppUI(topAppModel: TopAppModel, appObj: App): IDisposable 
       if ((widget as any)._labelblockBound) return;
       (widget as any)._labelblockBound = true;
 
-      const maximizeButton = widget.closest('.viewsection_content')?.querySelector('.test-maximize-section');
+      const maximizeButton = widget.closest('.viewsection_content')?.querySelector('.test-maximize-section') as HTMLElement;
       if (maximizeButton) {
         maximizeButton.style.display = 'block';
         maximizeButton.style.opacity = '1';

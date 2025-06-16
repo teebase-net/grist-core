@@ -270,19 +270,36 @@ function applyLabelBlockPatch(unlockStructure) {
     const style = document.createElement('style');
     style.id = styleId;
     style.textContent = `
+      /* LabelBlock container cleanup when structure is locked
+         - Masks Grist's default grey border and green focus line
+         - Keeps widget content and layout intact
+         - Does not interfere with rich text rendering
+      */
+
       .labelblock-hidden {
-        border: none !important;
-        box-shadow: none !important;
+        border: 2px solid #fff !important;        /* Overwrites persistent grey border */
+        border-left: 2px solid #fff !important;   /* Masks green focus bar */
         background-color: transparent !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
       }
+
       .labelblock-hidden::before,
       .labelblock-hidden::after {
-        display: none !important;
+        display: none !important;                /* Remove any pseudo-elements */
+      }
+
+      .labelblock-hidden > div {
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
       }
     `;
     document.head.appendChild(style);
-    console.log('[LabelBlock Patch] 🧩 Injected global style override for labelblock-hidden');
+    console.log('[LabelBlock Patch] 🧩 Injected style override for labelblock-hidden');
   }
+
+
 }
 
   

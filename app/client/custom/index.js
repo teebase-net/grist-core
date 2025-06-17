@@ -145,6 +145,19 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
     new MutationObserver(highlight).observe(document.body, { childList: true, subtree: true });
   }
 
+  // === Highlight "Delete record" menu option ===
+function highlightDeleteRecord() {
+  const highlight = () => {
+    document.querySelectorAll('.test-cmd-name').forEach(span => {
+      if (span.textContent?.trim() === 'Delete record') {
+        span.style.color = 'orange';
+      }
+    });
+  };
+  highlight();
+  new MutationObserver(highlight).observe(document.body, { childList: true, subtree: true });
+}
+
   // === 7. Main logic: Apply all visibility controls after permissions are loaded ===
   async function applyVisibilityControls() {
     const docId = await getDocId();

@@ -195,20 +195,20 @@ function pagePanelsDoc(owner: IDisposableOwner, appModel: AppModel, appObj: App)
   });
 
   // ===================================================================================
-  // MOD DMH
-  // Purpose: Support LabelBlock widget postMessage-based modal popup using native
-  // Grist behavior (`window.renderMaximized`). This listener waits for messages
-  // of type "labelblock-expand" and opens a styled modal with provided content.
-  // ===================================================================================
+  // MOD DMH: Listen for LabelBlock expand request
   window.addEventListener("message", (event) => {
-    const msg = event.data;
+    const msg = event?.data;
     if (msg?.type === "labelblock-expand" && typeof window.renderMaximized === "function") {
       const content = document.createElement("div");
       content.innerHTML = msg.body || "";
       content.style.padding = "24px";
       content.style.fontSize = "1rem";
       content.style.lineHeight = "1.5";
-      window.renderMaximized({ title: msg.heading || "LabelBlock", content });
+      content.style.fontFamily = "sans-serif";
+      window.renderMaximized({
+        title: msg.heading || "LabelBlock",
+        content
+      });
     }
   });
   // end MOD DMH

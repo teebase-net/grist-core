@@ -29,18 +29,13 @@ import {getPageTitleSuffix} from 'app/common/gristUrls';
 import {getGristConfig} from 'app/common/urlUtils';
 import {Computed, dom, IDisposable, IDisposableOwner, Observable, replaceContent, subscribe} from 'grainjs';
 
-// ===================================================================================
-// MOD DMH: Support for LabelBlock modal expand
-import {renderMaximized} from 'app/client/ui/MaximizedModal';
+// MOD DMH: Add support for labelblock-expand message to trigger Grist modal
 declare global {
   interface Window {
     renderMaximized?: (opts: { title: string, content: HTMLElement }) => void;
   }
 }
-window.renderMaximized = renderMaximized;
 // end MOD DMH
-// ===================================================================================
-
 
 // When integrating into the old app, we might in theory switch between new-style and old-style
 // content. This function allows disposing the created content by old-style code.
@@ -199,26 +194,26 @@ function pagePanelsDoc(owner: IDisposableOwner, appModel: AppModel, appObj: App)
     banner: dom.create(ViewAsBanner, pageModel),
   });
 
-  // ===================================================================================
-  // MOD DMH: Listen for LabelBlock expand request
-  window.addEventListener("message", (event) => {
-    const msg = event?.data;
-    if (msg?.type === "labelblock-expand" && typeof window.renderMaximized === "function") {
-      const content = document.createElement("div");
-      content.innerHTML = msg.body || "";
-      content.style.padding = "24px";
-      content.style.fontSize = "1rem";
-      content.style.lineHeight = "1.5";
-      content.style.fontFamily = "sans-serif";
-      window.renderMaximized({
-        title: msg.heading || "LabelBlock",
-        content
-      });
-    }
-  });
-  // end MOD DMH
-  // ===================================================================================
-  
+// ===================================================================================
+// MOD DMH: Listen for LabelBlock expand request
+window.addEventListener("message", (event) => {
+  const msg = event?.data;
+  if (msg?.type === "labelblock-expand" && typeof window.renderMaximized === "function") {
+    const content = document.createElement("div");
+    content.innerHTML = msg.body || "";
+    content.style.padding = "24px";
+    content.style.fontSize = "1rem";
+    content.style.lineHeight = "1.5";
+    content.style.fontFamily = "sans-serif";
+    window.renderMaximized({
+      title: msg.heading || "LabelBlock",
+      content
+    });
+  }
+});
+// end MOD DMH
+// ===================================================================================
+
   return layout;
 }
 

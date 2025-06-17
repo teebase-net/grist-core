@@ -28,7 +28,7 @@ import {testId} from 'app/client/ui2018/cssVars';
 import {getPageTitleSuffix} from 'app/common/gristUrls';
 import {getGristConfig} from 'app/common/urlUtils';
 import {Computed, dom, IDisposable, IDisposableOwner, Observable, replaceContent, subscribe} from 'grainjs';
-
+/*
 // MOD DMH: Add support for labelblock-expand message to trigger Grist modal
 declare global {
   interface Window {
@@ -36,6 +36,7 @@ declare global {
   }
 }
 // end MOD DMH
+*/
 
 // When integrating into the old app, we might in theory switch between new-style and old-style
 // content. This function allows disposing the created content by old-style code.
@@ -194,6 +195,7 @@ function pagePanelsDoc(owner: IDisposableOwner, appModel: AppModel, appObj: App)
     banner: dom.create(ViewAsBanner, pageModel),
   });
 
+/*  
 // ===================================================================================
 // MOD DMH: Listen for LabelBlock expand request
 window.addEventListener("message", (event) => {
@@ -213,7 +215,7 @@ window.addEventListener("message", (event) => {
 });
 // end MOD DMH
 // ===================================================================================
-
+*/
   return layout;
 }
 

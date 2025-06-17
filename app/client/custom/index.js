@@ -145,7 +145,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
     new MutationObserver(highlight).observe(document.body, { childList: true, subtree: true });
   }
 
-  // === Highlight "Delete record" menu option ===
+// === Highlight "Delete record" menu option ===
 function highlightDeleteRecord() {
   const highlight = () => {
     document.querySelectorAll('.test-cmd-name').forEach(span => {
@@ -179,6 +179,9 @@ function highlightDeleteRecord() {
 
     // --- STYLE ALL "DELETE WIDGET" MENU OPTIONS ---
     highlightDeleteWidget();
+
+    // --- STYLE "DELETE RECORD" MENU OPTION ---
+    highlightDeleteRecord();
 
     // --- HIDE LABELBLOCK CONTROLS IF STRUCTURE LOCKED ---
     applyLabelBlockPatch(perms.canAdd);

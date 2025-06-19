@@ -16,5 +16,6 @@
   "app/client/lib/waitForElement.ts",
   "app/client/ui/AppUI.ts",
   "app/server/MergedServer.ts",
-  "static/custom.css"
+  "static/custom.css",
+  "custom-files.json"
 ]

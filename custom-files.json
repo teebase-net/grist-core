@@ -1,0 +1,20 @@
+[
+  "Dockerfile",
+  "app/client/aclui/ACLFormulaEditor.ts",
+  "app/client/aclui/AccessRules.ts",
+  "app/client/app.js",
+  "app/client/components/CodeEditorPanel.ts",
+  "app/client/components/DetailView.css",
+  "app/client/components/GridView.css",
+  "app/client/components/GridView.css-custom",
+  "app/client/components/GridView.js",
+  "app/client/components/GridView.js-custom",
+  "app/client/components/GristDoc.ts",
+  "app/client/components/LayoutTray.ts",
+  "app/client/components/ViewLayout.ts",
+  "app/client/custom/index.js",
+  "app/client/lib/waitForElement.ts",
+  "app/client/ui/AppUI.ts",
+  "app/server/MergedServer.ts",
+  "static/custom.css"
+]

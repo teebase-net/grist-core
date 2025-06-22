@@ -207,9 +207,14 @@ DetailView.prototype.deleteRows = async function(rowIds) {
 };
 
 // MOD DMH
-// Add _getRowStyle to evaluate row-level styles
+// Add _getRowStyle to evaluate row-level styles with null check
 DetailView.prototype._getRowStyle = function (record) {
-  const styles = this._viewSection.table().rowStyles() || [];
+  const table = this._viewSection.table();
+  if (!table) {
+    console.warn('DetailView._getRowStyle: table is undefined for viewSection', this._viewSection);
+    return {};
+  }
+  const styles = table.rowStyles() || [];
   for (const style of styles) {
     if (style.condition(record)) {
       return style.css || {};

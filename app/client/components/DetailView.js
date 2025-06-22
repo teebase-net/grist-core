@@ -208,14 +208,14 @@ DetailView.prototype.deleteRows = async function(rowIds) {
 
 // MOD DMH
 // Add _getRowStyle to evaluate row-level styles
-DetailView.prototype._getRowStyle = function(record) {
+DetailView.prototype._getRowStyle = function (record) {
   const styles = this._viewSection.table().rowStyles() || [];
   for (const style of styles) {
     if (style.condition(record)) {
-      return style.css || {}; // e.g., { backgroundColor: 'red' }
+      return style.css || {};
     }
   }
-  return {}; // Default to no style if no rule matches
+  return {};
 };
 // END MOD DMH
 
@@ -288,55 +288,55 @@ DetailView.prototype.buildFieldContextMenu = function() {
  */
 // MOD DMH
 // Modified buildFieldDom to apply row-level background to fields
-DetailView.prototype.buildFieldDom = function(field, row) {
-  var self = this;
+DetailView.prototype.buildFieldDom = function (field, row) {
+  const self = this;
   if (field.isNewField) {
     return dom('div.g_record_detail_el.flexitem',
-      kd.cssClass(function() { return 'detail_theme_field_' + self.viewSection.themeDef(); }),
+      kd.cssClass(() => `detail_theme_field_${self.viewSection.themeDef()}`),
       dom('div.g_record_detail_label_container',
         dom('div.g_record_detail_label', kd.text(field.label)),
-        kd.scope(field.description, desc => desc ? descriptionInfoTooltip(desc, "column") : null)
+        kd.scope(field.description, (desc) => (desc ? descriptionInfoTooltip(desc, 'column') : null))
       ),
-      dom('div.g_record_detail_value'),
+      dom('div.g_record_detail_value')
     );
   }
 
-  var isCellSelected = ko.pureComputed(function() {
-    return this.cursor.fieldIndex() === (field && field._index()) &&
-      this.cursor.rowIndex() === (row && row._index());
-  }, this);
-  var isCellActive = ko.pureComputed(function() {
-    return this.viewSection.hasFocus() && isCellSelected();
-  }, this);
-
-  var isCopyActive = ko.computed(function() {
-    return self.copySelection() &&
-      self.copySelection().isCellSelected(row.getRowId(), field.colId());
-  });
+  const isCellSelected = ko.pureComputed(() => (
+    this.cursor.fieldIndex() === (field && field._index()) &&
+    this.cursor.rowIndex() === (row && row._index())
+  ), this);
+  const isCellActive = ko.pureComputed(() => (
+    this.viewSection.hasFocus() && isCellSelected()
+  ), this);
+  const isCopyActive = ko.computed(() => (
+    self.copySelection() &&
+    self.copySelection().isCellSelected(row.getRowId(), field.colId())
+  ));
 
   // Compute row-level style for the field
-  var rowStyle = ko.computed(function() {
+  const rowStyle = ko.computed(() => {
     const style = self._getRowStyle(row);
-    return { backgroundColor: style.backgroundColor || '' }; // Apply only backgroundColor
+    return { backgroundColor: style.backgroundColor || '' };
   }, this);
 
-  this.autoDispose(isCellSelected.subscribe(yesNo => {
+  this.autoDispose(isCellSelected.subscribe((yesNo) => {
     if (yesNo) {
-      var layoutBox = dom.findAncestor(fieldDom, '.layout_hbox');
+      const layoutBox = dom.findAncestor(fieldDom, '.layout_hbox');
       this.layoutBoxIdx(_.indexOf(layoutBox.parentElement.childNodes, layoutBox));
     }
   }));
 
-  var fieldDom = dom('div.g_record_detail_el.flexitem',
+  const fieldBuilder = this.fieldBuilders.at(field._index());
+  const fieldDom = dom('div.g_record_detail_el.flexitem',
     dom.autoDispose(isCellSelected),
     dom.autoDispose(isCellActive),
     dom.autoDispose(isCopyActive),
     dom.autoDispose(rowStyle),
-    kd.cssClass(function() { return 'detail_theme_field_' + self.viewSection.themeDef(); }),
+    kd.cssClass(() => `detail_theme_field_${self.viewSection.themeDef()}`),
     dom.style(rowStyle), // Apply row-level background
     dom('div.g_record_detail_label_container',
       dom('div.g_record_detail_label', kd.text(field.displayLabel)),
-      kd.scope(field.description, desc => desc ? descriptionInfoTooltip(desc, "column") : null)
+      kd.scope(field.description, (desc) => (desc ? descriptionInfoTooltip(desc, 'column') : null))
     ),
     dom('div.g_record_detail_value',
       kd.toggleClass('scissors', isCopyActive),

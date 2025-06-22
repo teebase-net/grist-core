@@ -206,6 +206,19 @@ DetailView.prototype.deleteRows = async function(rowIds) {
   }
 };
 
+// MOD DMH
+// Add _getRowStyle to evaluate row-level styles
+DetailView.prototype._getRowStyle = function(record) {
+  const styles = this._viewSection.table().rowStyles() || [];
+  for (const style of styles) {
+    if (style.condition(record)) {
+      return style.css || {}; // e.g., { backgroundColor: 'red' }
+    }
+  }
+  return {}; // Default to no style if no rule matches
+};
+// END MOD DMH
+
 /**
  * Pastes the provided data at the current cursor.
  *
@@ -273,6 +286,8 @@ DetailView.prototype.buildFieldContextMenu = function() {
  *    this may instead be an object with {isNewField:true, colRef, label, value}.
  * @param {DataRowModel} row: The record of data from which to render the given field.
  */
+// MOD DMH
+// Modified buildFieldDom to apply row-level background to fields
 DetailView.prototype.buildFieldDom = function(field, row) {
   var self = this;
   if (field.isNewField) {
@@ -280,7 +295,7 @@ DetailView.prototype.buildFieldDom = function(field, row) {
       kd.cssClass(function() { return 'detail_theme_field_' + self.viewSection.themeDef(); }),
       dom('div.g_record_detail_label_container',
         dom('div.g_record_detail_label', kd.text(field.label)),
-        kd.scope(field.description, desc => desc ? descriptionInfoTooltip(desc, "colmun") : null)
+        kd.scope(field.description, desc => desc ? descriptionInfoTooltip(desc, "column") : null)
       ),
       dom('div.g_record_detail_value'),
     );
@@ -294,11 +309,16 @@ DetailView.prototype.buildFieldDom = function(field, row) {
     return this.viewSection.hasFocus() && isCellSelected();
   }, this);
 
-  // Whether the cell is part of an active copy-paste operation.
   var isCopyActive = ko.computed(function() {
     return self.copySelection() &&
       self.copySelection().isCellSelected(row.getRowId(), field.colId());
   });
+
+  // Compute row-level style for the field
+  var rowStyle = ko.computed(function() {
+    const style = self._getRowStyle(row);
+    return { backgroundColor: style.backgroundColor || '' }; // Apply only backgroundColor
+  }, this);
 
   this.autoDispose(isCellSelected.subscribe(yesNo => {
     if (yesNo) {
@@ -306,11 +326,14 @@ DetailView.prototype.buildFieldDom = function(field, row) {
       this.layoutBoxIdx(_.indexOf(layoutBox.parentElement.childNodes, layoutBox));
     }
   }));
-  var fieldBuilder = this.fieldBuilders.at(field._index());
+
   var fieldDom = dom('div.g_record_detail_el.flexitem',
     dom.autoDispose(isCellSelected),
     dom.autoDispose(isCellActive),
+    dom.autoDispose(isCopyActive),
+    dom.autoDispose(rowStyle),
     kd.cssClass(function() { return 'detail_theme_field_' + self.viewSection.themeDef(); }),
+    dom.style(rowStyle), // Apply row-level background
     dom('div.g_record_detail_label_container',
       dom('div.g_record_detail_label', kd.text(field.displayLabel)),
       kd.scope(field.description, desc => desc ? descriptionInfoTooltip(desc, "column") : null)
@@ -318,14 +341,13 @@ DetailView.prototype.buildFieldDom = function(field, row) {
     dom('div.g_record_detail_value',
       kd.toggleClass('scissors', isCopyActive),
       kd.toggleClass('record-add', row._isAddRow),
-      dom.autoDispose(isCopyActive),
-      // Optional icon. Currently only use to show formula icon.
       dom('div.field-icon'),
       fieldBuilder.buildDomWithCursor(row, isCellActive, isCellSelected)
     )
   );
   return fieldDom;
 };
+// END MOD DMH
 
 DetailView.prototype.buildDom = function() {
   return dom('div.flexvbox.flexitem',

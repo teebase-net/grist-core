@@ -14,7 +14,7 @@ const TabBarView = (gristDoc: GristDoc) => {
         sections.map((sec, i) => dom('div',
           tab(
             {
-              style: `grid-row: ${i + 1};`, // Convert to string
+              style: `grid-row: ${i + 1};`,
               onClick: () => console.log(`Selected tab ${sec.widgetType || i}`),
               draggable: true,
               onDragStart: (e: DragEvent) => e.dataTransfer?.setData('text/plain', String(i)),
@@ -28,7 +28,7 @@ const TabBarView = (gristDoc: GristDoc) => {
             },
             sec.widgetType || `Tab ${i + 1}`
           )
-        )
+        ))
       )
     )
   );

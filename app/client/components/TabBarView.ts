@@ -13,20 +13,22 @@ const TabBarView = (gristDoc: GristDoc) => {
       tabGrid(
         sections.get().map((sec: ViewSectionRec, i: number) => dom('div',
           tab(
-            {
-              style: `grid-row: ${i + 1};`,
-              onClick: () => console.log(`Selected tab ${sec.widgetType || i}`),
-              draggable: true,
-              onDragStart: (e: DragEvent) => e.dataTransfer?.setData('text/plain', String(i)),
-              onDragOver: (e: DragEvent) => e.preventDefault(),
-              onDrop: (e: DragEvent) => {
-                e.preventDefault();
-                const fromIndex = Number(e.dataTransfer?.getData('text/plain'));
-                const toIndex = i;
-                if (fromIndex !== toIndex) reorderTabs(fromIndex, toIndex);
-              }
-            },
-            sec.widgetType || `Tab ${i + 1}`
+            dom('div', // Wrap content to handle attributes and children separately
+              {
+                style: `grid-row: ${i + 1};`,
+                draggable: true,
+                onDragStart: (e: DragEvent) => e.dataTransfer?.setData('text/plain', String(i)),
+                onDragOver: (e: DragEvent) => e.preventDefault(),
+                onDrop: (e: DragEvent) => {
+                  e.preventDefault();
+                  const fromIndex = Number(e.dataTransfer?.getData('text/plain'));
+                  const toIndex = i;
+                  if (fromIndex !== toIndex) reorderTabs(fromIndex, toIndex);
+                }
+              },
+              dom.on('click', () => console.log(`Selected tab ${sec.widgetType || i}`)), // Separate event handler
+              sec.widgetType || `Tab ${i + 1}`
+            )
           )
         ))
       )

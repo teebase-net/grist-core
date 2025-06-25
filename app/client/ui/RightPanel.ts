@@ -73,6 +73,7 @@ import {
 import * as ko from 'knockout';
 
 // MOD DMH
+// Adjusted import path to match TabBarView location
 import { TabBarView } from 'app/client/components/TabBarView';
 // end MOD DMH
 
@@ -425,24 +426,26 @@ export class RightPanel extends Disposable {
     ];
   }
 
-  // MOD DMH
-  private _createViewConfigTab(owner: MultiHolder): Observable<null|ViewConfigTab> {
-    const viewConfigTab = Observable.create<null|ViewConfigTab>(owner, null);
-    const gristDoc = this._gristDoc;
-    const activeSection = gristDoc.viewModel.activeSection.peek();
-    if (activeSection && activeSection.widgetType.peek() === 'TabBar') {
-      viewConfigTab.set(owner.autoDispose(new TabBarView(activeSection, { owner })));
-    } else {
-      imports.loadViewPane()
-        .then(ViewPane => {
-          if (owner.isDisposed()) { return; }
-          viewConfigTab.set(owner.autoDispose(
-            ViewPane.ViewConfigTab.create({gristDoc, viewModel: gristDoc.viewModel})));
-        })
-        .catch(reportError);
-    }
-    return viewConfigTab;
+// MOD DMH
+private _createViewConfigTab(owner: MultiHolder): Observable<null|ViewConfigTab> {
+  const viewConfigTab = Observable.create<null|ViewConfigTab>(owner, null);
+  const gristDoc = this._gristDoc;
+  const activeSection = gristDoc.viewModel.activeSection.peek();
+  if (activeSection && activeSection.widgetType.peek() === 'TabBar') {
+    // Cast to ViewConfigTab since TabBarView now implements it
+    viewConfigTab.set(owner.autoDispose(new TabBarView(activeSection, { owner }) as ViewConfigTab));
+  } else {
+    imports.loadViewPane()
+      .then(ViewPane => {
+        if (owner.isDisposed()) { return; }
+        viewConfigTab.set(owner.autoDispose(
+          ViewPane.ViewConfigTab.create({gristDoc, viewModel: gristDoc.viewModel})));
+      })
+      .catch(reportError);
   }
+  return viewConfigTab;
+}
+// end MOD DMH
 
   /* Original
   private _createViewConfigTab(owner: MultiHolder): Observable<null|ViewConfigTab> {

@@ -4,9 +4,13 @@ import {IPageWidget} from "app/client/ui/PageWidgetPicker";
 import {IconName} from "app/client/ui2018/IconList";
 import {IWidgetType} from "app/common/widgetTypes";
 import {makeT} from 'app/client/lib/localization';
+// MOD DMH
+import { TabBarView } from 'app/client/ui/TabBarView'; // Add this import (though not directly used here, for consistency)
+// end MOD DMH
 
 const t = makeT('widgetTypesMap');
 
+// MOD DMH
 export const widgetTypesMap = new Map<IWidgetType, IWidgetTypeInfo>([
   ['record', {name: 'Table', icon: 'TypeTable', getLabel: () => t('Table')}],
   ['single', {name: 'Card', icon: 'TypeCard', getLabel: () => t('Card')}],
@@ -15,7 +19,20 @@ export const widgetTypesMap = new Map<IWidgetType, IWidgetTypeInfo>([
   ['form', {name: 'Form', icon: 'Board', getLabel: () => t('Form')}],
   ['custom', {name: 'Custom', icon: 'TypeCustom', getLabel: () => t('Custom')}],
   ['custom.calendar', {name: 'Calendar', icon: 'TypeCalendar', getLabel: () => t('Calendar')}],
+  ['TabBar', {name: 'Tab Bar', icon: 'TypeTabs', getLabel: () => t('Tab Bar')}], // Add this line
 ]);
+
+/* Original
+export const widgetTypesMap = new Map<IWidgetType, IWidgetTypeInfo>([
+  ['record', {name: 'Table', icon: 'TypeTable', getLabel: () => t('Table')}],
+  ['single', {name: 'Card', icon: 'TypeCard', getLabel: () => t('Card')}],
+  ['detail', {name: 'Card List', icon: 'TypeCardList', getLabel: () => t('Card List')}],
+  ['chart', {name: 'Chart', icon: 'TypeChart', getLabel: () => t('Chart')}],
+  ['form', {name: 'Form', icon: 'Board', getLabel: () => t('Form')}],
+  ['custom', {name: 'Custom', icon: 'TypeCustom', getLabel: () => t('Custom')}],
+  ['custom.calendar', {name: 'Calendar', icon: 'TypeCalendar', getLabel: () => t('Calendar')}],
+]);*/
+// emd MOD DMH
 
 // Widget type info.
 export interface IWidgetTypeInfo {

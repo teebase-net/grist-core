@@ -33,12 +33,11 @@ import Popper from 'popper.js';
 import {IOpenController, popupOpen, setPopupToCreateDom} from 'popweasel';
 import without = require('lodash/without');
 
-// Add mock widget type for TabBar
-getWidgetTypes('TabBar', { getLabel: () => 'Tab Bar', icon: 'ViewTab' });
+// Register TabBar widget type
+getWidgetTypes('TabBar', { label: 'Tab Bar', iconName: 'ViewTab' }); // Adjusted for correct signature
 
 const t = makeT('PageWidgetPicker');
 
-// Describes a widget selection.
 export interface IPageWidget {
   type: IWidgetType;
   table: TableRef;
@@ -57,7 +56,6 @@ export const DefaultPageWidget: () => IPageWidget = () => ({
   section: 0,
 });
 
-// Creates a IPageWidget from a ViewSectionRec.
 export function toPageWidget(section: ViewSectionRec): IPageWidget {
   const link = linkId({
     srcSectionRef: section.linkSrcSectionRef.peek(),
@@ -88,8 +86,6 @@ export interface ICompatibleTypes {
 
 type TableRef = number|'New Table'|null;
 
-// The picker disables some choices that do not make much sense. This function return the list of
-// compatible types given the tableId and whether user is creating a new page or not.
 function getCompatibleTypes(tableId: TableRef,
                             {isNewPage, summarize}: ICompatibleTypes): IWidgetType[] {
   let compatibleTypes: Array<IWidgetType> = [];
@@ -103,14 +99,11 @@ function getCompatibleTypes(tableId: TableRef,
   return summarize ? compatibleTypes.filter((el) => isSummaryCompatible(el)) : compatibleTypes;
 }
 
-// The Picker disables some choices that do not make much sense.
-// This function return a boolean telling if summary can be used with this type.
 function isSummaryCompatible(widgetType: IWidgetType): boolean {
   const incompatibleTypes: Array<IWidgetType> = ['form'];
   return !incompatibleTypes.includes(widgetType);
 }
 
-// Whether table and type make for a valid selection whether the user is creating a new page or not.
 function isValidSelection(table: TableRef,
                           type: IWidgetType,
                           {isNewPage, summarize}: ICompatibleTypes) {
@@ -119,11 +112,8 @@ function isValidSelection(table: TableRef,
 
 export type ISaveFunc = (val: IPageWidget) => Promise<any>;
 
-// Delay in milliseconds, after a user click on the save btn, before we start showing a modal
-// spinner.
 const DELAY_BEFORE_SPINNER_MS = 500;
 
-// Attaches the page widget picker to elem to open on 'click' on the left.
 export function attachPageWidgetPicker(elem: HTMLElement, gristDoc: GristDoc, onSave: ISaveFunc,
                                        options: IOptions = {}) {
   options.placement = 'left';
@@ -136,7 +126,6 @@ export function attachPageWidgetPicker(elem: HTMLElement, gristDoc: GristDoc, on
   });
 }
 
-// Open page widget widget picker on the right of element.
 export function openPageWidgetPicker(elem: HTMLElement, gristDoc: GristDoc, onSave: ISaveFunc,
                                      options: IOptions = {}) {
   popupOpen(elem, (ctl) => buildPageWidgetPicker(
@@ -144,7 +133,6 @@ export function openPageWidgetPicker(elem: HTMLElement, gristDoc: GristDoc, onSa
   ), { placement: 'right' });
 }
 
-// Builds a picker to stick into the popup.
 export function buildPageWidgetPicker(
   ctl: IOpenController,
   gristDoc: GristDoc,
@@ -267,10 +255,11 @@ export class PageWidgetSelect extends Disposable {
     private _onSave: () => Promise<void>,
     private _behavioralPromptsManager: BehavioralPromptsManager,
     private _options: ISelectOptions = {},
-    private _gristDoc: GristDoc // Added to pass GristDoc
+    private _gristDoc: GristDoc
   ) { super(); }
 
   public buildDom() {
+    const testId = makeTestId('test-wselect-'); // Assign makeTestId to testId
     return cssContainer(
       testId('container'),
       cssBody(
@@ -291,7 +280,7 @@ export class PageWidgetSelect extends Disposable {
               testId('type'),
               dom.maybe((use) => use(this._value.type) === 'TabBar', () => {
                 return dom('div',
-                  TabBarView(this._gristDoc), // Render TabBarView
+                  import('app/client/components/TabBarView').then(({ default: TabBarView }) => TabBarView(this._gristDoc)),
                   testId('tabBarView')
                 );
               })
@@ -446,12 +435,12 @@ export class PageWidgetSelect extends Disposable {
 }
 
 function header(label: string, ...args: DomElementArg[]) {
+  const testId = makeTestId('test-wselect-');
   return cssHeader(dom('h4', label), ...args, testId('heading'));
 }
 
 const cssContainer = styled('div', `
   --outline: 1px solid ${theme.widgetPickerBorder};
-
   max-height: 386px;
   box-shadow: 0 2px 20px 0 ${theme.widgetPickerShadow};
   border-radius: 2px;
@@ -587,7 +576,6 @@ const cssSelectBy = styled('div', `
   align-items: center;
 `);
 
-// Returns a copy of array with its items sorted in the same order as they appear in other.
 function sortedAs(array: number[], other: number[]) {
   const order: {[id: number]: number} = {};
   for (const [index, item] of other.entries()) {

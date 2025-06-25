@@ -11,11 +11,11 @@ const TabBarView = (gristDoc: GristDoc) => {
   return dom('div',
     tabContainer(
       tabGrid(
-        computed(() => sections.get().map((sec, i) => dom('div',
+        sections.map((sec, i) => dom('div',
           tab(
-            { 
-              style: { gridRow: i + 1 },
-              onClick: () => console.log(`Selected tab ${sec.widgetType || i}`), // Use widgetType
+            {
+              style: `grid-row: ${i + 1};`, // Convert to string
+              onClick: () => console.log(`Selected tab ${sec.widgetType || i}`),
               draggable: true,
               onDragStart: (e: DragEvent) => e.dataTransfer?.setData('text/plain', String(i)),
               onDragOver: (e: DragEvent) => e.preventDefault(),
@@ -26,9 +26,9 @@ const TabBarView = (gristDoc: GristDoc) => {
                 if (fromIndex !== toIndex) reorderTabs(fromIndex, toIndex);
               }
             },
-            sec.widgetType || `Tab ${i + 1}` // Use widgetType
+            sec.widgetType || `Tab ${i + 1}`
           )
-        )))
+        )
       )
     )
   );
@@ -41,26 +41,31 @@ const TabBarView = (gristDoc: GristDoc) => {
   }
 };
 
-const tabContainer = styled('div', {
-  display: 'grid',
-  gridTemplateRows: 'auto',
-  gap: '5px',
-  padding: '10px',
-});
+const tabContainer = styled('div', `
+  display: grid;
+  grid-template-rows: auto;
+  gap: 5px;
+  padding: 10px;
+`);
 
-const tabGrid = styled('div', {
-  display: 'grid',
-  gridTemplateColumns: '1fr',
-  gap: '2px',
-});
+const tabGrid = styled('div', `
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+`);
 
-const tab = styled('div', {
-  padding: '10px',
-  cursor: 'pointer',
-  border: '1px solid #ccc',
-  background: '#f9f9f9',
-  '&:hover': { background: '#e0e0e0' },
-  '&.drop-target': { borderColor: '#007bff', background: '#e9f0fa' },
-});
+const tab = styled('div', `
+  padding: 10px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background: #f9f9f9;
+  &:hover {
+    background: #e0e0e0;
+  }
+  &.drop-target {
+    border-color: #007bff;
+    background: #e9f0fa;
+  }
+`);
 
 export default TabBarView;

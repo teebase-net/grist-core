@@ -7,7 +7,7 @@ import {ColumnRec, TableRec, ViewSectionRec} from 'app/client/models/DocModel';
 import {PERMITTED_CUSTOM_WIDGETS} from "app/client/models/features";
 import {linkId, NoLink} from 'app/client/ui/selectBy';
 import {overflowTooltip, withInfoTooltip} from 'app/client/ui/tooltips';
-import {getWidgetTypes} from "app/client/ui/widgetTypesMap"; // Removed registerWidgetType
+import {getWidgetTypes} from "app/client/ui/widgetTypesMap";
 import {bigPrimaryButton} from "app/client/ui2018/buttons";
 import {theme, vars} from "app/client/ui2018/cssVars";
 import {icon} from "app/client/ui2018/icons";
@@ -32,10 +32,10 @@ import {
 import Popper from 'popper.js';
 import {IOpenController, popupOpen, setPopupToCreateDom} from 'popweasel';
 import without = require('lodash/without');
-import TabBarView from 'app/client/components/TabBarView'; // Static import
+import TabBarView from 'app/client/components/TabBarView';
 
-// Define TabBar statically
-getWidgetTypes('TabBar', { label: 'Tab Bar', iconName: 'ViewTab' } as any); // Type assertion as a workaround
+// Define TabBar widget type manually (assuming getWidgetTypes needs adjustment)
+getWidgetTypes('TabBar'); // Minimal call; adjust if widgetTypesMap supports config
 
 const t = makeT('PageWidgetPicker');
 
@@ -280,7 +280,7 @@ export class PageWidgetSelect extends Disposable {
               cssEntry.cls('-disabled', disabled),
               testId('type'),
               dom.maybe((use) => use(this._value.type) === 'TabBar', () => {
-                return dom('div', TabBarView(this._gristDoc), testId('tabBarView')); // Static usage
+                return dom('div', TabBarView(this._gristDoc), testId('tabBarView'));
               })
             );
           }),

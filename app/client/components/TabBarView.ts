@@ -13,20 +13,20 @@ const TabBarView = (gristDoc: GristDoc) => {
       tabGrid(
         sections.get().map((sec: ViewSectionRec, i: number) => dom('div',
           tab(
-            dom('div', // Wrap content to handle attributes and children separately
+            dom('div',
               {
                 style: `grid-row: ${i + 1};`,
-                draggable: true,
-                onDragStart: (e: DragEvent) => e.dataTransfer?.setData('text/plain', String(i)),
-                onDragOver: (e: DragEvent) => e.preventDefault(),
-                onDrop: (e: DragEvent) => {
-                  e.preventDefault();
-                  const fromIndex = Number(e.dataTransfer?.getData('text/plain'));
-                  const toIndex = i;
-                  if (fromIndex !== toIndex) reorderTabs(fromIndex, toIndex);
-                }
+                draggable: true // Boolean attribute is fine
               },
-              dom.on('click', () => console.log(`Selected tab ${sec.widgetType || i}`)), // Separate event handler
+              dom.on('click', () => console.log(`Selected tab ${sec.widgetType || i}`)),
+              dom.on('dragstart', (e: DragEvent) => e.dataTransfer?.setData('text/plain', String(i))),
+              dom.on('dragover', (e: DragEvent) => e.preventDefault()),
+              dom.on('drop', (e: DragEvent) => {
+                e.preventDefault();
+                const fromIndex = Number(e.dataTransfer?.getData('text/plain'));
+                const toIndex = i;
+                if (fromIndex !== toIndex) reorderTabs(fromIndex, toIndex);
+              }),
               sec.widgetType || `Tab ${i + 1}`
             )
           )

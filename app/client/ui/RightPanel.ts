@@ -73,7 +73,7 @@ import {
 import * as ko from 'knockout';
 
 // MOD DMH
-import { TabBarView } from 'app/client/ui/TabBarView'; // Add this import
+import { TabBarView } from 'app/client/components/TabBarView';
 // end MOD DMH
 
 // some unicode characters

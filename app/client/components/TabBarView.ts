@@ -1,20 +1,19 @@
+```typescript
 /**
  * TabBarView.ts - Tab Bar Widget for Grist
- * Created by David Hawley 25-06-2025
- 
+ * 
  * This file defines the TabBarView class, a custom Grist widget that creates a tabbed interface
  * where each tab contains draggable sub-widgets (e.g., Table, Card, Chart). Sub-widgets can be
  * rearranged using native drag-and-drop functionality, with layout changes persisted in the
  * document model. The widget uses GrainJS for reactive updates and CSS for styling.
  * 
  * Affected Files:
- * - ViewPane.ts: Registers TabBarView in the widget factory.
- * - ViewEditor.ts: Adds TabBar to the widget type selector.
+ * - RightPanel.ts: Registers TabBarView in the view configuration via _createViewConfigTab.
+ * - widgetTypesMap.ts: Adds TabBar to the widget type selector.
  * - webpack.config.js: Ensures build configuration excludes external dependencies.
  * - package.json: Removes gridstack dependency, aligning with native method.
  */
 
-```typescript
 import { BaseView, ViewOptions } from 'app/client/ui/BaseView';
 import { GrainJS, computed, DomElementArg } from 'grainjs';
 import { css } from 'app/client/ui/style';
@@ -36,7 +35,7 @@ export class TabBarView extends BaseView {
           e.dataTransfer?.setData('text/plain', widget.id);
         });
         widget.addEventListener('dragover', (e) => {
-          e.preventDefault(); // Allow drop
+          e.preventDefault();
           widget.classList.add('drop-target');
         });
         widget.addEventListener('dragleave', (e) => {
@@ -63,7 +62,6 @@ export class TabBarView extends BaseView {
       if (dragged && target && dragged !== target) {
         const isAfter = Array.from(grid.children).indexOf(target) > Array.from(grid.children).indexOf(dragged);
         grid.insertBefore(dragged, isAfter ? target.nextSibling : target);
-        // Update subWidgets order in viewRec (simplified)
         const subWidgets = this.viewRec.subWidgets.peek() || [];
         const draggedIndex = subWidgets.findIndex(w => `widget-${w.id}` === draggedId);
         const targetIndex = subWidgets.findIndex(w => `widget-${w.id}` === targetId);
@@ -71,7 +69,7 @@ export class TabBarView extends BaseView {
           const [moved] = subWidgets.splice(draggedIndex, 1);
           subWidgets.splice(isAfter ? targetIndex + 1 : targetIndex, 0, moved);
           this.viewRec.subWidgets(subWidgets);
-          this.viewRec.save(); // Persist changes
+          this.viewRec.save();
         }
       }
     }
@@ -140,4 +138,3 @@ const css = {
     background: '#e9f0fa',
   }),
 };
-```

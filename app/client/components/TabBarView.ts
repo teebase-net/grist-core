@@ -1,3 +1,19 @@
+/**
+ * TabBarView.ts - Tab Bar Widget for Grist
+ * Created by David Hawley 25-06-2025
+ 
+ * This file defines the TabBarView class, a custom Grist widget that creates a tabbed interface
+ * where each tab contains draggable sub-widgets (e.g., Table, Card, Chart). Sub-widgets can be
+ * rearranged using native drag-and-drop functionality, with layout changes persisted in the
+ * document model. The widget uses GrainJS for reactive updates and CSS for styling.
+ * 
+ * Affected Files:
+ * - ViewPane.ts: Registers TabBarView in the widget factory.
+ * - ViewEditor.ts: Adds TabBar to the widget type selector.
+ * - webpack.config.js: Ensures build configuration excludes external dependencies.
+ * - package.json: Removes gridstack dependency, aligning with native method.
+ */
+
 ```typescript
 import { BaseView, ViewOptions } from 'app/client/ui/BaseView';
 import { GrainJS, computed, DomElementArg } from 'grainjs';

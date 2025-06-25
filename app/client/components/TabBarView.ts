@@ -1,4 +1,3 @@
-```typescript
 /**
  * TabBarView.ts - Tab Bar Widget for Grist
  * 

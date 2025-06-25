@@ -1,15 +1,18 @@
-import { dom, styled, computed } from 'grainjs';
+import { dom, computed } from 'grainjs';
 import { ViewSectionRec } from 'app/client/models/DocModel';
 import { GristDoc } from 'app/client/components/GristDoc';
 
 const TabBarView = (gristDoc: GristDoc) => {
-  const sections = computed(() => gristDoc.viewModel.activeSection.peek() as ViewSectionRec[] || []);
+  const sections = computed(() => {
+    const activeSection = gristDoc.viewModel.activeSection.peek() as ViewSectionRec | undefined;
+    return activeSection ? [activeSection] : [];
+  });
 
   return dom('div',
-    styled.container(
-      styled.tabGrid(
-        computed(() => sections().map((sec, i) => dom('div',
-          styled.tab(
+    tabContainer(
+      tabGrid(
+        computed(() => sections.get().map((sec, i) => dom('div',
+          tab(
             { 
               style: { gridRow: i + 1 },
               onClick: () => console.log(`Selected tab ${sec.label || i}`),
@@ -23,7 +26,7 @@ const TabBarView = (gristDoc: GristDoc) => {
                 if (fromIndex !== toIndex) reorderTabs(fromIndex, toIndex);
               }
             },
-            sec.label || `Tab ${i + 1}`
+            sec.label || sec.widgetType || `Tab ${i + 1}`
           )
         )))
       )
@@ -31,33 +34,33 @@ const TabBarView = (gristDoc: GristDoc) => {
   );
 
   function reorderTabs(fromIndex: number, toIndex: number) {
-    const newSections = [...sections()];
+    const newSections = [...sections.get()];
     const [moved] = newSections.splice(fromIndex, 1);
     newSections.splice(toIndex, 0, moved);
-    // Update logic would go here, e.g., via GristDoc API
-    console.log('Reordered tabs:', newSections.map(s => s.label));
+    console.log('Reordered tabs:', newSections.map(s => s.label || s.widgetType));
   }
 };
 
-const styled = {
-  container: styled.cls('tab-container', {
-    display: 'grid',
-    gridTemplateRows: 'auto',
-    gap: '5px',
-    padding: '10px',
-  }),
-  tabGrid: styled.cls('tab-grid', {
-    display: 'grid',
-    gridTemplateColumns: '1fr',
-    gap: '2px',
-  }),
-  tab: styled.cls('tab', {
-    padding: '10px',
-    cursor: 'pointer',
-    border: '1px solid #ccc',
-    background: '#f9f9f9',
-    '&:hover': { background: '#e0e0e0' },
-  }),
-} as const;
+const tabContainer = styled('div', {
+  display: 'grid',
+  gridTemplateRows: 'auto',
+  gap: '5px',
+  padding: '10px',
+});
+
+const tabGrid = styled('div', {
+  display: 'grid',
+  gridTemplateColumns: '1fr',
+  gap: '2px',
+});
+
+const tab = styled('div', {
+  padding: '10px',
+  cursor: 'pointer',
+  border: '1px solid #ccc',
+  background: '#f9f9f9',
+  '&:hover': { background: '#e0e0e0' },
+  '&.drop-target': { borderColor: '#007bff', background: '#e9f0fa' },
+});
 
 export default TabBarView;

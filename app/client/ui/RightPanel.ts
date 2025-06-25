@@ -72,11 +72,6 @@ import {
 } from 'grainjs';
 import * as ko from 'knockout';
 
-// MOD DMH
-// Adjusted import path to match TabBarView location
-import { TabBarView } from 'app/client/components/TabBarView';
-// end MOD DMH
-
 // some unicode characters
 const BLACK_CIRCLE = '\u2022';
 const ELEMENTOF = '\u2208'; //220A for small elementof
@@ -426,29 +421,6 @@ export class RightPanel extends Disposable {
     ];
   }
 
-// MOD DMH
-// Adjusted _createViewConfigTab to handle type conversion safely
-private _createViewConfigTab(owner: MultiHolder): Observable<null|ViewConfigTab> {
-  const viewConfigTab = Observable.create<null|ViewConfigTab>(owner, null);
-  const gristDoc = this._gristDoc;
-  const activeSection = gristDoc.viewModel.activeSection.peek();
-  if (activeSection && activeSection.widgetType.peek() === 'TabBar') {
-    const tabView = new TabBarView(gristDoc, { owner }) as unknown as ViewConfigTab; // Safe cast via unknown
-    viewConfigTab.set(owner.autoDispose(tabView));
-  } else {
-    imports.loadViewPane()
-      .then(ViewPane => {
-        if (owner.isDisposed()) { return; }
-        viewConfigTab.set(owner.autoDispose(
-          ViewPane.ViewConfigTab.create({gristDoc, viewModel: gristDoc.viewModel})));
-      })
-      .catch(reportError);
-  }
-  return viewConfigTab;
-}
-// end MOD DMH
-
-  /* Original
   private _createViewConfigTab(owner: MultiHolder): Observable<null|ViewConfigTab> {
     const viewConfigTab = Observable.create<null|ViewConfigTab>(owner, null);
     const gristDoc = this._gristDoc;
@@ -460,9 +432,8 @@ private _createViewConfigTab(owner: MultiHolder): Observable<null|ViewConfigTab>
       })
       .catch(reportError);
     return viewConfigTab;
-  }*/
-  // end MOD DMH
-  
+  }
+
   private _buildPageWidgetConfig(owner: MultiHolder, activeSection: ViewSectionRec) {
     // TODO: This uses private methods from ViewConfigTab. These methods are likely to get
     // refactored, but if not, should be made public.

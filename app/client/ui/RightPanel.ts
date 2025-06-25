@@ -427,13 +427,14 @@ export class RightPanel extends Disposable {
   }
 
 // MOD DMH
+// Adjusted _createViewConfigTab to handle type conversion safely
 private _createViewConfigTab(owner: MultiHolder): Observable<null|ViewConfigTab> {
   const viewConfigTab = Observable.create<null|ViewConfigTab>(owner, null);
   const gristDoc = this._gristDoc;
   const activeSection = gristDoc.viewModel.activeSection.peek();
   if (activeSection && activeSection.widgetType.peek() === 'TabBar') {
-    // Cast to ViewConfigTab since TabBarView now implements it
-    viewConfigTab.set(owner.autoDispose(new TabBarView(activeSection, { owner }) as ViewConfigTab));
+    const tabView = new TabBarView(gristDoc, { owner }) as unknown as ViewConfigTab; // Safe cast via unknown
+    viewConfigTab.set(owner.autoDispose(tabView));
   } else {
     imports.loadViewPane()
       .then(ViewPane => {

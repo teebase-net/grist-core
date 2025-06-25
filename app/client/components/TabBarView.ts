@@ -11,7 +11,7 @@ const TabBarView = (gristDoc: GristDoc) => {
   return dom('div',
     tabContainer(
       tabGrid(
-        sections.map((sec, i) => dom('div',
+        sections.get().map((sec: ViewSectionRec, i: number) => dom('div',
           tab(
             {
               style: `grid-row: ${i + 1};`,

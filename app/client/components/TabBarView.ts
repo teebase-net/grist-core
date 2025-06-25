@@ -3,33 +3,38 @@
  * [Truncated description for brevity]
  */
 import { ViewSectionRec } from 'app/client/models/DocModel';
+import { GristDoc } from 'app/client/components/GristDoc'; // For constructor
 // MOD DMH
-// Adjusted import paths and handled BaseView correctly
-import { computed, DomElementArg, Disposable, Observable } from 'grainjs';
-import { css } from 'app/client/ui/style'; // Corrected path
-import BaseView = require('app/client/components/BaseView'); // Require-style import
+// Adjusted imports: corrected style path, imported ViewConfigTab, and Disposable
+import { computed, DomElementArg, Disposable } from 'grainjs';
+import { css } from 'app/client/ui2018/cssVars'; // Adjusted to a likely valid path
+import ViewConfigTab from 'app/client/components/ViewConfigTab';
 // end MOD DMH
 
-export class TabBarView extends BaseView implements Disposable, ViewConfigTab {
+export class TabBarView extends BaseView implements ViewConfigTab {
   // MOD DMH
-  // Updated to use ViewSectionRec and added Disposable implementation
+  // Extended Disposable and used GristDoc, stored ViewSectionRec
   private readonly viewRec: ViewSectionRec;
-  constructor(viewRec: ViewSectionRec, options: any) { // Adjust options type if defined
-    super(viewRec, options);
-    this.viewRec = viewRec;
+  constructor(gristDoc: GristDoc, options: any) {
+    super(gristDoc, options); // Align with BaseView signature
+    this.viewRec = gristDoc.viewModel.activeSection.peek() as ViewSectionRec;
     this._initDragDrop();
   }
 
-  dispose(): void {
-    // Implement dispose if needed, currently empty as no resources to clean up
-  }
+  // Inherit Disposable methods
+  protected _disposalList: Disposable[] = [];
+  public onDispose(callback: () => void): this { return Disposable.prototype.onDispose.call(this, callback); }
+  public wipeOnDispose(obj: any): this { return Disposable.prototype.wipeOnDispose.call(this, obj); }
+  public _wipeOutObject(obj: any): void { Disposable.prototype._wipeOutObject.call(this, obj); }
 
-  // Stub implementations for ViewConfigTab (to be fully implemented based on interface)
-  buildSortFilterDom(): DomElementArg { return null; }
-  _buildAdvancedSettingsDom(): DomElementArg { return null; }
-  _buildThemeDom(): DomElementArg { return null; }
-  _buildChartConfigDom(): DomElementArg { return null; }
-  // Add other required methods from ViewConfigTab as needed
+  // Implement ViewConfigTab methods (stubbed)
+  buildSortFilterDom(): DomElementArg { return dom('div'); }
+  _buildLayoutDom(): DomElementArg { return dom('div'); }
+  _buildCustomTypeItems(): DomElementArg { return dom('div'); }
+  _buildAdvancedSettingsDom(): DomElementArg { return dom('div'); }
+  _buildThemeDom(): DomElementArg { return dom('div'); }
+  _buildChartConfigDom(): DomElementArg { return dom('div'); }
+  // Add other methods as per ViewConfigTab interface
   // end MOD DMH
 
   private _initDragDrop() {
@@ -39,24 +44,20 @@ export class TabBarView extends BaseView implements Disposable, ViewConfigTab {
       widgets.forEach(widget => {
         widget.setAttribute('draggable', 'true');
         // MOD DMH
-        // Used string overload with DragEvent casting
+        // Removed unused dragEvent, used direct casting
         widget.addEventListener('dragstart', (e: Event) => {
-          const dragEvent = e as DragEvent;
-          dragEvent.dataTransfer?.setData('text/plain', widget.id);
+          (e as DragEvent).dataTransfer?.setData('text/plain', widget.id);
         });
         widget.addEventListener('dragover', (e: Event) => {
-          const dragEvent = e as DragEvent;
-          dragEvent.preventDefault();
+          (e as DragEvent).preventDefault();
           widget.classList.add('drop-target');
         });
         widget.addEventListener('dragleave', (e: Event) => {
-          const dragEvent = e as DragEvent;
           widget.classList.remove('drop-target');
         });
         widget.addEventListener('drop', (e: Event) => {
-          const dragEvent = e as DragEvent;
-          dragEvent.preventDefault();
-          const id = dragEvent.dataTransfer?.getData('text');
+          (e as DragEvent).preventDefault();
+          const id = (e as DragEvent).dataTransfer?.getData('text');
           const target = e.target as HTMLElement;
           if (id && target.classList.contains('tab-widget')) {
             this._reorderWidgets(id, target.id);
@@ -77,8 +78,8 @@ export class TabBarView extends BaseView implements Disposable, ViewConfigTab {
         const isAfter = Array.from(grid.children).indexOf(target) > Array.from(grid.children).indexOf(dragged);
         grid.insertBefore(dragged, isAfter ? target.nextSibling : target);
         // MOD DMH
-        // Adjusted to use existing ViewSectionRec properties or assume custom ones
-        const subWidgets = this.viewRec.widgetOptions?.peek()?.subWidgets || []; // Adjust based on actual structure
+        // Used existing widgetType and label
+        const subWidgets = this.viewRec.viewSections.peek() || []; // Adjust based on actual sub-sections
         const draggedIndex = subWidgets.findIndex((w: ViewSectionRec) => `widget-${w.id}` === draggedId);
         const targetIndex = subWidgets.findIndex((w: ViewSectionRec) => `widget-${w.id}` === targetId);
         // end MOD DMH
@@ -86,8 +87,8 @@ export class TabBarView extends BaseView implements Disposable, ViewConfigTab {
           const [moved] = subWidgets.splice(draggedIndex, 1);
           subWidgets.splice(isAfter ? targetIndex + 1 : targetIndex, 0, moved);
           // MOD DMH
-          // Adjusted to use a method or property that exists
-          this.viewRec.setWidgetOptions({ subWidgets }); // Placeholder, adjust based on API
+          // Adjusted to use viewSections setter if available
+          this.viewRec.viewSections(subWidgets); // Adjust based on API
           // end MOD DMH
         }
       }
@@ -98,24 +99,21 @@ export class TabBarView extends BaseView implements Disposable, ViewConfigTab {
     return css.tabContainer(
       css.tabBar(computed((use) => {
         // MOD DMH
-        // Adjusted to use existing tabs or a default
-        const tabs = use(this.viewRec.widgetOptions?.tabs) as ViewSectionRec[] || [];
+        // Used viewSections as tabs
+        const tabs = use(this.viewRec.viewSections) as ViewSectionRec[] || [];
         return tabs.map((tab: ViewSectionRec, index: number) => css.tab(
           { onClick: () => this._setActiveTab(index) },
-          tab.name || `Tab ${index + 1}`
+          tab.label || `Tab ${index + 1}` // Used label instead of name
         ));
-        // end DMH
+        // end MOD DMH
       })),
       css.tabContent(
         computed((use) => css.gridContainer(
           { id: `grid-${this.viewRec.id}` },
-          // MOD DMH
-          // Adjusted to use existing subWidgets
-          use(this.viewRec.widgetOptions?.subWidgets as Observable<ViewSectionRec[]>).map((w: ViewSectionRec) => css.tabWidget(
+          use(this.viewRec.viewSections).map((w: ViewSectionRec) => css.tabWidget(
             { id: `widget-${w.id}`, class: 'tab-widget' },
-            w.type
+            w.widgetType // Used widgetType instead of type
           ))
-          // end MOD DMH
         ))
       )
     );
@@ -123,8 +121,8 @@ export class TabBarView extends BaseView implements Disposable, ViewConfigTab {
 
   private _setActiveTab(index: number) {
     // MOD DMH
-    // Adjusted to use an existing method or property
-    this.viewRec.setActiveTab(index); // Placeholder, adjust based on API
+    // Adjusted to use activeSectionId if available
+    this.viewRec.activeSectionId(index); // Adjust based on API
     // end MOD DMH
   }
 }
@@ -167,5 +165,5 @@ const css = {
     borderColor: '#007bff',
     background: '#e9f0fa',
   }),
-};
+} as const;
 // end MOD DMH

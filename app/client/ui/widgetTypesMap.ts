@@ -17,7 +17,7 @@ export const widgetTypesMap = new Map<IWidgetType, IWidgetTypeInfo>([
   ['form', {name: 'Form', icon: 'Board', getLabel: () => t('Form')}],
   ['custom', {name: 'Custom', icon: 'TypeCustom', getLabel: () => t('Custom')}],
   ['custom.calendar', {name: 'Calendar', icon: 'TypeCalendar', getLabel: () => t('Calendar')}],
-  ['TabBar', {name: 'Tab Bar', icon: 'TypeTabs', getLabel: () => t('Tab Bar')}], // Add this line
+  ['TabBar', {name: 'Tab Bar', icon: 'TypeTable', getLabel: () => t('Tab Bar')}], // Add this line
 ]);
 // end MOD DMH
 

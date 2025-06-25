@@ -7,7 +7,7 @@ import {ColumnRec, TableRec, ViewSectionRec} from 'app/client/models/DocModel';
 import {PERMITTED_CUSTOM_WIDGETS} from "app/client/models/features";
 import {linkId, NoLink} from 'app/client/ui/selectBy';
 import {overflowTooltip, withInfoTooltip} from 'app/client/ui/tooltips';
-import {getWidgetTypes} from "app/client/ui/widgetTypesMap";
+import {getWidgetTypes, registerWidgetType} from "app/client/ui/widgetTypesMap"; // Adjusted import
 import {bigPrimaryButton} from "app/client/ui2018/buttons";
 import {theme, vars} from "app/client/ui2018/cssVars";
 import {icon} from "app/client/ui2018/icons";
@@ -34,7 +34,7 @@ import {IOpenController, popupOpen, setPopupToCreateDom} from 'popweasel';
 import without = require('lodash/without');
 
 // Register TabBar widget type
-getWidgetTypes('TabBar', { label: 'Tab Bar', iconName: 'ViewTab' }); // Adjusted for correct signature
+registerWidgetType('TabBar', { label: 'Tab Bar', iconName: 'ViewTab' }); // Use registerWidgetType
 
 const t = makeT('PageWidgetPicker');
 
@@ -259,7 +259,7 @@ export class PageWidgetSelect extends Disposable {
   ) { super(); }
 
   public buildDom() {
-    const testId = makeTestId('test-wselect-'); // Assign makeTestId to testId
+    const testId = makeTestId('test-wselect-');
     return cssContainer(
       testId('container'),
       cssBody(
@@ -279,10 +279,12 @@ export class PageWidgetSelect extends Disposable {
               cssEntry.cls('-disabled', disabled),
               testId('type'),
               dom.maybe((use) => use(this._value.type) === 'TabBar', () => {
-                return dom('div',
-                  import('app/client/components/TabBarView').then(({ default: TabBarView }) => TabBarView(this._gristDoc)),
-                  testId('tabBarView')
-                );
+                // Load TabBarView dynamically
+                let TabBarView: (doc: GristDoc) => DomElementArg;
+                import('app/client/components/TabBarView').then(module => {
+                  TabBarView = module.default;
+                }).catch(err => console.error('Failed to load TabBarView:', err));
+                return TabBarView ? dom('div', TabBarView(this._gristDoc), testId('tabBarView')) : dom('div', 'Loading...');
               })
             );
           }),

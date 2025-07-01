@@ -17,5 +17,9 @@
   "app/client/ui/AppUI.ts",
   "app/server/MergedServer.ts",
   "static/custom.css",
-  "custom-files.json"
+  "custom-files.json",
+  "app/client/components/TabBarView.ts",
+  "app/client/ui/PageWidgetPicker.ts",
+  "app/client/ui/widgetTypesMap.ts",
+  "app/common/widgetTypes.ts"
 ]

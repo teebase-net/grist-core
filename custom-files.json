@@ -18,6 +18,5 @@
   "app/server/MergedServer.ts",
   "static/custom.css",
   "custom-files.json",
-  "app/client/components/TabBarView.ts",
-  "app/client/ui/widgetTypesMap.ts"
+  "app/client/components/TabBarView.ts"
 ]

@@ -17,6 +17,5 @@
   "app/client/ui/AppUI.ts",
   "app/server/MergedServer.ts",
   "static/custom.css",
-  "custom-files.json",
-  "app/client/components/TabBarView.ts"
+  "custom-files.json"
 ]

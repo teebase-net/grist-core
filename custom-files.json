@@ -17,5 +17,9 @@
   "app/client/ui/AppUI.ts",
   "app/server/MergedServer.ts",
   "static/custom.css",
-  "custom-files.json"
+  "custom-files.json",
+  "app/client/components/AA_delete_GridView.css-custom",
+  "app/client/components/AA_delete_GridView.js-custom",
+  "app/client/components/AA_delete_TabBarView.ts",
+  "app/client/lib/AA_delete_waitForElement.ts"
 ]

@@ -19,6 +19,5 @@
   "static/custom.css",
   "custom-files.json",
   "app/client/components/TabBarView.ts",
-  "app/client/ui/PageWidgetPicker.ts",
   "app/client/ui/widgetTypesMap.ts"
 ]

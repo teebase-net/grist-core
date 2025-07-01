@@ -20,6 +20,5 @@
   "custom-files.json",
   "app/client/components/TabBarView.ts",
   "app/client/ui/PageWidgetPicker.ts",
-  "app/client/ui/widgetTypesMap.ts",
-  "app/common/widgetTypes.ts"
+  "app/client/ui/widgetTypesMap.ts"
 ]

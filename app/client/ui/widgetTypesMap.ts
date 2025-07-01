@@ -7,8 +7,6 @@ import {makeT} from 'app/client/lib/localization';
 
 const t = makeT('widgetTypesMap');
 
-// MOD DMH
-// Ensured TabBar is included in widgetTypesMap, assuming IWidgetType supports string literals
 export const widgetTypesMap = new Map<IWidgetType, IWidgetTypeInfo>([
   ['record', {name: 'Table', icon: 'TypeTable', getLabel: () => t('Table')}],
   ['single', {name: 'Card', icon: 'TypeCard', getLabel: () => t('Card')}],
@@ -17,20 +15,7 @@ export const widgetTypesMap = new Map<IWidgetType, IWidgetTypeInfo>([
   ['form', {name: 'Form', icon: 'Board', getLabel: () => t('Form')}],
   ['custom', {name: 'Custom', icon: 'TypeCustom', getLabel: () => t('Custom')}],
   ['custom.calendar', {name: 'Calendar', icon: 'TypeCalendar', getLabel: () => t('Calendar')}],
-  ['TabBar', {name: 'Tab Bar', icon: 'TypeTable', getLabel: () => t('Tab Bar')}], // Add this line
 ]);
-// end MOD DMH
-
-/* Original
-export const widgetTypesMap = new Map<IWidgetType, IWidgetTypeInfo>([
-  ['record', {name: 'Table', icon: 'TypeTable', getLabel: () => t('Table')}],
-  ['single', {name: 'Card', icon: 'TypeCard', getLabel: () => t('Card')}],
-  ['detail', {name: 'Card List', icon: 'TypeCardList', getLabel: () => t('Card List')}],
-  ['chart', {name: 'Chart', icon: 'TypeChart', getLabel: () => t('Chart')}],
-  ['form', {name: 'Form', icon: 'Board', getLabel: () => t('Form')}],
-  ['custom', {name: 'Custom', icon: 'TypeCustom', getLabel: () => t('Custom')}],
-  ['custom.calendar', {name: 'Calendar', icon: 'TypeCalendar', getLabel: () => t('Calendar')}],
-]);*/
 
 // Widget type info.
 export interface IWidgetTypeInfo {

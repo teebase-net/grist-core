@@ -32,19 +32,30 @@ import {
 import Popper from 'popper.js';
 import {IOpenController, popupOpen, setPopupToCreateDom} from 'popweasel';
 import without = require('lodash/without');
-import TabBarView from 'app/client/components/TabBarView';
-
-// Define TabBar widget type manually (assuming getWidgetTypes needs adjustment)
-getWidgetTypes('TabBar'); // Minimal call; adjust if widgetTypesMap supports config
 
 const t = makeT('PageWidgetPicker');
 
+type TableRef = number|'New Table'|null;
+
+// Describes a widget selection.
 export interface IPageWidget {
+
+  // The widget type
   type: IWidgetType;
+
+  // The table (one of the listed tables or 'New Table')
   table: TableRef;
+
+  // Whether to summarize the table (not available for "New Table").
   summarize: boolean;
+
+  // some of the listed columns to use to summarize the table.
   columns: number[];
+
+  // link
   link: string;
+
+  // the page widget section id (should be 0 for a to-be-saved new widget)
   section: number;
 }
 
@@ -57,6 +68,7 @@ export const DefaultPageWidget: () => IPageWidget = () => ({
   section: 0,
 });
 
+// Creates a IPageWidget from a ViewSectionRec.
 export function toPageWidget(section: ViewSectionRec): IPageWidget {
   const link = linkId({
     srcSectionRef: section.linkSrcSectionRef.peek(),
@@ -70,41 +82,56 @@ export function toPageWidget(section: ViewSectionRec): IPageWidget {
     columns: section.table.peek().columns.peek().peek()
       .filter((col) => col.summarySourceCol.peek())
       .map((col) => col.summarySourceCol.peek()),
-    link,
-    section: section.id.peek()
+    link, section: section.id.peek()
   };
 }
 
+
 export interface IOptions extends ISelectOptions {
+
+  // the initial selected value, we call the function when the popup get triggered
   value?: () => IPageWidget;
+
+  // placement, directly passed to the underlying Popper library.
   placement?: Popper.Placement;
 }
 
 export interface ICompatibleTypes {
+
+  // true if "New Page" is selected in Page Picker
   isNewPage: Boolean | undefined;
+
+  // true if can be summarized
   summarize: Boolean;
 }
 
-type TableRef = number|'New Table'|null;
+const testId = makeTestId('test-wselect-');
 
+// The picker disables some choices that do not make much sense. This function return the list of
+// compatible types given the tableId and whether user is creating a new page or not.
 function getCompatibleTypes(tableId: TableRef,
                             {isNewPage, summarize}: ICompatibleTypes): IWidgetType[] {
   let compatibleTypes: Array<IWidgetType> = [];
   if (tableId !== 'New Table') {
     compatibleTypes = ['record', 'single', 'detail', 'chart', 'custom', 'custom.calendar', 'form'];
   } else if (isNewPage) {
+    // New view + new table means we'll be switching to the primary view.
     compatibleTypes = ['record', 'form'];
   } else {
+    // The type 'chart' makes little sense when creating a new table.
     compatibleTypes = ['record', 'single', 'detail', 'form'];
   }
   return summarize ? compatibleTypes.filter((el) => isSummaryCompatible(el)) : compatibleTypes;
 }
 
+// The Picker disables some choices that do not make much sense.
+// This function return a boolean telling if summary can be used with this type.
 function isSummaryCompatible(widgetType: IWidgetType): boolean {
   const incompatibleTypes: Array<IWidgetType> = ['form'];
   return !incompatibleTypes.includes(widgetType);
 }
 
+// Whether table and type make for a valid selection whether the user is creating a new page or not.
 function isValidSelection(table: TableRef,
                           type: IWidgetType,
                           {isNewPage, summarize}: ICompatibleTypes) {
@@ -113,10 +140,20 @@ function isValidSelection(table: TableRef,
 
 export type ISaveFunc = (val: IPageWidget) => Promise<any>;
 
+// Delay in milliseconds, after a user click on the save btn, before we start showing a modal
+// spinner. If saving completes before this time elapses (which is likely to happen for regular
+// table) we don't show the modal spinner.
 const DELAY_BEFORE_SPINNER_MS = 500;
 
+// Attaches the page widget picker to elem to open on 'click' on the left.
 export function attachPageWidgetPicker(elem: HTMLElement, gristDoc: GristDoc, onSave: ISaveFunc,
                                        options: IOptions = {}) {
+  // Overrides .placement, this is needed to enable the page widget to update position when user
+  // expand the `Group By` panel.
+  // TODO: remove .placement from the options of this method (note: breaking buildPageWidgetPicker
+  // into two steps, one for model creation and the other for building UI, seems promising. In
+  // particular listening to value.summarize to update popup position could be done directly in
+  // code).
   options.placement = 'left';
   const domCreator = (ctl: IOpenController) => buildPageWidgetPicker(ctl, gristDoc, onSave, options);
   setPopupToCreateDom(elem, domCreator, {
@@ -127,6 +164,7 @@ export function attachPageWidgetPicker(elem: HTMLElement, gristDoc: GristDoc, on
   });
 }
 
+// Open page widget widget picker on the right of element.
 export function openPageWidgetPicker(elem: HTMLElement, gristDoc: GristDoc, onSave: ISaveFunc,
                                      options: IOptions = {}) {
   popupOpen(elem, (ctl) => buildPageWidgetPicker(
@@ -134,6 +172,11 @@ export function openPageWidgetPicker(elem: HTMLElement, gristDoc: GristDoc, onSa
   ), { placement: 'right' });
 }
 
+// Builds a picker to stick into the popup. Takes care of setting up the initial selected value and
+// bind various events to the popup behaviours: close popup on save, gives focus to the picker,
+// binds cancel and save to Escape and Enter keydown events. Also takes care of preventing the popup
+// to overlay the trigger element (which could happen when the 'Group By' panel is expanded for the
+// first time). When saving is taking time, show a modal spinner (see DELAY_BEFORE_SPINNER_MS).
 export function buildPageWidgetPicker(
   ctl: IOpenController,
   gristDoc: GristDoc,
@@ -144,15 +187,17 @@ export function buildPageWidgetPicker(
   const tables = fromKo(docModel.visibleTables.getObservable());
   const columns = fromKo(docModel.columns.createAllRowsModel('parentPos').getObservable());
 
+  // default value for when it is omitted
   const defaultValue: IPageWidget = {
     type: 'record',
-    table: null,
+    table: null, // when creating a new widget, let's initially have no table selected
     summarize: false,
     columns: [],
     link: NoLink,
     section: 0,
   };
 
+  // get initial value and setup state for the picker.
   const initValue = options.value && options.value() || defaultValue;
   const value: IWidgetValueObs = {
     type: Observable.create(ctl, initValue.type),
@@ -163,6 +208,7 @@ export function buildPageWidgetPicker(
     section: Observable.create(ctl, initValue.section)
   };
 
+  // calls onSave and closes the popup. Failure must be handled by the caller.
   async function onSaveCB() {
     ctl.close();
     const type = value.type.get();
@@ -175,8 +221,11 @@ export function buildPageWidgetPicker(
       section: value.section.get(),
     });
     if (value.table.get() === 'New Table') {
+      // Adding empty table will show a prompt, so we don't want to wait for it.
       await savePromise;
     } else {
+      // If savePromise throws an error, before or after timeout, we let the error propagate as it
+      // should be handle by the caller.
       if (await isLongerThan(savePromise, DELAY_BEFORE_SPINNER_MS)) {
         const label = getWidgetTypes(type).getLabel();
         await spinnerModal(t("Building {{- label}} widget", { label }), savePromise);
@@ -184,6 +233,7 @@ export function buildPageWidgetPicker(
     }
   }
 
+  // whether the current selection is valid
   function isValid() {
     return isValidSelection(
       value.table.get(),
@@ -194,49 +244,80 @@ export function buildPageWidgetPicker(
       });
   }
 
+  // Summarizing a table causes the 'Group By' panel to expand on the right. To prevent it from
+  // overlaying the trigger, we bind an update of the popup to it when it is on the left of the
+  // trigger.
+  // WARN: This does not work when the picker is triggered from a menu item because the trigger
+  // element does not exist anymore at this time so calling update will misplace the popup. However,
+  // this is not a problem at the time or writing because the picker is never placed at the left of
+  // a menu item (currently picker is only placed at the right of a menu item and at the left of a
+  // basic button).
   if (options.placement && options.placement === 'left') {
     ctl.autoDispose(value.summarize.addListener((val, old) => val && ctl.update()));
   }
 
+  // dom
   return cssPopupWrapper(
     dom.create(PageWidgetSelect,
-      value, tables, columns, onSaveCB, behavioralPromptsManager, options, gristDoc),
+      value, tables, columns, onSaveCB, behavioralPromptsManager, options),
+
     elem => { FocusLayer.create(ctl, {defaultFocusElem: elem, pauseMousetrap: true}); },
     onKeyDown({
       Escape: () => ctl.close(),
       Enter: () => isValid() && onSaveCB()
     })
+
   );
 }
 
+// Same as IWidgetValue but with observable values
 export type IWidgetValueObs = {
   [P in keyof IPageWidget]: Observable<IPageWidget[P]>;
 };
 
+
 export interface ISelectOptions {
+  // the button's label
   buttonLabel?: string;
+
+  // Indicates whether the section builder is in a new view
   isNewPage?: boolean;
+
+  // A callback to provides the links that are available to a page widget. It is called any time the
+  // user changes in the selected page widget (type, table, summary ...) and we update the "SELECT
+  // BY" dropdown with the result list of options. The "SELECT BY" dropdown is hidden if omitted.
   selectBy?: (val: IPageWidget) => Array<IOption<string>>;
 }
 
-const registeredCustomWidgets: IAttachedCustomWidget[] = ['custom.calendar', 'TabBar'];
+const registeredCustomWidgets: IAttachedCustomWidget[] =  ['custom.calendar'];
 
 const permittedCustomWidgets: IAttachedCustomWidget[] = PERMITTED_CUSTOM_WIDGETS().get().map((widget) =>
-  widget as IAttachedCustomWidget) ?? [];
-const finalListOfCustomWidgetToShow = permittedCustomWidgets.filter(a =>
+  widget as IAttachedCustomWidget)??[];
+// the list of widget types in the order they should be listed by the widget.
+const finalListOfCustomWidgetToShow =  permittedCustomWidgets.filter(a=>
   registeredCustomWidgets.includes(a));
 const sectionTypes: IWidgetType[] = [
-  'record', 'single', 'detail', 'form', 'chart', ...finalListOfCustomWidgetToShow, 'custom', 'TabBar'
+  'record', 'single', 'detail', 'form', 'chart', ...finalListOfCustomWidgetToShow, 'custom'
 ];
 
+
+// Returns dom that let a user select a page widget. User can select a widget type (id: 'grid',
+// 'card', ...), one of `tables` and optionally some of the `columns` of the selected table if she
+// wants to generate a summary. Clicking the `Add ...` button trigger `onSave()`. Note: this is an
+// internal method used by widgetPicker, it is only exposed for testing reason.
 export class PageWidgetSelect extends Disposable {
+
+  // an observable holding the list of options of the `select by` dropdown
   private _selectByOptions = this._options.selectBy ?
     Computed.create(this, (use) => {
+      // TODO: it is unfortunate to have to convert from IWidgetValueObs to IWidgetValue. Maybe
+      // better to change this._value to be Observable<IWidgetValue> instead.
       const val = {
         type: use(this._value.type),
         table: use(this._value.table),
         summarize: use(this._value.summarize),
         columns: use(this._value.columns),
+        // should not have a dependency on .link
         link: this._value.link.get(),
         section: use(this._value.section),
       };
@@ -255,12 +336,10 @@ export class PageWidgetSelect extends Disposable {
     private _columns: Observable<ColumnRec[]>,
     private _onSave: () => Promise<void>,
     private _behavioralPromptsManager: BehavioralPromptsManager,
-    private _options: ISelectOptions = {},
-    private _gristDoc: GristDoc
+    private _options: ISelectOptions = {}
   ) { super(); }
 
   public buildDom() {
-    const testId = makeTestId('test-wselect-');
     return cssContainer(
       testId('container'),
       cssBody(
@@ -279,9 +358,6 @@ export class PageWidgetSelect extends Disposable {
               cssEntry.cls('-selected', (use) => use(this._value.type) === value),
               cssEntry.cls('-disabled', disabled),
               testId('type'),
-              dom.maybe((use) => use(this._value.type) === 'TabBar', () => {
-                return dom('div', TabBarView(this._gristDoc), testId('tabBarView'));
-              })
             );
           }),
         ),
@@ -290,6 +366,7 @@ export class PageWidgetSelect extends Disposable {
           header(t("Select Data")),
           cssEntry(
             cssIcon('TypeTable'), 'New Table',
+            // prevent the selection of 'New Table' if it is disabled
             dom.on('click', (ev) => !this._isNewTableDisabled.get() && this._selectTable('New Table')),
             this._behavioralPromptsManager.attachPopup('pageWidgetPicker', {
               popupOptions: {
@@ -309,15 +386,15 @@ export class PageWidgetSelect extends Disposable {
                        cssEntry.cls('-selected', (use) => use(this._value.table) === table.id()),
                        testId('table-label')
               ),
-              cssPivot(
-                cssBigIcon('Pivot'),
-                cssEntry.cls('-selected', (use) => use(this._value.summarize) &&
-                                                  use(this._value.table) === table.id()
-                ),
-                cssEntry.cls('-disabled', this._isSummaryDisabled),
-                dom.on('click', (_ev, el) =>
-                  !this._isSummaryDisabled.get() && this._selectPivot(table.id(), el as HTMLElement)),
-                testId('pivot'),
+                cssPivot(
+                  cssBigIcon('Pivot'),
+                  cssEntry.cls('-selected', (use) => use(this._value.summarize) &&
+                                                     use(this._value.table) === table.id()
+                  ),
+                  cssEntry.cls('-disabled', this._isSummaryDisabled),
+                  dom.on('click', (_ev, el) =>
+                    !this._isSummaryDisabled.get() && this._selectPivot(table.id(), el as HTMLElement)),
+                  testId('pivot'),
               ),
               testId('table'),
             )
@@ -343,6 +420,7 @@ export class PageWidgetSelect extends Disposable {
       ),
       cssFooter(
         cssFooterContent(
+          // If _selectByOptions exists and has more than then "NoLinkOption", show the selector.
           dom.maybe((use) => this._selectByOptions && use(this._selectByOptions).length > 1, () =>
             withInfoTooltip(
               cssSelectBy(
@@ -363,6 +441,8 @@ export class PageWidgetSelect extends Disposable {
           ),
           dom('div', {style: 'flex-grow: 1'}),
           bigPrimaryButton(
+            // TODO: The button's label of the page widget picker should read 'Close' instead when
+            // there are no changes.
             this._options.buttonLabel || t("Add to Page"),
             dom.prop('disabled', (use) => !isValidSelection(
               use(this._value.table),
@@ -430,15 +510,16 @@ export class PageWidgetSelect extends Disposable {
     }
     return !getCompatibleTypes(table, {isNewPage: this._options.isNewPage, summarize: isSummaryOn}).includes(type);
   }
+
 }
 
 function header(label: string, ...args: DomElementArg[]) {
-  const testId = makeTestId('test-wselect-');
   return cssHeader(dom('h4', label), ...args, testId('heading'));
 }
 
 const cssContainer = styled('div', `
   --outline: 1px solid ${theme.widgetPickerBorder};
+
   max-height: 386px;
   box-shadow: 0 2px 20px 0 ${theme.widgetPickerShadow};
   border-radius: 2px;
@@ -459,6 +540,7 @@ const cssBody = styled('div', `
   min-height: 0;
 `);
 
+// todo: try replace min-width / max-width
 const cssPanel = styled('div', `
   width: 224px;
   font-size: ${vars.mediumFontSize};
@@ -574,6 +656,7 @@ const cssSelectBy = styled('div', `
   align-items: center;
 `);
 
+// Returns a copy of array with its items sorted in the same order as they appear in other.
 function sortedAs(array: number[], other: number[]) {
   const order: {[id: number]: number} = {};
   for (const [index, item] of other.entries()) {

@@ -13,5 +13,5 @@
   "app/client/custom/index.js",
   "app/server/MergedServer.ts",
   "static/custom.css",
-  "custom-files.json",
+  "custom-files.json"
 ]

@@ -6,7 +6,6 @@
   "app/client/components/CodeEditorPanel.ts",
   "app/client/components/DetailView.css",
   "app/client/components/GridView.css",
-  "app/client/components/GridView.css-custom",
   "app/client/components/GridView.js",
   "app/client/components/GridView.js-custom",
   "app/client/components/GristDoc.ts",

@@ -18,6 +18,7 @@ jobs:
           echo "Checking for ZIP in main/backups"
           if [ -f "backups/custom-files-backup.zip" ]; then
             echo "ZIP found"
+            unzip -l backups/custom-files-backup.zip
           else
             echo "Error: ZIP not found in main/backups"
             exit 1
@@ -27,6 +28,10 @@ jobs:
         with:
           ref: custom-ui
           path: custom-ui-repo
+      - name: Clean duplicate directories
+        run: |
+          echo "Removing duplicate directories in custom-ui"
+          rm -rf custom-ui-repo/custom-ui-repo
       - name: Restore files from ZIP
         run: |
           echo "Restoring files to custom-ui"
@@ -48,7 +53,8 @@ jobs:
             if [ -f "custom-ui-repo/$file" ]; then
               echo "Restored $file to custom-ui"
             else
-              echo "File $file not found in ZIP, skipping"
+              echo "Error: File $file not found in custom-ui-repo after unzip"
+              exit 1
             fi
           done
       - name: Commit restored files to custom-ui
@@ -57,8 +63,12 @@ jobs:
           cd custom-ui-repo
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          git commit -m "Restore custom files to custom-ui" || echo "No changes to commit"
+          git add --all
+          git commit -m "Restore custom files to custom-ui from main/backups" || echo "No changes to commit"
           git push origin custom-ui
+      - name: Clean up temporary files
+        run: |
+          echo "Cleaning up temporary directories"
+          rm -rf custom-ui-repo/temp
       - name: Log completion
         run: echo "Files restored to custom-ui"

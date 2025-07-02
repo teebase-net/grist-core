@@ -1,4 +1,16 @@
 /**
+ * GristDoc.ts
+ *
+ * Manages the open Grist document, including document state, view navigation, cursor behavior,
+ * undo stack, plugin loading, and various interactive workflows such as tours, raw data access,
+ * and custom widgets.
+ *
+ * 🔧 MOD DMH — May 2025:
+ * - Reduced layout padding by modifying `cssViewContentPane`
+ * - All changes are marked with `// MOD DMH` and `// end MOD DMH`
+ */
+
+/**
  * GristDoc manages an open Grist document on the client side.
  */
 // tslint:disable:no-console
@@ -58,7 +70,7 @@ import {IconName} from 'app/client/ui2018/IconList';
 import {icon} from 'app/client/ui2018/icons';
 import {invokePrompt} from 'app/client/ui2018/modals';
 import {AssistantPopup} from 'app/client/widgets/AssistantPopup';
-import {CommentMonitor, DiscussionPanel} from 'app/client/widgets/DiscussionEditor';
+import {DiscussionPanel} from 'app/client/widgets/DiscussionEditor';
 import {FieldEditor} from "app/client/widgets/FieldEditor";
 import {MinimalActionGroup} from 'app/common/ActionGroup';
 import {ClientQuery, FilterColValues} from "app/common/ActiveDocAPI";
@@ -75,7 +87,7 @@ import type {UserOrgPrefs} from 'app/common/Prefs';
 import {StringUnion} from 'app/common/StringUnion';
 import {TableData} from 'app/common/TableData';
 import {getGristConfig} from 'app/common/urlUtils';
-import {AttachmentTransferStatus, DocAPI, DocStateComparison, ExtendedUser} from 'app/common/UserAPI';
+import {AttachmentTransferStatus, DocAPI, DocStateComparison} from 'app/common/UserAPI';
 import {AttachedCustomWidgets, IAttachedCustomWidget, IWidgetType, WidgetType} from 'app/common/widgetTypes';
 import {CursorPos} from 'app/plugin/GristAPI';
 import {
@@ -163,7 +175,6 @@ export interface GristDoc extends DisposableWithEvents {
   comparison: DocStateComparison | null;
   cursorMonitor: CursorMonitor;
   editorMonitor?: EditorMonitor;
-  commentMonitor?: CommentMonitor;
   hasCustomNav: Observable<boolean>;
   resizeEmitter: Emitter;
   fieldEditorHolder: Holder<IDisposable>;
@@ -179,7 +190,6 @@ export interface GristDoc extends DisposableWithEvents {
   isTimingOn: Observable<boolean>;
   attachmentTransfer: Observable<AttachmentTransferStatus | null>;
   canShowRawData: Observable<boolean>;
-  currentUser: Observable<ExtendedUser|null>;
 
   docId(): string;
   openDocPage(viewId: IDocPage): Promise<void>;
@@ -229,8 +239,6 @@ export class GristDocImpl extends DisposableWithEvents implements GristDoc {
   public editorMonitor?: EditorMonitor;
   // component for keeping track of a cell that is being edited
   public draftMonitor: Drafts;
-  // component for keeping track of discarded comments.
-  public commentMonitor: CommentMonitor;
   // will document perform its own navigation (from anchor link)
   public hasCustomNav: Observable<boolean>;
   // Emitter triggered when the main doc area is resized.
@@ -291,7 +299,6 @@ export class GristDocImpl extends DisposableWithEvents implements GristDoc {
    * Extracted to single computed as it is used here and in menus.
    */
   public canShowRawData: Computed<boolean>;
-  public currentUser: Observable<ExtendedUser|null>;
 
   private _actionLog: ActionLog;
   private _undoStack: UndoStack;
@@ -347,10 +354,6 @@ export class GristDocImpl extends DisposableWithEvents implements GristDoc {
 
     // Maintain the MetaRowModel for the global document info, including docId and peers.
     this.docInfo = this.docModel.docInfoRow;
-
-    this.currentUser = Computed.create(this, use => {
-      return use(this.app.topAppModel.appObs)?.currentUser ?? null;
-    });
 
     const defaultViewId = this.docInfo.newDefaultViewId;
 
@@ -409,10 +412,8 @@ export class GristDocImpl extends DisposableWithEvents implements GristDoc {
     }));
 
     // Subscribe to URL state, and navigate to anchor or open a popup if necessary.
-    // If state.hash.anchor is set, we use it as a "normal" non-disappearing link hash,
-    // useful to linking to more normal, more web-like and less app-like pages.
     this.autoDispose(subscribe(urlState().state, async (use, state) => {
-      if (!state.hash || state.hash.anchor) {
+      if (!state.hash) {
         return;
       }
 
@@ -700,7 +701,6 @@ export class GristDocImpl extends DisposableWithEvents implements GristDoc {
     this.draftMonitor = Drafts.create(this, this);
     this.cursorMonitor = CursorMonitor.create(this, this);
     this.editorMonitor = EditorMonitor.create(this, this);
-    this.commentMonitor = CommentMonitor.create(this, this);
 
     // When active section is changed to a chart or custom widget, change the tab in the creator
     // panel to the table.
@@ -814,7 +814,6 @@ export class GristDocImpl extends DisposableWithEvents implements GristDoc {
       ]),
     );
   }
-
 
   // Open the given page. Note that links to pages should use <a> elements together with setLinkUrl().
   public openDocPage(viewId: IDocPage) {
@@ -1792,7 +1791,6 @@ export class GristDocImpl extends DisposableWithEvents implements GristDoc {
       filter: filterInfo.filter()
     }));
     const linkingFilter: FilterColValues = activeSection.linkingFilter();
-    const userOverride = this.docPageModel.userOverride.get();
 
     return {
       viewSection: this.viewModel.activeSectionId(),
@@ -1800,7 +1798,6 @@ export class GristDocImpl extends DisposableWithEvents implements GristDoc {
       activeSortSpec: JSON.stringify(activeSection.activeSortSpec()),
       filters: JSON.stringify(filters),
       linkingFilter: JSON.stringify(linkingFilter),
-      ...(userOverride ? {aclAsUser_: userOverride.user?.email} : {}),
     };
   }
 
@@ -1999,7 +1996,11 @@ const cssViewContentPane = styled('div', `
   overflow: visible;
   position: relative;
   min-width: 240px;
-  padding: var(--view-content-page-padding, 12px);
+  
+  // MOD DMH - Removes gap above green line in Layout Tray. 
+  // This also has the effect of removing border around main body, which also saves more screen space 
+  padding: var(--view-content-page-padding, 0px);   // was 12px
+  // end MOD DMH
   @media ${mediaSmall} {
     & {
       padding: 4px;

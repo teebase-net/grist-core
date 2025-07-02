@@ -1,28 +1,34 @@
+/**
+ * custom.css
+ *
+ * Custom theme overrides for Grist UI.
+ *
+ * 🔧 MOD DMH — May 2025:
+ * - Narrows the “Add Column” button in the Table widget for a cleaner layout
+ * - Adds visual confirmation of custom.css load via `html::before`
+ * - Each custom block is clearly marked using `// MOD DMH` and `// end MOD DMH` comments
+ */
+
+/* MOD DMH */
+html::before {
+  content: "[Custom Patch] ✅ custom.css loaded";
+  display: none; /* Or block to visibly show it */
+}
+/* end MOD DMH */
+
+
 /*
   Are you getting a console warning about deprecated usage? Please see the migration guide at the end of this file.
 
   Otherwise, you can copy and paste this file and use it as a base for your customization needs.
 */
 @layer grist-custom {
-  /* theme-agnostic overrides
-   *
-   * These are always applied regardless of the current theme.
-   */
   :root {
     /* logo */
     --icon-GristLogo: url("ui-icons/Logo/GristLogo.svg");
     --grist-theme-logo-bg: #040404;
     --grist-theme-logo-size: 22px 22px;
-  }
 
-  /*
-   * theme-dependent overrides
-   *
-   * You can filter your CSS rules with the [data-grist-appearance] and [data-grist-theme] attributes to apply rules conditionally:
-   *  - [data-grist-appearance] is the current appearance (light or dark)
-   *  - [data-grist-theme] is the current theme (GristLight, GristDark, or HighContrastLight)
-   */
-  :root[data-grist-theme="GristLight"] {
     /* colors */
     --grist-theme-body: #262633; /* main body text */
     --grist-theme-emphasis: var(--grist-theme-black); /* pronounced text */
@@ -147,3 +153,25 @@
   --grist-control-border
   --grist-toast-bg
 */
+
+/*===================================================================================
+  🔧 Custom Patch: Narrow “Add Column” button in Table widget
+  📄 File: custom.css
+  📅 Applied: 2025-05-05
+  📝 Purpose:
+    Reduces the width of the “Add Column” (+) column in table widgets for a cleaner,
+    more compact look. Also centers the "+" icon.
+
+  ✅ Applied via custom-iu branch. This CSS is copied to /static/custom.css and loaded at runtime.
+===================================================================================*/
+
+/* Target the "Add Column" button more specifically */
+.column_name.mod-add-column.field,
+.column_name.mod-add-column.field .mod-add-column-button {
+  width: 20px !important;
+  min-width: 20px !important;
+  max-width: 20px !important;
+  padding: 0 !important;
+  justify-content: center; /* Center the "+" icon */
+}
+

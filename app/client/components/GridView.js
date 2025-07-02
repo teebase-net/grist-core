@@ -1,3 +1,14 @@
+/**
+ * GridView.js
+ *
+ * Implements the main grid view component in Grist, responsible for rendering table data,
+ * handling keyboard and mouse interactions, drag-and-drop logic, context menus, and cell editing.
+ *
+ * 🔧 MOD DMH — May 2025:
+ * - Reduced `ROW_NUMBER_WIDTH` constant from 52px to 30px to enable more compact row numbering
+ * - Clearly marked with `// MOD DMH` for PR clarity
+ */
+
 /* globals $, window, CustomEvent */
 
 const _         = require('underscore');
@@ -10,6 +21,7 @@ const {Sort} = require('app/common/SortSpec');
 
 const dom           = require('../lib/dom');
 const kd            = require('../lib/koDom');
+const kf            = require('../lib/koForm');
 const koDomScrolly  = require('../lib/koDomScrolly');
 const tableUtil     = require('../lib/tableUtil');
 const {addToSort, sortBy}   = require('../lib/sortUtil');
@@ -48,11 +60,11 @@ const {
 } = require('app/client/ui/GridViewMenus');
 const {mouseDragMatchElem} = require('app/client/ui/mouseDrag');
 const {menuToggle} = require('app/client/ui/MenuToggle');
-const {showTooltip} = require('app/client/ui/tooltips');
+const {descriptionInfoTooltip, showTooltip} = require('app/client/ui/tooltips');
 const {parsePasteForView} = require("./BaseView2");
 const {NEW_FILTER_JSON} = require('app/client/models/ColumnFilter');
 const {CombinedStyle} = require("app/client/models/Styles");
-const {buildRenameColumn, columnHeaderWithInfo} = require('app/client/ui/ColumnTitle');
+const {buildRenameColumn} = require('app/client/ui/ColumnTitle');
 const {makeT} = require('app/client/lib/localization');
 const {isList} = require('app/common/gristTypes');
 const identity = require('lodash/identity');
@@ -71,7 +83,7 @@ const SHORT_CLICK_IN_MS = 500;
 // size of the plus width ()
 const PLUS_WIDTH = 40;
 // size of the row number field (we assume 4rem, 1rem = 13px in grist)
-const ROW_NUMBER_WIDTH = 52;
+const ROW_NUMBER_WIDTH = 30;    // DMG MOD was 52px
 
 
 /**
@@ -1324,12 +1336,11 @@ GridView.prototype.buildDom = function() {
                   if (btn) { btn.click(); }
                 }),
                 dom('div.g-column-label',
-                  columnHeaderWithInfo(
-                    self.isPreview ? field.label : field.displayLabel,
-                    field.description,
-                    "column"
-                  ),
+                  kd.scope(field.description, desc => desc ? descriptionInfoTooltip(desc, "column") : null),
                   dom.on('mousedown', ev => isEditingLabel() ? ev.stopPropagation() : true),
+                  // We are using editableLabel here, but we don't use it for editing.
+                  kf.editableLabel(self.isPreview ? field.label : field.displayLabel, ko.observable(false)),
+                  kd.scope(field.description, desc => desc ? dom('div.g-column-label-spacer') : null),
                   buildRenameColumn({
                     field,
                     isEditing: isEditingLabel,

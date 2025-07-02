@@ -36,7 +36,6 @@ jobs:
             "app/client/custom/index.js"
             "app/client/app.js"
             "app/client/components/DetailView.css"
-            "app/server/MergedServer.ts"
           )
           for file in "${files[@]}"; do
             if [ -f "custom-ui-repo/$file" ]; then

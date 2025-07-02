@@ -1,7 +1,13 @@
 name: Backup Custom Files
 
 on:
-  workflow_dispatch: # Manual trigger via Actions tab
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to backup custom files from (e.g., custom-ui-old)'
+        type: string
+        required: true
+        default: 'custom-ui-old'
 
 jobs:
   backup-files:
@@ -15,14 +21,14 @@ jobs:
           ref: main
       - name: Create backups directory
         run: mkdir -p backups
-      - name: Checkout custom-ui branch for backup
+      - name: Checkout specified branch for backup
         uses: actions/checkout@v4
         with:
-          ref: custom-ui
+          ref: ${{ inputs.branch }}
           path: custom-ui-repo
       - name: Backup custom files
         run: |
-          echo "Backing up custom files from custom-ui"
+          echo "Backing up custom files from ${{ inputs.branch }}"
           mkdir -p backup-files
           files=(
             "app/client/aclui/AccessRules.ts"
@@ -42,7 +48,7 @@ jobs:
               cp --parents "custom-ui-repo/$file" backup-files/
               echo "Backed up $file"
             else
-              echo "File $file not found in custom-ui, skipping"
+              echo "File $file not found in ${{ inputs.branch }}, skipping"
             fi
           done
       - name: Create ZIP file
@@ -56,7 +62,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add backups/custom-files-backup.zip
-          git commit -m "Store backup ZIP in main" || echo "No changes to commit"
+          git commit -m "Store backup ZIP in main from ${{ inputs.branch }}" || echo "No changes to commit"
           git push origin main
       - name: Log completion
         run: echo "Backup ZIP stored in main/backups"

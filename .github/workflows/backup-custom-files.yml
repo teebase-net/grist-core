@@ -19,13 +19,17 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
+      - name: Clean old ZIPs
+        run: |
+          echo "Removing old ZIPs from main/backups"
+          rm -f backups/custom-files-backup.zip
       - name: Create backups directory
         run: mkdir -p backups
       - name: Checkout specified branch for backup
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
-          path: custom-ui-repo
+          path: source-repo
       - name: Backup custom files
         run: |
           echo "Backing up custom files from ${{ inputs.branch }}"
@@ -44,8 +48,9 @@ jobs:
             "app/client/components/DetailView.css"
           )
           for file in "${files[@]}"; do
-            if [ -f "custom-ui-repo/$file" ]; then
-              cp --parents "custom-ui-repo/$file" backup-files/
+            if [ -f "source-repo/$file" ]; then
+              mkdir -p "backup-files/$(dirname $file)"
+              cp "source-repo/$file" "backup-files/$file"
               echo "Backed up $file"
             else
               echo "File $file not found in ${{ inputs.branch }}, skipping"
@@ -64,5 +69,9 @@ jobs:
           git add backups/custom-files-backup.zip
           git commit -m "Store backup ZIP in main from ${{ inputs.branch }}" || echo "No changes to commit"
           git push origin main
+      - name: Clean up temporary files
+        run: |
+          echo "Cleaning up temporary directories"
+          rm -rf backup-files source-repo
       - name: Log completion
         run: echo "Backup ZIP stored in main/backups"

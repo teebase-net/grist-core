@@ -102,7 +102,8 @@ export class CodeEditorPanel extends DisposableWithEvents {
         const pretty = sorted.map(b => b.join("\n")).join("\n\n");
         console.log("[Custom Patch] CodeEditorPanel.ts ✅ Sorted @grist.UserTable blocks by class name (v0.3)");
         this._schema.set(pretty);
-
+        // end MOD DMH
+        
         this._denied.set(false);
       }
     } catch (err) {

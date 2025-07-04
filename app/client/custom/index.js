@@ -137,7 +137,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
           span.classList.add('custom-highlight');
           span.style.color = 'red'; // Red in normal state
           if (label === 'Delete record') {
-            span.style.color = '#000'; // Black normally (override if needed)
+            span.style.color = 'red'; // Red in normal state
           }
         }
       });

@@ -190,3 +190,14 @@
     background-color: #16B378;
   }
 }
+
+// MOD DMH
+// Purpose: Apply Montserrat Medium (weight 500) to bold elements only, preserving default regular font.
+// Date: 2025-07-04
+// Author: DMH
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500&display=swap');
+b, strong, [class*="bold"], [class*="Bold"], [class*="grist-cell"][style*="bold"], [style*="font-weight: bold"], [style*="font-weight: 700"] {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+}
+// end MOD DMH

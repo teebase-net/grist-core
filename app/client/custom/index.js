@@ -118,8 +118,9 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
       document.querySelectorAll('.test-cmd-name').forEach(span => {
         if (span.textContent?.trim() === 'Delete widget') {
           span.classList.add('custom-highlight');
-          span.style.color = '#000'; // Black normally
-          span.style.fontStyle = 'italic';
+          span.style.color = 'red'; // Red in normal state
+          //span.style.fontStyle = 'italic';
+          span.style.fontWeight = 'bold';
         }
       });
     };
@@ -134,7 +135,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
         const label = span.textContent?.trim();
         if (label === 'Delete record' || label === 'Delete') {
           span.classList.add('custom-highlight');
-          span.style.color = '#000'; // Black normally
+          span.style.color = 'red'; // Red in normal state
           if (label === 'Delete record') {
             span.style.color = '#000'; // Black normally (override if needed)
           }

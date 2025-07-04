@@ -1,40 +1,6 @@
-/* index.js including labelblock - 15Jun - working
-
 /* eslint-env browser */
 
 "use strict";
-
-/*===================================================================================
-  Custom Patch: Role-Based UI Access Control for Grist
-
-  Purpose:
-    Restricts visibility and access to sensitive UI actions in Grist (Add Column, Share, Download)
-    based on per-user permissions set in the SysUsers table of the current document.
-    Also displays a 10px pink banner at the top for documents with "- DEV" in the name.
-    Hides "Insert column to the left" and "Insert column to the right" menu options
-    in the column header dropdown if user lacks Export_Data permission.
-    Highlights all "Delete widget" menu options in all widgets (Card, Table, etc.) in red and italics
-    to reduce the risk of accidental selection.
-    Hides control buttons and menus for LabelBlock widgets if Unlock_Structure is false.
-
-  Features:
-    - Hides “Add Column” (“+”) button if the user does not have Unlock_Structure = true.
-    - Hides “Share” icon if the user does not have Export_Data = true.
-    - Hides “Download/Export” options if the user does not have Export_Data = true.
-    - Hides "Insert column to the left/right" menu items in the column menu if user lacks Export_Data = true.
-    - Styles all "Delete widget" menu options (across all widgets) in red italic bold to make them visually distinct and reduce accidental deletion risk.
-    - Hides LabelBlock widget controls (title, filter, layout menu) if Unlock_Structure = false.
-    - Permissions are dynamically loaded and enforced every time the page loads.
-    - Shows a 10px high pink banner with a message at the top if document name contains "- DEV".
-
-  Implementation:
-    - Captures the current docId as soon as possible (even if Grist is slow to set it)
-    - Loads the current user's permissions from SysUsers
-    - Uses MutationObservers to continually hide/show elements as the UI updates
-    - Uses the Grist API to get the document name and displays the DEV banner if needed
-
-  Version: v1.5.0
-===================================================================================*/
 
 console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
 
@@ -131,12 +97,28 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
     new MutationObserver(hideIfNeeded).observe(document.body, { childList: true, subtree: true });
   }
 
-  // === 6. Highlight all "Delete widget" menu options across all widgets ===
+  // === 6. Add CSS rule for focus styling ===
+  function addFocusStyle() {
+    if (!document.getElementById('custom-focus-style')) {
+      const style = document.createElement('style');
+      style.id = 'custom-focus-style';
+      style.textContent = `
+        li:focus .test-cmd-name.custom-highlight,
+        li:focus-within .test-cmd-name.custom-highlight {
+          color: #fff !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }
+
+  // === 7. Highlight all "Delete widget" menu options across all widgets ===
   function highlightDeleteWidget() {
     const highlight = () => {
       document.querySelectorAll('.test-cmd-name').forEach(span => {
         if (span.textContent?.trim() === 'Delete widget') {
-          span.style.color = 'red';
+          span.classList.add('custom-highlight');
+          span.style.color = '#000'; // Black normally
           span.style.fontStyle = 'italic';
         }
       });
@@ -145,20 +127,25 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
     new MutationObserver(highlight).observe(document.body, { childList: true, subtree: true });
   }
 
-// === Highlight "Delete record" menu option ===
-function highlightDeleteRecord() {
-  const highlight = () => {
-    document.querySelectorAll('.test-cmd-name').forEach(span => {
-      if (span.textContent?.trim() === 'Delete record') {
-        span.style.color = 'orange';
-      }
-    });
-  };
-  highlight();
-  new MutationObserver(highlight).observe(document.body, { childList: true, subtree: true });
-}
+  // === 8. Highlight "Delete" and "Delete record" menu options ===
+  function highlightDeleteRecord() {
+    const highlight = () => {
+      document.querySelectorAll('.test-cmd-name').forEach(span => {
+        const label = span.textContent?.trim();
+        if (label === 'Delete record' || label === 'Delete') {
+          span.classList.add('custom-highlight');
+          span.style.color = '#000'; // Black normally
+          if (label === 'Delete record') {
+            span.style.color = '#000'; // Black normally (override if needed)
+          }
+        }
+      });
+    };
+    highlight();
+    new MutationObserver(highlight).observe(document.body, { childList: true, subtree: true });
+  }
 
-  // === 7. Main logic: Apply all visibility controls after permissions are loaded ===
+  // === 9. Main logic: Apply all visibility controls after permissions are loaded ===
   async function applyVisibilityControls() {
     const docId = await getDocId();
     if (!docId) return;
@@ -180,14 +167,14 @@ function highlightDeleteRecord() {
     // --- STYLE ALL "DELETE WIDGET" MENU OPTIONS ---
     highlightDeleteWidget();
 
-    // --- STYLE "DELETE RECORD" MENU OPTION ---
+    // --- STYLE "DELETE RECORD" AND "DELETE" MENU OPTIONS ---
     highlightDeleteRecord();
 
-    // --- HIDE LABELBLOCK CONTROLS IF STRUCTURE LOCKED ---
-    applyLabelBlockPatch(perms.canAdd);
+    // --- ADD FOCUS STYLING ---
+    addFocusStyle();
   }
 
-  // === 8. DEV banner: show a 10px banner at top if doc name contains "- DEV" ===
+  // === 10. DEV banner: show a 10px banner at top if doc name contains "- DEV" ===
   async function maybeShowDevBanner() {
     const docId = await getDocId();
     if (!docId) return;
@@ -230,129 +217,10 @@ function highlightDeleteRecord() {
     }
   }
 
-  // === 9. Run everything on window load ===
+  // === 11. Run everything on window load ===
   window.addEventListener('load', () => {
     console.log("[Custom Patch] ⏳ window.onload fallback triggered");
     applyVisibilityControls();
     maybeShowDevBanner();
   });
-
-// === 10. LabelBlock-specific control hiding based on Unlock_Structure ===
-function applyLabelBlockPatch(unlockStructure) {
-  const shouldHide = !unlockStructure;
-  if (!shouldHide) {
-    console.log("[LabelBlock Patch] 🛑 Unlock_Structure = true: LabelBlock elements remain visible.");
-    return;
-  }
-
-  function hideLabelElements() {
-    const iframes = [...document.querySelectorAll('iframe[src*="labelblock"]')];
-    if (iframes.length === 0) return;
-
-    console.log(`[LabelBlock Patch] Found ${iframes.length} LabelBlock iframe(s).`);
-
-    for (const iframe of iframes) {
-      const section = iframe.closest('.view_leaf.viewsection_content');
-      if (!section) {
-        console.warn("[LabelBlock Patch] ⚠️ Couldn't locate container for LabelBlock iframe.");
-        continue;
-      }
-
-      // Add class for styling override
-      section.classList.add('labelblock-hidden');
-
-      // Hide entire viewsection title bar (includes title, layout menu, drag handle)
-      const titleBar = section.querySelector('.viewsection_title');
-      if (titleBar) {
-        titleBar.style.display = 'none';
-        console.log('[LabelBlock Patch] ✅ Hiding viewsection title bar');
-      }
-
-      // Hide entire filter bar (includes filter fields and add filter button)
-      const filterBar = section.querySelector('.filter_bar.test-filter-bar');
-      if (filterBar) {
-        filterBar.style.display = 'none';
-        console.log('[LabelBlock Patch] ✅ Hiding filter bar');
-      }
-    }
-  }
-
-  hideLabelElements();
-  new MutationObserver(hideLabelElements).observe(document.body, { childList: true, subtree: true });
-
-  // Add global style override once
-  const styleId = 'labelblock-style-override';
-  if (!document.getElementById(styleId)) {
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.textContent = `
-      /* LabelBlock container cleanup when structure is locked
-         - Masks Grist's default grey border and green focus line
-         - Keeps widget content and layout intact
-         - Does not interfere with rich text rendering
-      */
-
-      .labelblock-hidden {
-        border: 2px solid #fff !important;        /* Overwrites persistent grey border */
-        border-left: 2px solid #fff !important;   /* Masks green focus bar */
-        background-color: transparent !important;
-        box-shadow: none !important;
-        border-radius: 0 !important;
-      }
-
-      .labelblock-hidden::before,
-      .labelblock-hidden::after {
-        display: none !important;                /* Remove any pseudo-elements */
-      }
-
-      .labelblock-hidden > div {
-        border: none !important;
-        background: transparent !important;
-        box-shadow: none !important;
-      }
-    `;
-    document.head.appendChild(style);
-    console.log('[LabelBlock Patch] 🧩 Injected style override for labelblock-hidden');
-  }
-}
-
-// === 11. LabelBlock: show only the maximize button in a transparent toolbar ===
-(function injectLabelBlockMaximizeOnly() {
-  const styleId = 'labelblock-maximize-style';
-  if (document.getElementById(styleId)) return;
-
-  const style = document.createElement('style');
-  style.id = styleId;
-  style.textContent = `
-    /* Force-show only the maximize button inside the widget toolbar */
-    .widget-controls {
-      display: flex !important;
-      background: transparent !important;
-      box-shadow: none !important;
-      border: none !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      position: absolute !important;
-      top: 32px;         /* Adjust if needed */
-      right: 4px;
-      z-index: 10;
-    }
-
-    /* Hide all other toolbar controls */
-    .widget-controls > :not(.test-maximize) {
-      display: none !important;
-    }
-
-    /* Optional: tighten LabelBlock header spacing */
-    .labelblock-heading {
-      margin-top: 0 !important;
-      margin-bottom: 0 !important;
-    }
-  `;
-  document.head.appendChild(style);
-  console.log('[LabelBlock Patch] 🧭 Injected style to show only maximize button');
-})();
-
-  
-  
 })();

@@ -76,26 +76,28 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
     new MutationObserver(apply).observe(document.body, { childList: true, subtree: true });
   }
 
-  // === 5. Hide "Insert column to the left/right" in column menu if user lacks Export_Data permission ===
-  function hideInsertColumnOptions(allowed) {
-    const hideIfNeeded = () => {
-      document.querySelectorAll('.test-cmd-name').forEach(span => {
-        const label = span.textContent?.trim();
-        if (
-          (label === 'Insert column to the left' || label === 'Insert column to the right') &&
-          !allowed
-        ) {
-          const li = span.closest('li');
-          if (li && li.style.display !== 'none') {
+// === 5. Show/Hide "Insert column to the left/right" in column menu based on canAlterStructure permission ===
+function hideInsertColumnOptions(canAlterStructure) {
+  const hideIfNeeded = () => {
+    document.querySelectorAll('.test-cmd-name').forEach(span => {
+      const label = span.textContent?.trim();
+      if (label === 'Insert column to the left' || label === 'Insert column to the right') {
+        const li = span.closest('li');
+        if (li) {
+          if (!canAlterStructure) {
             li.style.display = 'none';
-            console.log(`[Custom Patch] Hiding column menu option: ${label} (no Export_Data permission)`);
+            console.log(`[Custom Patch] Hiding column menu option: ${label} (no canAlterStructure permission)`);
+          } else {
+            li.style.display = '';
+            console.log(`[Custom Patch] Showing column menu option: ${label} (has canAlterStructure permission)`);
           }
         }
-      });
-    };
-    hideIfNeeded();
-    new MutationObserver(hideIfNeeded).observe(document.body, { childList: true, subtree: true });
-  }
+      }
+    });
+  };
+  hideIfNeeded();
+  new MutationObserver(hideIfNeeded).observe(document.body, { childList: true, subtree: true });
+}
 
   // === 6. Add CSS rule for focus styling ===
   function addFocusStyle() {

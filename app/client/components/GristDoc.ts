@@ -1,4 +1,15 @@
 /**
+ * GristDoc.ts
+ *
+ * Manages the open Grist document, including document state, view navigation, cursor behavior,
+ * undo stack, plugin loading, and various interactive workflows such as tours, raw data access,
+ * and custom widgets.
+ *
+ * 🔧 MOD DMH — May 2025:
+ * - Reduced layout padding by modifying `cssViewContentPane`
+ * - All changes are marked with `// MOD DMH` and `// end MOD DMH`
+ */
+/**
  * GristDoc manages an open Grist document on the client side.
  */
 // tslint:disable:no-console
@@ -21,27 +32,24 @@ import {RawDataPage, RawDataPopup} from 'app/client/components/RawDataPage';
 import {RecordCardPopup} from 'app/client/components/RecordCardPopup';
 import {ActionGroupWithCursorPos, UndoStack} from 'app/client/components/UndoStack';
 import {ViewLayout} from 'app/client/components/ViewLayout';
-import {RegionFocusSwitcher} from 'app/client/components/RegionFocusSwitcher';
 import {get as getBrowserGlobals} from 'app/client/lib/browserGlobals';
-import {copyToClipboard} from 'app/client/lib/clipboardUtils';
 import {DocPluginManager} from 'app/client/lib/DocPluginManager';
 import {ImportSourceElement} from 'app/client/lib/ImportSourceElement';
 import {makeT} from 'app/client/lib/localization';
 import {createSessionObs} from 'app/client/lib/sessionObs';
 import {logTelemetryEvent} from 'app/client/lib/telemetry';
 import {setTestState} from 'app/client/lib/testState';
-import {AppModel} from 'app/client/models/AppModel';
+import {AppModel, reportError} from 'app/client/models/AppModel';
 import BaseRowModel from 'app/client/models/BaseRowModel';
 import DataTableModel from 'app/client/models/DataTableModel';
 import {DataTableModelWithDiff} from 'app/client/models/DataTableModelWithDiff';
 import {DocData} from 'app/client/models/DocData';
 import {DocInfoRec, DocModel, ViewFieldRec, ViewRec, ViewSectionRec} from 'app/client/models/DocModel';
 import {DocPageModel} from 'app/client/models/DocPageModel';
-import {reportError, reportSuccess, UserError} from 'app/client/models/errors';
+import {UserError} from 'app/client/models/errors';
 import {getMainOrgUrl, urlState} from 'app/client/models/gristUrlState';
 import {getFilterFunc, QuerySetManager} from 'app/client/models/QuerySet';
 import {getUserOrgPrefObs, getUserOrgPrefsObs, markAsSeen} from 'app/client/models/UserPrefs';
-import {UserPresenceModel, UserPresenceModelImpl} from 'app/client/models/UserPresenceModel';
 import {App} from 'app/client/ui/App';
 import {showCustomWidgetGallery} from 'app/client/ui/CustomWidgetGallery';
 import {DocHistory} from 'app/client/ui/DocHistory';
@@ -64,7 +72,7 @@ import {AssistantPopup} from 'app/client/widgets/AssistantPopup';
 import {CommentMonitor, DiscussionPanel} from 'app/client/widgets/DiscussionEditor';
 import {FieldEditor} from "app/client/widgets/FieldEditor";
 import {MinimalActionGroup} from 'app/common/ActionGroup';
-import {AssistantState, ClientQuery, FilterColValues} from "app/common/ActiveDocAPI";
+import {ClientQuery, FilterColValues} from "app/common/ActiveDocAPI";
 import {CommDocChatter, CommDocUsage, CommDocUserAction} from 'app/common/CommTypes';
 import {delay} from 'app/common/delay';
 import {DisposableWithEvents} from 'app/common/DisposableWithEvents';
@@ -101,8 +109,6 @@ import {
 import * as ko from 'knockout';
 import cloneDeepWith = require('lodash/cloneDeepWith');
 import isEqual = require('lodash/isEqual');
-import omit = require('lodash/omit');
-import pick = require('lodash/pick');
 
 const RICK_ROLL_YOUTUBE_EMBED_ID = 'dQw4w9WgXcQ';
 
@@ -157,7 +163,6 @@ export interface GristDoc extends DisposableWithEvents {
   docPageModel: DocPageModel;
   docModel: DocModel;
   viewModel: ViewRec;
-  userPresenceModel: UserPresenceModel;
   activeViewId: Observable<IDocPage>;
   currentPageName: Observable<string>;
   docData: DocData;
@@ -186,7 +191,6 @@ export interface GristDoc extends DisposableWithEvents {
   attachmentTransfer: Observable<AttachmentTransferStatus | null>;
   canShowRawData: Observable<boolean>;
   currentUser: Observable<ExtendedUser|null>;
-  regionFocusSwitcher?: RegionFocusSwitcher;
 
   docId(): string;
   openDocPage(viewId: IDocPage): Promise<void>;
@@ -215,13 +219,11 @@ export interface GristDoc extends DisposableWithEvents {
     visitedSections?: number[]
   ): Promise<boolean>;
   activateEditorAtCursor(options?: { init?: string; state?: any }): Promise<void>;
-  copyAnchorLink(anchorInfo: HashLink & CursorPos): Promise<void>;
 }
 
 export class GristDocImpl extends DisposableWithEvents implements GristDoc {
   public docModel: DocModel;
   public viewModel: ViewRec;
-  public userPresenceModel: UserPresenceModel;
   public activeViewId: Observable<IDocPage>;
   public currentPageName: Observable<string>;
   public docData: DocData;
@@ -232,7 +234,6 @@ export class GristDocImpl extends DisposableWithEvents implements GristDoc {
   public isReadonly = this.docPageModel.isReadonly;
   public isReadonlyKo = toKo(ko, this.isReadonly);
   public comparison: DocStateComparison | null;
-  public get regionFocusSwitcher() { return this.app.regionFocusSwitcher; }
   // component for keeping track of latest cursor position
   public cursorMonitor: CursorMonitor;
   // component for keeping track of a cell that is being edited
@@ -347,7 +348,6 @@ export class GristDocImpl extends DisposableWithEvents implements GristDoc {
     this.isTimingOn.set(openDocResponse.isTimingOn);
     this.docData = new DocData(this.docComm, openDocResponse.doc);
     this.docModel = this.autoDispose(new DocModel(this.docData, this.docPageModel));
-    this.userPresenceModel = UserPresenceModelImpl.create(this, this.docComm, this.app.comm);
     this.querySetManager = QuerySetManager.create(this, this.docModel, this.docComm);
     this.docPluginManager = new DocPluginManager({
       plugins,
@@ -434,22 +434,6 @@ export class GristDocImpl extends DisposableWithEvents implements GristDoc {
           // Navigate to an anchor if one is present in the url hash.
           const cursorPos = this._getCursorPosFromHash(state.hash);
           await this.recursiveMoveToCursorPos(cursorPos, true);
-
-          if (state.hash.comments) {
-            const section = this.viewModel.activeSection.peek();
-            // Wait for the view to load and be rendered (which is async operation already scheduled at 0).
-            this._waitForView(section).then(async () => {
-              // Sanity check that section is still there.
-              if (section.isDisposed() || !section.hasFocus.peek()) { return; }
-              // And the cursor position wasn't changed (it shouldn't as we were loaded by hash, so Grist
-              // should keep the position no matter what).
-              const current = this._getCursorPos();
-              const cell = (pos: CursorPos) => pick(pos, ['rowId', 'fieldId']);
-              if (!isEqual(cell(cursorPos), cell(current))) { return; }
-              // Open up the discussion panel.
-              commands.allCommands.openDiscussion.run();
-            }).catch(reportError);
-          }
         }
 
         const isTourOrTutorialActive = isTourActive() || this.docModel.isTutorial();
@@ -526,8 +510,8 @@ export class GristDocImpl extends DisposableWithEvents implements GristDoc {
         return;
       }
 
-      // Onboarding tours can conflict with rick rowing and the assistant.
-      if (state.hash?.rickRow || state.params?.assistantState) {
+      // Onboarding tours can conflict with rick rowing.
+      if (state.hash?.rickRow) {
         this._disableAutoStartingTours = true;
       }
 
@@ -649,8 +633,6 @@ export class GristDocImpl extends DisposableWithEvents implements GristDoc {
       activateAssistant: this._activateAssistant.bind(this),
     }, this, true));
 
-    this.userPresenceModel.initialize().catch(reportError);
-
     this.listenTo(app.comm, 'docUserAction', this._onDocUserAction);
 
     this.listenTo(app.comm, 'docUsage', this._onDocUsageMessage);
@@ -756,23 +738,6 @@ export class GristDocImpl extends DisposableWithEvents implements GristDoc {
       }
       return true;
     });
-
-    this.autoDispose(subscribe(urlState().state, async (_use, state) => {
-      const {params} = state;
-      if (!params?.assistantState) {
-        return;
-      }
-
-      await urlState().pushUrl(
-        {params: omit(params, "assistantState")},
-        {replace: true, avoidReload: true}
-      );
-
-      const assistantState = await this.docComm.getAssistantState(params.assistantState);
-      if (this.isDisposed() || !assistantState) { return; }
-
-      this._activateAssistant({state: assistantState});
-    }));
   }
 
   /**
@@ -1229,26 +1194,6 @@ export class GristDocImpl extends DisposableWithEvents implements GristDoc {
   }
 
   /**
-   * Copy an anchor link for the current row (or comment) to the clipboard.
-   */
-  public async copyAnchorLink(anchorInfo: HashLink & CursorPos) {
-    const hash: HashLink = anchorInfo;
-    if (!hash.colRef && anchorInfo.fieldIndex && anchorInfo.sectionId) {
-      const section = this.docModel.viewSections.getRowModel(anchorInfo.sectionId);
-      const column = section.viewFields.peek().peek()[anchorInfo.fieldIndex].column.peek();
-      hash.colRef = column.id.peek();
-    }
-    try {
-      const link = urlState().makeUrl({hash});
-      await copyToClipboard(link);
-      setTestState({clipboard: link});
-      reportSuccess('Link copied to clipboard', {key: 'clipboard'});
-    } catch (e) {
-      throw new Error('cannot copy to clipboard');
-    }
-  }
-
-  /**
    * Renames table. Method exposed primarily for tests.
    */
   public async testRenameTable(tableId: string, newTableName: string) {
@@ -1325,8 +1270,8 @@ export class GristDocImpl extends DisposableWithEvents implements GristDoc {
     if (message.data.webhooks) {
       if (message.data.webhooks.type == 'webhookOverflowError') {
         this.trigger('webhookOverflowError',
-          t('New changes are temporarily suspended. Webhooks queue overflowed. \
-Please check webhooks settings, remove invalid webhooks, and clean the queue.'),);
+          t('New changes are temporarily suspended. Webhooks queue overflowed.' +
+            ' Please check webhooks settings, remove invalid webhooks, and clean the queue.'),);
       } else {
         this.trigger('webhooks', message.data.webhooks);
       }
@@ -2041,14 +1986,14 @@ Please check webhooks settings, remove invalid webhooks, and clean the queue.'),
     });
   }
 
-  private _activateAssistant(options: {state?: AssistantState} = {}) {
+  private _activateAssistant() {
     if (!this._assistantPopupHolder.isEmpty()) {
       // If an AssistantPopup is already open, don't dispose and reopen it, which
       // would cause its state to be reset.
       return;
     }
 
-    AssistantPopup.create(this._assistantPopupHolder, this, options);
+    AssistantPopup.create(this._assistantPopupHolder, this);
   }
 }
 
@@ -2065,7 +2010,12 @@ const cssViewContentPane = styled('div', `
   overflow: visible;
   position: relative;
   min-width: 240px;
-  padding: var(--view-content-page-padding, 12px);
+  
+  // MOD DMH - Removes gap above green line in Layout Tray. 
+  // This also has the effect of removing border around main body, which also saves more screen space 
+  padding: var(--view-content-page-padding, 0px);   // was 12px
+  // end MOD DMH
+  
   @media ${mediaSmall} {
     & {
       padding: 4px;

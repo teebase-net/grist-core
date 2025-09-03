@@ -22,7 +22,6 @@
 
 // Make sure TypeScript treats this as a module
 export {};
-
 import BaseView from 'app/client/components/BaseView';
 import {buildCollapsedSectionDom, buildViewSectionDom} from 'app/client/components/buildViewSectionDom';
 import * as commands from 'app/client/components/commands';
@@ -39,6 +38,7 @@ import {isNonNullish} from 'app/common/gutil';
 import {Computed, Disposable, dom, IDisposable, IDisposableOwner,
         makeTestId, obsArray, Observable, styled} from 'grainjs';
 import isEqual from 'lodash/isEqual';
+
 // MOD DMH - to make search button open automatically
 import { ViewSectionRec } from 'app/client/models/DocModel';
 // end MOD DMH
@@ -74,7 +74,6 @@ export class LayoutTray extends DisposableWithEvents {
 
   constructor(public viewLayout: ViewLayout) {
     super();
-
     // Create a proxy for the LayoutEditor. It will mimic the same interface as CollapsedLeaf.
     const externalLeaf = ExternalLeaf.create(this, this);
 
@@ -145,7 +144,7 @@ export class LayoutTray extends DisposableWithEvents {
   }
 
 /* -------------------------------------------
-  /*Builds a popup for a maximized section. */
+   * Builds a popup for a maximized section. */
 /* Original
   public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, close: () => void) {
     const section = Observable.create<number|null>(owner, null);
@@ -221,8 +220,24 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
 
 // end MOD DMH
 
-
-
+/* original
+  public buildDom() {
+    return this._rootElement = cssCollapsedTray(
+      testId('editor'),
+      // When drag is active we should show a dotted border around the tray.
+      cssCollapsedTray.cls('-is-active', this.active.state),
+      // If element is over the tray, we should indicate that we are ready by changing a color.
+      cssCollapsedTray.cls('-is-target', this.over.state),
+      // Synchronize the hovering state with the event.
+      syncHover(this.hovering),
+      // Create a drop zone (below actual sections)
+      dom.create(CollapsedDropZone, this),
+      // Build the layout.
+      this.layout.buildDom(),
+      // But show only if there are any sections in the tray (even if those are empty or drop target sections)
+      // or we can accept a drop.
+      dom.show(use => use(this.layout.count) > 0 || use(this.active.state)),
+end original */
 // MOD DMH & ChatGPT
 public buildDom() {
   return this._rootElement = cssVFull(
@@ -248,6 +263,8 @@ public buildDom() {
       sectionRowId: id,
     });
   }
+
+
 
   private _registerCommands() {
     const viewLayout = this.viewLayout;
@@ -1216,7 +1233,6 @@ function useDragging() {
   };
 }
 
-
 /**
  * A virtual rectangle that is relative to a DOMRect.
  */
@@ -1246,7 +1262,7 @@ const cssVirtualZone = styled('div', `
 
 
 const cssFloaterWrapper = styled('div', `
-  height: 40px;     
+  height: 40px;
   width: 140px;
   max-width: 140px;
   background: ${theme.tableBodyBg};
@@ -1274,7 +1290,6 @@ const cssCollapsedTrayWrapper = styled('div', `
 `);
 
 // end MOD DMH
-
 // MOD DMH - Modify behaviour of Tray
 // The actual collapsed tray content (green line initially) that expands on mouse hover/focus
 const cssCollapsedTray = styled('div.collapsed_layout', `
@@ -1321,7 +1336,6 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
 // end MOD DMH
 
 const cssRow = styled('div', `display: flex`);
-
 // MOD DMH - modify layout of collapsed widgets
 const cssLayout = styled(cssRow, `
   padding: 4px 24px 4px 24px;  /* MOD ⬅️ Reduced top padding */

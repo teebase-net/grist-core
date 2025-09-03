@@ -1,3 +1,18 @@
+/**
+ * DetailView.css
+ *
+ * Styles for Grist's Detail View, including themes (compact, blocks, form), card layouts,
+ * and layout editor behavior.
+ *
+ * 🔧 MOD DMH — May 2025:
+ * - Reduced padding in compact single-record mode for tighter layout
+ * - All changes clearly marked with `// MOD DMH` and `// end MOD DMH`
+ */
+
+html::before {
+  content: "[Custom Patch] ✅ DetailView.css loaded";
+  display: none; /* Or block to visibly show it */
+}
 .detail_menu_bottom {
   border-top: 1px solid lightgrey;
 }
@@ -205,9 +220,20 @@
   background-color: var(--grist-theme-card-compact-widget-bg, var(--grist-color-medium-grey));
 }
 
+/* 
+ * 🔧 Custom Patch: Reduced padding for single record in compact view.
+ * 📅 Applied: 2025-05-05
+ * This reduces vertical and horizontal space around a card-style record,
+ * creating a tighter layout in Detail (Card) View.
+ *
+ * Original: padding: 8px;
+ * Patched:  padding: 0px;
+ */
+// MOD DMH
 .detail_theme_record_compact.detailview_record_single {
-  padding: 8px;
+  padding: 0px;
 }
+// end MOD DMH
 
 .detail_theme_record_compact > .detail_row_num {
   padding: 0px;
@@ -348,3 +374,25 @@
     background-color: var(--grist-color-medium-grey) !important;
   }
 }
+// MOD DMH: Make Card widget padding uniform - left/right same as top/bottom
+
+.layout_box.layout_fill_window.layout_hbox,
+.flexvbox.view_data_pane_container,
+.flexvbox.detailview_single {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  background: none !important;
+}
+
+.g_record_detail.detail_theme_record_compact.detailview_record_single {
+  padding: 0 !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  background: white !important; /* or your desired bg */
+  box-shadow: none !important;  /* remove if it has a shadow causing a gutter look */
+}
+
+// end MOD DMH

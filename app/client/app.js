@@ -1,5 +1,17 @@
 /* global $, window */
 
+/*
+===============================================================================
+📄 app/client/app.js
+
+Entry point for loading the Grist frontend application.
+
+🔧 MOD DMH — May 2025:
+- Adds support for custom UI overrides via `require('./custom')` at end of file.
+- Purpose: Load runtime UI patches from `app/client/custom/index.js`.
+
+===============================================================================
+*/
 // This is the entry point into loading the whole of Grist frontend application. Some extensions
 // attempt to load it more than once (e.g. "Lingvanex"). This leads to duplicated work and errors.
 // At least some of such interference can be neutralized by simply ignoring repeated loads.
@@ -50,3 +62,8 @@ $(function() {
   window.loadScript = (name) =>
     window.exposeModulesForTests().then(() => window.exposedModules.loadScript.loadScript(name));
 });
+// ==========================
+// MOD DMH: Load custom patch
+require('./custom');
+console.log("[Custom Patch] ✅ app.js loaded");
+// end MOD DMH

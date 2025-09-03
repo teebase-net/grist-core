@@ -1,3 +1,13 @@
+/**
+ * GridView.js
+ *
+ * Implements the main grid view component in Grist, responsible for rendering table data,
+ * handling keyboard and mouse interactions, drag-and-drop logic, context menus, and cell editing.
+ *
+ * 🔧 MOD DMH — May 2025:
+ * - Reduced `ROW_NUMBER_WIDTH` constant from 52px to 30px to enable more compact row numbering
+ * - Clearly marked with `// MOD DMH` for PR clarity
+ */
 /* globals $, window, CustomEvent */
 
 const _         = require('underscore');
@@ -73,8 +83,10 @@ const SHORT_CLICK_IN_MS = 500;
 // size of the plus width ()
 const PLUS_WIDTH = 40;
 // size of the row number field (we assume 4rem, 1rem = 13px in grist)
-const ROW_NUMBER_WIDTH = 52;
 
+// DMH MOD
+const ROW_NUMBER_WIDTH = 30;    // DMH MOD was 52px
+// end DMH MOD
 
 /**
  * GridView component implements the view of a grid of cells.

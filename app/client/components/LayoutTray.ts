@@ -13,15 +13,17 @@
  * - Special behavior: if tray contains a widget titled "🔍 SEARCH", the search input is auto-focused when expanded.
  *
  * Modified Blocks:
- * - Import of `ViewSectionRec` for search detection
+ * - Import of `ViewSectionRec` for search detection (type-only to avoid runtime import reordering)
  * - `buildPopup()` override for search auto-focus
  * - `buildDom()` override for tray wrapper/float behavior
  * - Custom tray + wrapper styles for hover and visibility
  * - Layout padding tweaks for visual alignment
+ *
+ * Notes:
+ * - Removed `export {}` sentinels to keep module ordering stable. This prevents accidental disruption of
+ *   declaration merging that supplies extra fields on `GristDoc` elsewhere in the app.
  */
 
-// Make sure TypeScript treats this as a module
-export {};
 import BaseView from 'app/client/components/BaseView';
 import {buildCollapsedSectionDom, buildViewSectionDom} from 'app/client/components/buildViewSectionDom';
 import * as commands from 'app/client/components/commands';
@@ -40,7 +42,7 @@ import {Computed, Disposable, dom, IDisposable, IDisposableOwner,
 import isEqual from 'lodash/isEqual';
 
 // MOD DMH - to make search button open automatically
-import { ViewSectionRec } from 'app/client/models/DocModel';
+import type { ViewSectionRec } from 'app/client/models/DocModel'; // type-only import prevents runtime side effects
 // end MOD DMH
 
 console.log("✅ [Custom Patch] Floating LayoutTray.ts v0.2");
@@ -217,7 +219,6 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
     );
   });
 }
-
 // end MOD DMH
 
 /* original
@@ -243,7 +244,7 @@ public buildDom() {
   return this._rootElement = cssVFull(
     dom.maybe(use => use(this.layout.count) > 0, () =>
       cssCollapsedTrayWrapper(
-        dom.cls('collapsed-tray-wrapper'),  // 👈 Required for hover effect to work
+        dom.cls('collapsed-tray-wrapper'),  // Required for hover expansion
         cssCollapsedTray(
           testId('editor'),
           cssCollapsedTray.cls('-is-active', this.active.state),
@@ -257,6 +258,7 @@ public buildDom() {
   );
 }
 // end MOD DMH
+
   public buildContentDom(id: string|number) {
     return buildCollapsedSectionDom({
       gristDoc: this.viewLayout.gristDoc,
@@ -1278,7 +1280,7 @@ const cssFloaterWrapper = styled('div', `
 
 const cssVFull = styled('div', `
   position: relative;
-  display: contents;   // ✅ Removes wrapper layout impact entirely
+  display: contents;   // Removes wrapper layout impact entirely
 `);
 
 
@@ -1297,10 +1299,10 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   flex-direction: column;
   overflow: hidden;
   height: 3px;
-  background-color: #16b378;        // ✅ Green line color
+  background-color: #16b378;        // Green line color
   transition: height 0.3s ease;
   position: absolute;
-  z-index: 101;  /* ⬅️ Just slightly higher, to ensure it's topmost */
+  z-index: 101;  /* Slightly higher to ensure it's topmost */
   top: 0;
   left: 0;
   right: 0;
@@ -1316,8 +1318,8 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
     background-color: #f7f7f7;
     padding-left: 20px;
     padding-right: 20px;
-    border: none !important;             // ✅ Fixes grey border
-    border-radius: 0 !important;         // ✅ Removes rounded corners
+    border: none !important;             // Fixes grey border
+    border-radius: 0 !important;         // Removes rounded corners
   }
 
   &-is-active {
@@ -1338,7 +1340,7 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
 const cssRow = styled('div', `display: flex`);
 // MOD DMH - modify layout of collapsed widgets
 const cssLayout = styled(cssRow, `
-  padding: 4px 24px 4px 24px;  /* MOD ⬅️ Reduced top padding */
+  padding: 4px 24px 4px 24px;  /* Reduced top padding */
   column-gap: 16px;
   row-gap: 8px;
   flex-wrap: wrap;
@@ -1398,5 +1400,3 @@ const cssVirtualPart = styled('div', `
 `);
 
 const cssHidden = styled('div', `display: none;`);
-
-export {};

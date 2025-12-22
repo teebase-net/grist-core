@@ -11,5 +11,6 @@
   "app/client/components/LayoutTray.ts",
   "app/client/custom/index.js",
   "custom-files.json",
-  "static/custom.css"
+  "static/custom.css",
+  "app/client/models/GristDocExtensions.d.ts"
 ]

@@ -12,5 +12,6 @@
   "app/client/custom/index.js",
   "custom-files.json",
   "static/custom.css",
-  "app/client/models/GristDocExtensions.d.ts"
+  "app/client/models/GristDocExtensions.d.ts",
+  "test.json"
 ]

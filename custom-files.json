@@ -1,9 +1,6 @@
 [
-  "app/client/aclui/ACLFormulaEditor.ts",
-  "app/client/aclui/AccessRules.ts",
   "app/client/app.css",
   "app/client/app.js",
-  "app/client/components/CodeEditorPanel.ts",
   "app/client/components/DetailView.css",
   "app/client/components/GridView.css",
   "app/client/components/GridView.js",

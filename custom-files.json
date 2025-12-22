@@ -1,13 +1,12 @@
 [
-  "app/client/app.css",
-  "app/client/app.js",
-  "app/client/components/DetailView.css",
+  "app/client/components/LayoutTray.ts",
+  "app/client/components/GristDoc.ts",
   "app/client/components/GridView.css",
   "app/client/components/GridView.js",
-  "app/client/components/GristDoc.ts",
-  "app/client/components/LayoutTray.ts",
-  "app/client/custom/index.js",
-  "custom-files.json",
   "static/custom.css",
+  "app/client/custom/index.js",
+  "app/client/app.js",
+  "app/client/components/DetailView.css",
+  "custom-files.json",
   "app/client/models/GristDocExtensions.d.ts"
 ]

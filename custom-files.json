@@ -8,5 +8,4 @@
   "app/client/app.js",
   "app/client/components/DetailView.css",
   "custom-files.json",
-  "app/client/models/GristDocExtensions.d.ts"
 ]

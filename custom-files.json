@@ -1,4 +1,13 @@
 [
+  "--- DOCUMENTATION ---",
+  "PURPOSE: This file tracks 'Surgical' UI changes for the Grist Custom-UI Manager.",
+  "WORKFLOW: When upgrading Grist (e.g., 1.7.3 -> 1.7.8):",
+  "  1. Sync 'main' from upstream (gristlabs).",
+  "  2. Create a new branch from 'main' (e.g., custom-ui-1.7.8).",
+  "  3. Copy this JSON file from the PREVIOUS branch (1.7.3) into the NEW branch.",
+  "  4. Remove any files from this list that have since been made official or add new files requiring customisation.",
+  "  5. Use the Manager tool to guide your manual logic copy-pasting.",
+  "---------------------",
   "app/client/components/LayoutTray.ts",
   "app/client/components/GristDoc.ts",
   "app/client/components/GridView.css",

@@ -170,33 +170,36 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
     const title = vs?.title.peek()?.trim().toUpperCase();
 
     if (title === "🔍 SEARCH") {
+      // 1. Give the popup a tiny moment to exist in the DOM
       setTimeout(() => {
-        // 1. Force the search bar to open by clicking the icon
-        const searchIcon = document.querySelector('.test-tb-search-icon') as HTMLElement;
-        if (searchIcon) { searchIcon.click(); }
+        const container = document.querySelector('.test-tb-search-wrapper');
+        const icon = document.querySelector('.test-tb-search-icon') as HTMLElement;
+        
+        if (!container || !icon) return;
 
-        // 2. Poll until the input is actually visible (not just in the DOM)
-        let attempts = 0;
-        const interval = setInterval(() => {
-          const input = document.querySelector('.test-tb-search-input input') as HTMLInputElement;
-          
-          // offsetWidth > 0 is the key check for "is it visible?"
+        // 2. Click the icon to start the Grist "open" animation
+        icon.click();
+
+        // 3. Set up an observer to wait for the input to actually become visible
+        const observer = new MutationObserver(() => {
+          const input = container.querySelector('input') as HTMLInputElement;
+          // Check if the search bar finished its transition (is now visible)
           if (input && input.offsetWidth > 0) {
             input.focus();
             input.select();
-            console.log("✅ [Patch] Search focused after transition.");
-            clearInterval(interval);
+            console.log("✅ [Patch] Search input successfully focused after animation.");
+            observer.disconnect(); // Stop watching once focused
           }
+        });
 
-          if (++attempts > 40) { // 2 second timeout (40 * 50ms)
-            clearInterval(interval);
-            console.warn("⚠️ [Patch] Search input never became visible.");
-          }
-        }, 50);
-      }, 400); 
+        // Start observing the search wrapper for attribute/style changes (visibility)
+        observer.observe(container, { attributes: true, subtree: true, childList: true });
+
+        // Safety: disconnect after 2 seconds if it never becomes visible
+        setTimeout(() => observer.disconnect(), 2000);
+      }, 300);
     }
 
-  
     return dom.update(
       buildViewSectionDom({
         gristDoc: this.viewLayout.gristDoc,

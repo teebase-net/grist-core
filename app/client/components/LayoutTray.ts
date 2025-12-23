@@ -171,36 +171,32 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
 
     if (title === "🔍 SEARCH") {
       setTimeout(() => {
-        // 1. Find the magnifying glass icon and click it to "open" the search bar
-        const searchIcon = document.querySelector('.test-tb-search-icon');
-        if (searchIcon instanceof HTMLElement) {
-          searchIcon.click();
-          console.log("✅ [Patch] Clicked search icon to open bar.");
+        // 1. Force the search bar to open by clicking the icon
+        const searchIcon = document.querySelector('.test-tb-search-icon') as HTMLElement;
+        if (searchIcon) { searchIcon.click(); }
 
-          // 2. Poll for the input to become visible
-          let attempts = 0;
-          const focusInterval = setInterval(() => {
-            const input = document.querySelector('.test-tb-search-input input') as HTMLInputElement;
-            
-            // Check if input exists AND is visible (width > 0)
-            if (input && input.offsetWidth > 0) {
-              input.focus();
-              input.select();
-              console.log("✅ [Patch] Search input is now visible and focused.");
-              clearInterval(focusInterval);
-            }
+        // 2. Poll until the input is actually visible (not just in the DOM)
+        let attempts = 0;
+        const interval = setInterval(() => {
+          const input = document.querySelector('.test-tb-search-input input') as HTMLInputElement;
+          
+          // offsetWidth > 0 is the key check for "is it visible?"
+          if (input && input.offsetWidth > 0) {
+            input.focus();
+            input.select();
+            console.log("✅ [Patch] Search focused after transition.");
+            clearInterval(interval);
+          }
 
-            if (++attempts > 10) { // Stop trying after 1 second (10 * 100ms)
-              clearInterval(focusInterval);
-              console.warn("⚠️ [Patch] Search input never became visible.");
-            }
-          }, 100);
-        } else {
-          console.warn("⚠️ [Patch] Could not find .test-tb-search-icon");
-        }
-      }, 500); // Wait for the tray popup itself to settle
+          if (++attempts > 40) { // 2 second timeout (40 * 50ms)
+            clearInterval(interval);
+            console.warn("⚠️ [Patch] Search input never became visible.");
+          }
+        }, 50);
+      }, 400); 
     }
 
+  
     return dom.update(
       buildViewSectionDom({
         gristDoc: this.viewLayout.gristDoc,

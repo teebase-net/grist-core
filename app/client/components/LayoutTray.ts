@@ -38,8 +38,12 @@ import {Computed, Disposable, dom, IDisposable, IDisposableOwner,
         makeTestId, obsArray, Observable, styled} from 'grainjs';
 import isEqual from 'lodash/isEqual';
 
-// MOD DMH - to make search button open automatically
+// MOD DMH
+1. Make search button open automatically
 import { ViewSectionRec } from 'app/client/models/DocModel';
+
+2. Avoid cssVFull not found error
+import {theme, cssVFull} from 'app/client/ui2018/cssVars';
 // end MOD DMH
 
 console.log("✅ [Custom Patch] Floating LayoutTray.ts v0.2");

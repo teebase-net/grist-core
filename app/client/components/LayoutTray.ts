@@ -171,15 +171,20 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
 
     if (title === "🔍 SEARCH") {
       setTimeout(() => {
-        const input = document.querySelector('input[placeholder="Search in document"]');
+        // Try multiple selectors: the specific Grist class, then the placeholder fallback
+        const input = document.querySelector('.search_input') || 
+                      document.querySelector('input[type="search"]') ||
+                      document.querySelector('input[placeholder*="Search"]');
+
         if (input instanceof HTMLInputElement) {
           input.focus();
           input.select();
           console.log("✅ [Patch] Focused search input for 🔍 SEARCH popup.");
-       } else {
-         console.warn("⚠️ [Patch] Search input not found.");
-       }
-      }, 300);
+        } else {
+          // If it fails, let's log what it actually finds to help debugging
+          console.warn("⚠️ [Patch] Search input not found. Check if DOM changed.");
+        }
+      }, 500); // Increased to 500ms to account for new version rendering speeds
     }
 
     return dom.update(

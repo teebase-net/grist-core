@@ -1,3 +1,14 @@
+/**
+ * GridView.js
+ *
+ * Implements the main grid view component in Grist, responsible for rendering table data,
+ * handling keyboard and mouse interactions, drag-and-drop logic, context menus, and cell editing.
+ *
+ * 🔧 MOD DMH — May 2025:
+ * - Reduced `ROW_NUMBER_WIDTH` constant from 52px to 30px to enable more compact row numbering
+ * - Clearly marked with `// MOD DMH` for PR clarity
+ */
+
 import BaseView, {ViewOptions} from 'app/client/components/BaseView';
 import {parsePasteForView} from 'app/client/components/BaseView2';
 import * as selector from 'app/client/components/CellSelector';
@@ -91,7 +102,9 @@ export type CornerRenderer = (el: Element) => DomElementArg | null;
 // size of the plus width
 const PLUS_WIDTH = 40;
 // size of the row number field
-const ROW_NUMBER_WIDTH = 52;
+// DMH MOD
+const ROW_NUMBER_WIDTH = 30;    // DMH MOD was 52px
+// end DMH MOD
 
 interface InsertColOptions {
   colInfo?: ColInfo;

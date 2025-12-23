@@ -169,36 +169,68 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
     const vs = viewSections.all().find((s: ViewSectionRec) => s.getRowId() === id);
     const title = vs?.title.peek()?.trim().toUpperCase();
 
+
     if (title === "🔍 SEARCH") {
-      // 1. Give the popup a tiny moment to exist in the DOM
+      console.log("🔍 [Diagnostic] Search Tray Triggered");
+
       setTimeout(() => {
-        const container = document.querySelector('.test-tb-search-wrapper');
-        const icon = document.querySelector('.test-tb-search-icon') as HTMLElement;
-        
-        if (!container || !icon) return;
+        const searchIcon = document.querySelector('.test-tb-search-icon') as HTMLElement;
+        const wrapper = document.querySelector('.test-tb-search-wrapper') as HTMLElement;
 
-        // 2. Click the icon to start the Grist "open" animation
-        icon.click();
+        if (!searchIcon) {
+          console.error("❌ [Diagnostic] Search Icon NOT found in DOM.");
+          return;
+        }
 
-        // 3. Set up an observer to wait for the input to actually become visible
-        const observer = new MutationObserver(() => {
-          const input = container.querySelector('input') as HTMLInputElement;
-          // Check if the search bar finished its transition (is now visible)
-          if (input && input.offsetWidth > 0) {
-            input.focus();
-            input.select();
-            console.log("✅ [Patch] Search input successfully focused after animation.");
-            observer.disconnect(); // Stop watching once focused
+        // 1. Monitor Focus Changes
+        const focusSniffer = (e: FocusEvent) => {
+          console.log("🎯 [Diagnostic] Focus moved to:", e.target);
+        };
+        document.addEventListener('focusin', focusSniffer, { capture: true });
+        // Clean up sniffer after 4 seconds
+        setTimeout(() => document.removeEventListener('focusin', focusSniffer, { capture: true }), 4000);
+
+        // 2. Trigger Opening
+        console.log("🚀 [Diagnostic] Dispatching Click/Mousedown sequence...");
+        searchIcon.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+        searchIcon.click();
+        searchIcon.dispatchEvent(new MouseEvent('mouseup', {bubbles: true}));
+
+        // 3. The Burst-Polling Loop
+        let attempts = 0;
+        const poll = setInterval(() => {
+          attempts++;
+          const input = document.querySelector('.test-tb-search-input input') as HTMLInputElement;
+          
+          if (input) {
+            const isVisible = input.offsetWidth > 0;
+            const isFocused = document.activeElement === input;
+
+            if (isVisible && !isFocused) {
+              console.log(`⚡ [Diagnostic] Attempt ${attempts}: Input visible. Burst-focusing...`);
+              
+              // Force focus 3 times in rapid succession to beat internal race conditions
+              input.focus();
+              setTimeout(() => input.focus(), 5);
+              setTimeout(() => input.focus(), 20);
+              input.select();
+            }
+
+            if (isFocused) {
+              console.log("🎊 [Diagnostic] SUCCESS: Focus stable.");
+              clearInterval(poll);
+            }
           }
-        });
 
-        // Start observing the search wrapper for attribute/style changes (visibility)
-        observer.observe(container, { attributes: true, subtree: true, childList: true });
+          if (attempts > 60) { // Give up after 3 seconds
+            console.warn("🛑 [Diagnostic] TIMEOUT: Input never became focusable/stable.");
+            clearInterval(poll);
+          }
+        }, 50);
 
-        // Safety: disconnect after 2 seconds if it never becomes visible
-        setTimeout(() => observer.disconnect(), 2000);
-      }, 300);
+      }, 400); // Initial wait for popup to render
     }
+
 
     return dom.update(
       buildViewSectionDom({

@@ -2,7 +2,7 @@
 
 "use strict";
 
-console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
+console.log("[Custom Patch] index.js loaded ✅ v1.6.1");
 
 (function () {
   let capturedDocId = null;
@@ -76,28 +76,28 @@ console.log("[Custom Patch] index.js loaded ✅ v1.5.0");
     new MutationObserver(apply).observe(document.body, { childList: true, subtree: true });
   }
 
-// === 5. Show/Hide "Insert column to the left/right" in column menu based on canAlterStructure permission ===
-function hideInsertColumnOptions(canAlterStructure) {
-  const hideIfNeeded = () => {
-    document.querySelectorAll('.test-cmd-name').forEach(span => {
-      const label = span.textContent?.trim();
-      if (label === 'Insert column to the left' || label === 'Insert column to the right') {
-        const li = span.closest('li');
-        if (li) {
-          if (!canAlterStructure) {
-            li.style.display = 'none';
-            console.log(`[Custom Patch] Hiding column menu option: ${label} (no canAlterStructure permission)`);
-          } else {
-            li.style.display = '';
-            console.log(`[Custom Patch] Showing column menu option: ${label} (has canAlterStructure permission)`);
+  // === 5. Show/Hide "Insert column to the left/right" in column menu based on canAlterStructure permission ===
+  function hideInsertColumnOptions(canAlterStructure) {
+    const hideIfNeeded = () => {
+      document.querySelectorAll('.test-cmd-name').forEach(span => {
+        const label = span.textContent?.trim();
+        if (label === 'Insert column to the left' || label === 'Insert column to the right') {
+          const li = span.closest('li');
+          if (li) {
+            if (!canAlterStructure) {
+              li.style.display = 'none';
+              console.log(`[Custom Patch] Hiding column menu option: ${label} (no canAlterStructure permission)`);
+            } else {
+              li.style.display = '';
+              console.log(`[Custom Patch] Showing column menu option: ${label} (has canAlterStructure permission)`);
+            }
           }
         }
-      }
-    });
-  };
-  hideIfNeeded();
-  new MutationObserver(hideIfNeeded).observe(document.body, { childList: true, subtree: true });
-}
+      });
+    };
+    hideIfNeeded();
+    new MutationObserver(hideIfNeeded).observe(document.body, { childList: true, subtree: true });
+  }
 
   // === 6. Add CSS rule for focus styling ===
   function addFocusStyle() {
@@ -121,7 +121,6 @@ function hideInsertColumnOptions(canAlterStructure) {
         if (span.textContent?.trim() === 'Delete widget') {
           span.classList.add('custom-highlight');
           span.style.color = 'red'; // Red in normal state
-          //span.style.fontStyle = 'italic';
           span.style.fontWeight = 'bold';
         }
       });
@@ -138,9 +137,6 @@ function hideInsertColumnOptions(canAlterStructure) {
         if (label === 'Delete record' || label === 'Delete') {
           span.classList.add('custom-highlight');
           span.style.color = 'red'; // Red in normal state
-          if (label === 'Delete record') {
-            span.style.color = 'red'; // Red in normal state
-          }
         }
       });
     };
@@ -155,25 +151,12 @@ function hideInsertColumnOptions(canAlterStructure) {
 
     const perms = await getCurrentUserPermissions(docId);
 
-    // --- HIDE/SHOW ADD COLUMN BUTTON ---
     observeAndHide('.mod-add-column', perms.canAdd, 'Add Column Button');
-
-    // --- HIDE/SHOW SHARE ICON ---
     observeAndHide('.test-tb-share', perms.canExport, 'Share Icon');
-
-    // --- HIDE/SHOW DOWNLOAD/EXPORT OPTIONS ---
     observeAndHide('.test-download-section', perms.canExport, 'Download/Export Option');
-
-    // --- HIDE/SHOW INSERT COLUMN MENU OPTIONS ---
     hideInsertColumnOptions(perms.canExport);
-
-    // --- STYLE ALL "DELETE WIDGET" MENU OPTIONS ---
     highlightDeleteWidget();
-
-    // --- STYLE "DELETE RECORD" AND "DELETE" MENU OPTIONS ---
     highlightDeleteRecord();
-
-    // --- ADD FOCUS STYLING ---
     addFocusStyle();
   }
 
@@ -186,7 +169,6 @@ function hideInsertColumnOptions(canAlterStructure) {
       if (!res.ok) return;
       const data = await res.json();
       if (data.name && data.name.includes('- DEV')) {
-        // Insert banner if not already present
         if (!document.getElementById('custom-global-banner')) {
           const banner = document.createElement('div');
           banner.id = 'custom-global-banner';
@@ -210,20 +192,18 @@ function hideInsertColumnOptions(canAlterStructure) {
           });
           document.body.prepend(banner);
           document.body.style.marginTop = '10px';
-          console.log("[Custom Patch] DEV banner displayed (document name includes '- DEV').");
+          console.log("[Custom Patch] DEV banner displayed.");
         }
-      } else {
-        console.log("[Custom Patch] DEV banner not displayed (document name does not include '- DEV').");
       }
     } catch (err) {
       console.warn("[Custom Patch] ❌ DEV banner logic failed", err);
     }
   }
 
-// === 11. Idle Session Timeout: Monitor activity and force logout ===
+  // === 11. Idle Session Timeout: Monitor activity and force logout ===
   function setupIdleTimer() {
-    const IDLE_TIMEOUT_MS = 30 * 60 * 1000;    // 30 Minutes
-    const WARNING_THRESHOLD_MS = 28 * 60 * 1000; // Warning at 28 mins
+    const IDLE_TIMEOUT_MS = 120000;      // 2 Minutes (Test)
+    const WARNING_THRESHOLD_MS = 90000;  // 1.5 Minutes (Test)
     const LOGOUT_URL = '/logout'; 
     
     let idleTimer;
@@ -240,24 +220,19 @@ function hideInsertColumnOptions(canAlterStructure) {
     };
 
     const showWarning = () => {
+      console.log("⚠️ [Custom Patch] Showing inactivity warning.");
       let warningDiv = document.getElementById('logout-warning');
       if (!warningDiv) {
         warningDiv = document.createElement('div');
         warningDiv.id = 'logout-warning';
         Object.assign(warningDiv.style, {
-          position: 'fixed',
-          bottom: '20px',
-          right: '20px',
-          background: '#ff9800',
-          color: 'white',
-          padding: '15px',
-          borderRadius: '5px',
-          zIndex: '99999',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          fontFamily: 'sans-serif',
-          pointerEvents: 'none'
+          position: 'fixed', bottom: '20px', right: '20px', 
+          background: '#ff9800', color: 'white', padding: '15px', 
+          borderRadius: '5px', zIndex: '99999', 
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)', 
+          fontFamily: 'sans-serif', pointer-events: 'none'
         });
-        warningDiv.innerHTML = "<strong>Session Warning:</strong> Inactivity detected. Logging out in 2 minutes.";
+        warningDiv.innerHTML = "<strong>Session Warning:</strong> Inactivity detected. Logging out in 30 seconds.";
         document.body.appendChild(warningDiv);
       }
       warningDiv.style.display = 'block';
@@ -278,12 +253,17 @@ function hideInsertColumnOptions(canAlterStructure) {
     });
 
     resetTimers();
-    console.log("[Custom Patch] ⏳ Idle Timer initialized (30m).");
+    console.log("[Custom Patch] ✅ Idle Timer logic fully initialized.");
   }
-  
+
   // === 12. Run everything on window load ===
   window.addEventListener('load', () => {
-    console.log("[Custom Patch] ⏳ window.onload fallback triggered");
+    console.log("[Custom Patch] ⏳ window.onload triggered");
+    
+    // START TIMER FIRST (No async/network dependencies)
+    setupIdleTimer();
+    
+    // RUN UI PATCHES SECOND (Async/Network dependencies)
     applyVisibilityControls();
     maybeShowDevBanner();
   });

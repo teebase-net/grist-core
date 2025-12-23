@@ -171,35 +171,34 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
 
     if (title === "🔍 SEARCH") {
       setTimeout(() => {
-        // 1. Target the actual magnifying glass button/icon
-        const searchButton = document.querySelector('.test-tb-search-icon') || 
-                             document.querySelector('.test-tb-search-wrapper button');
+        // 1. Find the magnifying glass icon and click it to "open" the search bar
+        const searchIcon = document.querySelector('.test-tb-search-icon');
+        if (searchIcon instanceof HTMLElement) {
+          searchIcon.click();
+          console.log("✅ [Patch] Clicked search icon to open bar.");
 
-        if (searchButton instanceof HTMLElement) {
-          // Simulate the user click to trigger Grist's internal search activation
-          searchButton.click();
-          console.log("✅ [Patch] Simulated click on search icon.");
-
-          // 2. Small additional delay to allow the input to transition to an active state
-          setTimeout(() => {
-            const input = document.querySelector('.test-tb-search-input input') || 
-                          document.querySelector('input[placeholder="Search in document"]');
+          // 2. Poll for the input to become visible
+          let attempts = 0;
+          const focusInterval = setInterval(() => {
+            const input = document.querySelector('.test-tb-search-input input') as HTMLInputElement;
             
-            if (input instanceof HTMLInputElement) {
+            // Check if input exists AND is visible (width > 0)
+            if (input && input.offsetWidth > 0) {
               input.focus();
               input.select();
-              console.log("✅ [Patch] Focus moved to input after click.");
+              console.log("✅ [Patch] Search input is now visible and focused.");
+              clearInterval(focusInterval);
+            }
+
+            if (++attempts > 10) { // Stop trying after 1 second (10 * 100ms)
+              clearInterval(focusInterval);
+              console.warn("⚠️ [Patch] Search input never became visible.");
             }
           }, 100);
         } else {
-          // Fallback: If button isn't found, try focusing the input directly
-          const directInput = document.querySelector('input[placeholder="Search in document"]');
-          if (directInput instanceof HTMLInputElement) {
-            directInput.focus();
-          }
-          console.warn("⚠️ [Patch] Search icon not found, attempted direct focus.");
+          console.warn("⚠️ [Patch] Could not find .test-tb-search-icon");
         }
-      }, 400); // 400ms allows the tray popup animation to settle
+      }, 500); // Wait for the tray popup itself to settle
     }
 
     return dom.update(

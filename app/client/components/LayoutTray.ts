@@ -31,11 +31,7 @@ import {get as getBrowserGlobals} from 'app/client/lib/browserGlobals';
 import {Signal} from 'app/client/lib/Signal';
 import {urlState} from 'app/client/models/gristUrlState';
 import {TransitionWatcher} from 'app/client/ui/transitions';
-
-// MOD DMH - avoid compile error in v1.7.8
 import {theme, cssVFull} from 'app/client/ui2018/cssVars';
-// end MOD DMH
-
 import {DisposableWithEvents} from 'app/common/DisposableWithEvents';
 import {isNonNullish} from 'app/common/gutil';
 import {Computed, Disposable, dom, IDisposable, IDisposableOwner,
@@ -150,7 +146,7 @@ export class LayoutTray extends DisposableWithEvents {
    * Builds a popup for a maximized section.
    */
 
-// MOD DMH & ChatGPT
+// MOD DMH
 public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, close: () => void) {
   const section = Observable.create<number|null>(owner, null);
 
@@ -196,11 +192,11 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
     );
   });
 }
-
 // end MOD DMH
-// MOD DMH & ChatGPT
+
+// MOD DMH
 public buildDom() {
-  return this._rootElement = cssVFull(
+  return this._rootElement = cssFullSizeWrapper( // 👈 Change cssVFull to cssFullSizeWrapper  
     dom.maybe(use => use(this.layout.count) > 0, () =>
       cssCollapsedTrayWrapper(
         dom.cls('collapsed-tray-wrapper'),  // 👈 Required for hover effect to work
@@ -1334,6 +1330,12 @@ const cssEmptyBox = styled('div', `
 `);
 // end MOD DMH
 
+// MOD DMH - replacement for missing cssVFull
+const cssFullSizeWrapper = styled('div', `
+  height: 100%;
+  width: 100%;
+`);
+// end DMH MOD
 
 const cssProbe = styled('div', `
   min-width: 0px;

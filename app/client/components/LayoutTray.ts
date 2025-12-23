@@ -1330,10 +1330,14 @@ const cssEmptyBox = styled('div', `
 `);
 // end MOD DMH
 
-// MOD DMH - replacement for missing cssVFull
+// MOD DMH - replacement for missing cssVFull v1.7.8
 const cssFullSizeWrapper = styled('div', `
-  height: 100%;
+  position: absolute;    /* ⬅️ Crucial: Floats the tray so it doesn't occupy space */
+  top: 0;
+  left: 0;
   width: 100%;
+  height: 0;              /* ⬅️ Height is 0 so the "page" starts at the top */
+  z-index: 1000;          /* ⬅️ Ensures it stays on top of data tables */
 `);
 // end DMH MOD
 

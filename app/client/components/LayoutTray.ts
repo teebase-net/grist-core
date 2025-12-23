@@ -169,13 +169,11 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
     const vs = viewSections.all().find((s: ViewSectionRec) => s.getRowId() === id);
     const title = vs?.title.peek()?.trim().toUpperCase();
 
-
     if (title === "🔍 SEARCH") {
       console.log("🔍 [Diagnostic] Search Tray Triggered");
 
       setTimeout(() => {
         const searchIcon = document.querySelector('.test-tb-search-icon') as HTMLElement;
-        const wrapper = document.querySelector('.test-tb-search-wrapper') as HTMLElement;
 
         if (!searchIcon) {
           console.error("❌ [Diagnostic] Search Icon NOT found in DOM.");
@@ -200,7 +198,8 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
         let attempts = 0;
         const poll = setInterval(() => {
           attempts++;
-          const input = document.querySelector('.test-tb-search-input input') as HTMLInputElement;
+          // Target the input inside the search wrapper
+          const input = document.querySelector('.test-tb-search-wrapper input') as HTMLInputElement;
           
           if (input) {
             const isVisible = input.offsetWidth > 0;
@@ -209,10 +208,10 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
             if (isVisible && !isFocused) {
               console.log(`⚡ [Diagnostic] Attempt ${attempts}: Input visible. Burst-focusing...`);
               
-              // Force focus 3 times in rapid succession to beat internal race conditions
               input.focus();
+              // Rapid fire focus to fight off race conditions
               setTimeout(() => input.focus(), 5);
-              setTimeout(() => input.focus(), 20);
+              setTimeout(() => input.focus(), 25);
               input.select();
             }
 
@@ -222,15 +221,14 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
             }
           }
 
-          if (attempts > 60) { // Give up after 3 seconds
+          if (attempts > 60) {
             console.warn("🛑 [Diagnostic] TIMEOUT: Input never became focusable/stable.");
             clearInterval(poll);
           }
         }, 50);
 
-      }, 400); // Initial wait for popup to render
+      }, 400);
     }
-
 
     return dom.update(
       buildViewSectionDom({

@@ -2,7 +2,7 @@
 
 "use strict";
 
-console.log("[Custom Patch] index.js loaded ✅ v1.6.1");
+console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
 
 (function () {
   let capturedDocId = null;
@@ -192,7 +192,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.1");
           });
           document.body.prepend(banner);
           document.body.style.marginTop = '10px';
-          console.log("[Custom Patch] DEV banner displayed.");
+          console.log("[Custom Patch] DEV banner displayed (document name includes '- DEV').");
         }
       }
     } catch (err) {
@@ -226,11 +226,17 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.1");
         warningDiv = document.createElement('div');
         warningDiv.id = 'logout-warning';
         Object.assign(warningDiv.style, {
-          position: 'fixed', bottom: '20px', right: '20px', 
-          background: '#ff9800', color: 'white', padding: '15px', 
-          borderRadius: '5px', zIndex: '99999', 
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)', 
-          fontFamily: 'sans-serif', pointer-events: 'none'
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          background: '#ff9800',
+          color: 'white',
+          padding: '15px',
+          borderRadius: '5px',
+          zIndex: '99999',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          fontFamily: 'sans-serif',
+          'pointer-events': 'none'
         });
         warningDiv.innerHTML = "<strong>Session Warning:</strong> Inactivity detected. Logging out in 30 seconds.";
         document.body.appendChild(warningDiv);

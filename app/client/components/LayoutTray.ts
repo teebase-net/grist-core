@@ -170,64 +170,36 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
     const title = vs?.title.peek()?.trim().toUpperCase();
 
     if (title === "🔍 SEARCH") {
-      console.log("🔍 [Diagnostic] Search Tray Triggered");
+      // 1. Log to the console so we can prove this version of the code is running
+      console.log("🚀 [Patch] Initializing Search Auto-Focus (V3)");
 
       setTimeout(() => {
-        const searchIcon = document.querySelector('.test-tb-search-icon') as HTMLElement;
-
-        if (!searchIcon) {
-          console.error("❌ [Diagnostic] Search Icon NOT found in DOM.");
-          return;
-        }
-
-        // 1. Monitor Focus Changes
-        const focusSniffer = (e: FocusEvent) => {
-          console.log("🎯 [Diagnostic] Focus moved to:", e.target);
-        };
-        document.addEventListener('focusin', focusSniffer, { capture: true });
-        // Clean up sniffer after 4 seconds
-        setTimeout(() => document.removeEventListener('focusin', focusSniffer, { capture: true }), 4000);
-
-        // 2. Trigger Opening
-        console.log("🚀 [Diagnostic] Dispatching Click/Mousedown sequence...");
-        searchIcon.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
-        searchIcon.click();
-        searchIcon.dispatchEvent(new MouseEvent('mouseup', {bubbles: true}));
-
-        // 3. The Burst-Polling Loop
-        let attempts = 0;
-        const poll = setInterval(() => {
-          attempts++;
-          // Target the input inside the search wrapper
-          const input = document.querySelector('.test-tb-search-wrapper input') as HTMLInputElement;
+        // 2. Find the icon. Grist's new search bar often needs a physical click to activate.
+        const icon = document.querySelector('.test-tb-search-icon') as HTMLElement;
+        
+        if (icon) {
+          icon.click();
           
-          if (input) {
-            const isVisible = input.offsetWidth > 0;
-            const isFocused = document.activeElement === input;
-
-            if (isVisible && !isFocused) {
-              console.log(`⚡ [Diagnostic] Attempt ${attempts}: Input visible. Burst-focusing...`);
-              
+          // 3. The search box might take 100-300ms to animate open. 
+          // We check every 50ms for up to 2 seconds.
+          let checkCount = 0;
+          const checkVisible = setInterval(() => {
+            const input = document.querySelector('.test-tb-search-input input') as HTMLInputElement;
+            
+            // Check if it exists AND is actually visible to the user
+            if (input && input.offsetWidth > 0) {
               input.focus();
-              // Rapid fire focus to fight off race conditions
-              setTimeout(() => input.focus(), 5);
-              setTimeout(() => input.focus(), 25);
               input.select();
+              console.log("✅ [Patch] Search box focused.");
+              clearInterval(checkVisible);
             }
 
-            if (isFocused) {
-              console.log("🎊 [Diagnostic] SUCCESS: Focus stable.");
-              clearInterval(poll);
-            }
-          }
-
-          if (attempts > 60) {
-            console.warn("🛑 [Diagnostic] TIMEOUT: Input never became focusable/stable.");
-            clearInterval(poll);
-          }
-        }, 50);
-
-      }, 400);
+            if (++checkCount > 40) clearInterval(checkVisible);
+          }, 50);
+        } else {
+          console.warn("⚠️ [Patch] Could not find the search icon.");
+        }
+      }, 500); // Wait for the tray popup itself to finish opening
     }
 
     return dom.update(

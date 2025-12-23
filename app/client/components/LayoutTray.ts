@@ -171,20 +171,35 @@ public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, cl
 
     if (title === "🔍 SEARCH") {
       setTimeout(() => {
-        // Try multiple selectors: the specific Grist class, then the placeholder fallback
-        const input = document.querySelector('.search_input') || 
-                      document.querySelector('input[type="search"]') ||
-                      document.querySelector('input[placeholder*="Search"]');
+        // 1. Target the actual magnifying glass button/icon
+        const searchButton = document.querySelector('.test-tb-search-icon') || 
+                             document.querySelector('.test-tb-search-wrapper button');
 
-        if (input instanceof HTMLInputElement) {
-          input.focus();
-          input.select();
-          console.log("✅ [Patch] Focused search input for 🔍 SEARCH popup.");
+        if (searchButton instanceof HTMLElement) {
+          // Simulate the user click to trigger Grist's internal search activation
+          searchButton.click();
+          console.log("✅ [Patch] Simulated click on search icon.");
+
+          // 2. Small additional delay to allow the input to transition to an active state
+          setTimeout(() => {
+            const input = document.querySelector('.test-tb-search-input input') || 
+                          document.querySelector('input[placeholder="Search in document"]');
+            
+            if (input instanceof HTMLInputElement) {
+              input.focus();
+              input.select();
+              console.log("✅ [Patch] Focus moved to input after click.");
+            }
+          }, 100);
         } else {
-          // If it fails, let's log what it actually finds to help debugging
-          console.warn("⚠️ [Patch] Search input not found. Check if DOM changed.");
+          // Fallback: If button isn't found, try focusing the input directly
+          const directInput = document.querySelector('input[placeholder="Search in document"]');
+          if (directInput instanceof HTMLInputElement) {
+            directInput.focus();
+          }
+          console.warn("⚠️ [Patch] Search icon not found, attempted direct focus.");
         }
-      }, 500); // Increased to 500ms to account for new version rendering speeds
+      }, 400); // 400ms allows the tray popup animation to settle
     }
 
     return dom.update(

@@ -31,7 +31,7 @@ import {get as getBrowserGlobals} from 'app/client/lib/browserGlobals';
 import {Signal} from 'app/client/lib/Signal';
 import {urlState} from 'app/client/models/gristUrlState';
 import {TransitionWatcher} from 'app/client/ui/transitions';
-import {theme, cssVFull} from 'app/client/ui2018/cssVars';
+import {theme} from 'app/client/ui2018/cssVars';
 import {DisposableWithEvents} from 'app/common/DisposableWithEvents';
 import {isNonNullish} from 'app/common/gutil';
 import {Computed, Disposable, dom, IDisposable, IDisposableOwner,

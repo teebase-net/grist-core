@@ -220,7 +220,68 @@ function hideInsertColumnOptions(canAlterStructure) {
     }
   }
 
-  // === 11. Run everything on window load ===
+// === 11. Idle Session Timeout: Monitor activity and force logout ===
+  function setupIdleTimer() {
+    const IDLE_TIMEOUT_MS = 30 * 60 * 1000;    // 30 Minutes
+    const WARNING_THRESHOLD_MS = 28 * 60 * 1000; // Warning at 28 mins
+    const LOGOUT_URL = '/logout'; 
+    
+    let idleTimer;
+    let warningTimer;
+
+    const hideWarning = () => {
+      const warningDiv = document.getElementById('logout-warning');
+      if (warningDiv) warningDiv.style.display = 'none';
+    };
+
+    const logoutUser = () => {
+      console.log("🚨 [Custom Patch] Idle timeout reached. Redirecting to logout.");
+      window.location.href = LOGOUT_URL;
+    };
+
+    const showWarning = () => {
+      let warningDiv = document.getElementById('logout-warning');
+      if (!warningDiv) {
+        warningDiv = document.createElement('div');
+        warningDiv.id = 'logout-warning';
+        Object.assign(warningDiv.style, {
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          background: '#ff9800',
+          color: 'white',
+          padding: '15px',
+          borderRadius: '5px',
+          zIndex: '99999',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          fontFamily: 'sans-serif',
+          pointerEvents: 'none'
+        });
+        warningDiv.innerHTML = "<strong>Session Warning:</strong> Inactivity detected. Logging out in 2 minutes.";
+        document.body.appendChild(warningDiv);
+      }
+      warningDiv.style.display = 'block';
+    };
+
+    const resetTimers = () => {
+      clearTimeout(idleTimer);
+      clearTimeout(warningTimer);
+      hideWarning();
+      
+      warningTimer = setTimeout(showWarning, WARNING_THRESHOLD_MS);
+      idleTimer = setTimeout(logoutUser, IDLE_TIMEOUT_MS);
+    };
+
+    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    activityEvents.forEach(name => {
+      document.addEventListener(name, resetTimers, { capture: true, passive: true });
+    });
+
+    resetTimers();
+    console.log("[Custom Patch] ⏳ Idle Timer initialized (30m).");
+  }
+  
+  // === 12. Run everything on window load ===
   window.addEventListener('load', () => {
     console.log("[Custom Patch] ⏳ window.onload fallback triggered");
     applyVisibilityControls();

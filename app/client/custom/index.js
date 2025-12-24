@@ -200,67 +200,107 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
     }
   }
 
-  // === 11. Idle Session Timeout: Monitor activity and force logout ===
-  function setupIdleTimer() {
-    const IDLE_TIMEOUT_MS = 120000;      // 2 Minutes (Test)
-    const WARNING_THRESHOLD_MS = 90000;  // 1.5 Minutes (Test)
-    const LOGOUT_URL = '/logout'; 
-    
-    let idleTimer;
-    let warningTimer;
+ // === 11. Enhanced Idle Session Timeout: 60m Timeout, 58m Warning + Countdown ===
+ function setupIdleTimer() {
+   const IDLE_TIMEOUT_MS = 3600000;    // 60 Minutes
+   const WARNING_THRESHOLD_MS = 3480000; // 58 Minutes (Triggers 2 mins before logout)
+   const LOGOUT_URL = '/logout'; 
+   
+   let idleTimer;
+   let warningTimer;
+   let countdownInterval;
 
-    const hideWarning = () => {
-      const warningDiv = document.getElementById('logout-warning');
-      if (warningDiv) warningDiv.style.display = 'none';
-    };
+   const hideWarning = () => {
+     const warningDiv = document.getElementById('logout-warning');
+     if (warningDiv) warningDiv.style.display = 'none';
+     clearInterval(countdownInterval);
+   };
 
-    const logoutUser = () => {
-      console.log("🚨 [Custom Patch] Idle timeout reached. Redirecting to logout.");
-      window.location.href = LOGOUT_URL;
-    };
+   const logoutUser = () => {
+     console.log("🚨 [Custom Patch] Idle timeout reached. Redirecting to logout.");
+     window.location.href = LOGOUT_URL;
+   };
 
-    const showWarning = () => {
-      console.log("⚠️ [Custom Patch] Showing inactivity warning.");
-      let warningDiv = document.getElementById('logout-warning');
-      if (!warningDiv) {
-        warningDiv = document.createElement('div');
-        warningDiv.id = 'logout-warning';
-        Object.assign(warningDiv.style, {
-          position: 'fixed',
-          bottom: '20px',
-          right: '20px',
-          background: '#ff9800',
-          color: 'white',
-          padding: '15px',
-          borderRadius: '5px',
-          zIndex: '99999',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          fontFamily: 'sans-serif',
-          'pointer-events': 'none'
-        });
-        warningDiv.innerHTML = "<strong>Session Warning:</strong> Inactivity detected. Logging out in 30 seconds.";
-        document.body.appendChild(warningDiv);
-      }
-      warningDiv.style.display = 'block';
-    };
+   const startCountdown = (secondsRemaining) => {
+     const countdownSpan = document.getElementById('logout-countdown');
+     
+     clearInterval(countdownInterval);
+     countdownInterval = setInterval(() => {
+       secondsRemaining--;
+       if (countdownSpan) {
+         const mins = Math.floor(secondsRemaining / 60);
+         const secs = secondsRemaining % 60;
+         countdownSpan.innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
+       }
+       
+       if (secondsRemaining <= 0) {
+         clearInterval(countdownInterval);
+         logoutUser();
+       }
+     }, 1000);
+   };
 
-    const resetTimers = () => {
-      clearTimeout(idleTimer);
-      clearTimeout(warningTimer);
-      hideWarning();
-      
-      warningTimer = setTimeout(showWarning, WARNING_THRESHOLD_MS);
-      idleTimer = setTimeout(logoutUser, IDLE_TIMEOUT_MS);
-    };
+   const showWarning = () => {
+     console.log("⚠️ [Custom Patch] Showing centered inactivity warning.");
+     let warningDiv = document.getElementById('logout-warning');
+     
+     if (!warningDiv) {
+       warningDiv = document.createElement('div');
+       warningDiv.id = 'logout-warning';
+       Object.assign(warningDiv.style, {
+         position: 'fixed',
+         top: '50%',
+         left: '50%',
+         transform: 'translate(-50%, -50%)',
+         background: 'rgba(255, 152, 0, 0.95)',
+         backdropFilter: 'blur(10px)',
+         color: 'white',
+         padding: '40px 60px',
+         borderRadius: '15px',
+         zIndex: '100000',
+         boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+         fontFamily: 'sans-serif',
+         textAlign: 'center',
+         border: '2px solid rgba(255,255,255,0.3)',
+         pointerEvents: 'auto' // Set to auto so you could add a "Stay Logged In" button here later
+       });
+       
+       warningDiv.innerHTML = `
+         <div style="font-size: 32px; font-weight: bold; margin-bottom: 15px;">Session Expiring</div>
+         <div style="font-size: 18px; opacity: 0.9; margin-bottom: 20px;">You will be logged out due to inactivity in:</div>
+         <div id="logout-countdown" style="font-size: 48px; font-weight: 800; font-family: monospace;">2:00</div>
+       `;
+       document.body.appendChild(warningDiv);
+     }
+     
+     warningDiv.style.display = 'block';
+     startCountdown(120); // Start 2-minute countdown
+   };
 
-    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-    activityEvents.forEach(name => {
-      document.addEventListener(name, resetTimers, { capture: true, passive: true });
-    });
+   const resetTimers = () => {
+     // Only reset if we aren't currently showing the critical warning
+     // (Optional: remove this check if you want any movement to clear the warning)
+     const warningDiv = document.getElementById('logout-warning');
+     if (warningDiv && warningDiv.style.display === 'block') {
+       // If warning is visible, we hide it and restart the long timers
+       hideWarning();
+     }
 
-    resetTimers();
-    console.log("[Custom Patch] ✅ Idle Timer logic fully initialized.");
-  }
+     clearTimeout(idleTimer);
+     clearTimeout(warningTimer);
+     
+     warningTimer = setTimeout(showWarning, WARNING_THRESHOLD_MS);
+     idleTimer = setTimeout(logoutUser, IDLE_TIMEOUT_MS);
+   };
+
+   const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+   activityEvents.forEach(name => {
+     document.addEventListener(name, resetTimers, { capture: true, passive: true });
+   });
+
+   resetTimers();
+   console.log("[Custom Patch] ✅ Idle Timer (60m) with Centered Countdown initialized.");
+ }
 
 // === 12. GridView Overrides: Narrow Row Numbers (Migrated from GridView.css) ===
   /**

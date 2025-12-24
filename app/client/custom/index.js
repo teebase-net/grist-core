@@ -262,19 +262,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
     console.log("[Custom Patch] ✅ Idle Timer logic fully initialized.");
   }
 
-// === 12. Run everything on window load ===
-  window.addEventListener('load', () => {
-    console.log("[Custom Patch] ⏳ window.onload triggered");
-    
-    setupIdleTimer();
-    injectGridViewStyles();
-    injectGristDocStyles(); // <--- ADD THIS LINE
-    
-    applyVisibilityControls();
-    maybeShowDevBanner();
-  });
-
-// === 13. GridView Overrides: Narrow Row Numbers (Migrated from GridView.css) ===
+// === 12. GridView Overrides: Narrow Row Numbers (Migrated from GridView.css) ===
   /**
    * PURPOSE: Reduces row-number column width from 52px to 30px for a more compact UI.
    * Targets: .gridview_row_numbers, .gridview_corner_spacer, and related overlay offsets.
@@ -327,7 +315,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
     console.log("[Custom Patch] GridView (Row Number) styles injected.");
   }
 
-  // === 14. GristDoc Overrides: Layout Padding (Migrated from GristDoc.ts) ===
+  // === 13. GristDoc Overrides: Layout Padding (Migrated from GristDoc.ts) ===
   /**
    * PURPOSE: Removes the 12px gap above the green line in the Layout Tray 
    * and removes the border around the main body to save screen space.
@@ -362,7 +350,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
     console.log("[Custom Patch] GristDoc (Layout Padding) styles injected.");
   }
 
-  // === 15. GridView.ts Override: Row Width Constant (Standalone) ===
+  // === 14. GridView.ts Override: Row Width Constant (Standalone) ===
   /**
    * PURPOSE: Overrides the visual manifestation of the ROW_NUMBER_WIDTH constant.
    * Targets the 52px to 30px reduction for row headers and frozen column offsets.
@@ -389,11 +377,51 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
     console.log("[Custom Patch] GridView.ts constant override (30px) injected.");
   }
 
+  // === 15. DetailView.css Overrides: Compact Card Layout (Standalone) ===
+  /**
+   * PURPOSE: Tightens the Card/Detail widget layout by removing horizontal padding and margins.
+   * Migrated from DetailView.css.
+   */
+  function injectDetailViewStyles() {
+    if (document.getElementById('custom-detailview-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'custom-detailview-styles';
+    style.textContent = `
+      /* MOD DMH: Make Card widget padding uniform and remove horizontal gaps */
+      .layout_box.layout_fill_window.layout_hbox,
+      .flexvbox.view_data_pane_container,
+      .flexvbox.detailview_single {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+      }
+    `;
+    document.head.appendChild(style);
+    console.log("[Custom Patch] DetailView compact layout styles injected.");
+  }
 
 
-
+// === 99. Run everything on window load ===
+  /**
+   * Keep this at the very bottom of index.js.
+   * Executes all surgical patches and logic once the DOM and resources are ready.
+   */
+  window.addEventListener('load', () => {
+    console.log("[Custom Patch] ⏳ window.onload triggered");
+    
+    // 1. Static UI & CSS Overrides (No dependencies)
+    setupIdleTimer();
+    injectGridViewStyles();           // Ported from GridView.css (30px UI)
+    injectGristDocStyles();          // Ported from GristDoc.ts (0px Padding)
+    injectGridViewConstantOverrides(); // Ported from GridView.ts (Width Overrides)
+    injectDetailViewStyles();        // Ported from DetailView.css (Compact Cards)
+    
+    // 2. Data-Dependent Overrides (Requires docId/API access)
+    applyVisibilityControls();
+    maybeShowDevBanner();
+  });
   
-
 //end  
 })();
 

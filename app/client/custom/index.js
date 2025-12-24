@@ -262,14 +262,14 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
     console.log("[Custom Patch] ✅ Idle Timer logic fully initialized.");
   }
 
-  // === 12. Run everything on window load ===
+// === 12. Run everything on window load ===
   window.addEventListener('load', () => {
     console.log("[Custom Patch] ⏳ window.onload triggered");
     
-    // START TIMER FIRST (No async/network dependencies)
     setupIdleTimer();
+    injectGridViewStyles();
+    injectGristDocStyles(); // <--- ADD THIS LINE
     
-    // RUN UI PATCHES SECOND (Async/Network dependencies)
     applyVisibilityControls();
     maybeShowDevBanner();
   });

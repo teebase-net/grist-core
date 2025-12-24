@@ -273,4 +273,95 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
     applyVisibilityControls();
     maybeShowDevBanner();
   });
+
+// === 13. GridView Overrides: Narrow Row Numbers (Migrated from GridView.css) ===
+  /**
+   * PURPOSE: Reduces row-number column width from 52px to 30px for a more compact UI.
+   * Targets: .gridview_row_numbers, .gridview_corner_spacer, and related overlay offsets.
+   */
+  function injectGridViewStyles() {
+    if (document.getElementById('custom-gridview-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'custom-gridview-styles';
+    style.textContent = `
+      /* MOD DMH: Define the 30px width variable */
+      :root {
+        --gridview-rownum-width: 30px !important;
+      }
+
+      /* 1. Corner Spacers and Row Numbers */
+      .gridview_corner_spacer,
+      .gridview_data_row_num,
+      .gridview_data_corner_overlay {
+        width: 30px !important;
+        min-width: 30px !important;
+      }
+
+      /* 2. Backdrop and Offset calculations */
+      .gridview_header_backdrop_left {
+        width: 31px !important; /* width + 1px border */
+      }
+
+      .scroll_shadow_left,
+      .scroll_shadow_frozen {
+        left: 30px !important;
+      }
+
+      .frozen_line {
+        left: calc(30px + var(--frozen-width, 0) * 1px) !important;
+      }
+
+      /* 3. Printing adjustments */
+      @media print {
+        .print-widget .gridview_data_header {
+          padding-left: 30px !important;
+        }
+      }
+
+      /* 4. Sticky positioning for frozen columns */
+      .record .field.frozen {
+        left: calc(30px + 1px + (var(--frozen-position, 0) - var(--frozen-offset, 0)) * 1px) !important;
+      }
+    `;
+    document.head.appendChild(style);
+    console.log("[Custom Patch] GridView (Row Number) styles injected.");
+  }
+
+  // === 14. GristDoc Overrides: Layout Padding (Migrated from GristDoc.ts) ===
+  /**
+   * PURPOSE: Removes the 12px gap above the green line in the Layout Tray 
+   * and removes the border around the main body to save screen space.
+   * Targets: .test-grist-doc (the class associated with cssViewContentPane)
+   */
+  function injectGristDocStyles() {
+    if (document.getElementById('custom-gristdoc-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'custom-gristdoc-styles';
+    style.textContent = `
+      /* MOD DMH: Force padding to 0px to remove body borders and top gaps */
+      .test-grist-doc {
+        padding: var(--view-content-page-padding, 0px) !important;
+      }
+
+      /* Ensure small screens still respect a minimum manageable padding */
+      @media (max-width: 768px) {
+        .test-grist-doc {
+          padding: 4px !important;
+        }
+      }
+
+      /* Maintain 0px padding for special pages and print mode */
+      .test-grist-doc-special-page,
+      @media print {
+        .test-grist-doc {
+          padding: 0px !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    console.log("[Custom Patch] GristDoc (Layout Padding) styles injected.");
+  }
+
+//end  
 })();
+

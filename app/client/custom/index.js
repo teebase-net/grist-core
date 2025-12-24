@@ -362,6 +362,38 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
     console.log("[Custom Patch] GristDoc (Layout Padding) styles injected.");
   }
 
+  // === 15. GridView.ts Override: Row Width Constant (Standalone) ===
+  /**
+   * PURPOSE: Overrides the visual manifestation of the ROW_NUMBER_WIDTH constant.
+   * Targets the 52px to 30px reduction for row headers and frozen column offsets.
+   */
+  function injectGridViewConstantOverrides() {
+    if (document.getElementById('custom-gridview-ts-overrides')) return;
+    const style = document.createElement('style');
+    style.id = 'custom-gridview-ts-overrides';
+    style.textContent = `
+      /* MOD DMH: Force row number width to 30px */
+      .gridview_row_numbers, 
+      .gridview_header_corner {
+        width: 30px !important;
+        min-width: 30px !important;
+        max-width: 30px !important;
+      }
+
+      /* MOD DMH: Re-calculate frozen column positioning for 30px start */
+      .gridview_row .record .field.frozen {
+        left: calc(30px + (var(--frozen-width-prefix, 0) * 1px)) !important;
+      }
+    `;
+    document.head.appendChild(style);
+    console.log("[Custom Patch] GridView.ts constant override (30px) injected.");
+  }
+
+
+
+
+  
+
 //end  
 })();
 

@@ -4,7 +4,8 @@
 ##   docker buildx build -t ... --build-context=ext=<path> .
 ## The code in <path> will then be built along with the rest of Grist.
 ################################################################################
-FROM scratch AS ext
+#FROM scratch AS ext
+FROM gristlabs/grist-ee:latest AS ext
 
 ################################################################################
 ## Javascript build stage

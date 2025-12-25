@@ -4,40 +4,41 @@
 FROM gristlabs/grist-ee:latest AS base
 
 ################################################################################
-## Build Stage: Overwrite source and rebuild frontend
+## Build Stage: Full Branch Injection and Compilation
 ################################################################################
 FROM base AS builder
 
 USER root
+WORKDIR /grist
 
-# Copy only the files from your selected branch that contain customizations
-# This ensures things like LayoutTray in app/client/components are updated
-COPY package.json yarn.lock tsconfig.json tsconfig-ext.json tsconfig-prod.json /grist/
-COPY app /grist/app
-COPY stubs /grist/stubs
-COPY buildtools /grist/buildtools
-COPY static /grist/static
+# 1. Copy EVERYTHING from your selected branch into the image.
+# This ensures that any file you modify in the future is included.
+# Note: This will not overwrite /grist/ext if 'ext' is in your .gitignore.
+COPY . /grist
 
-# Run the build process inside the container. 
-# It uses the 'ext' folder already present in the base image.
+# 2. Re-compile the frontend.
+# We explicitly export GRIST_EXT=ext so the build process links 
+# your custom code with the Enterprise extensions found in the base image.
 RUN yarn install --frozen-lockfile && \
     export GRIST_EXT=ext && \
     yarn run build:prod
 
 ################################################################################
-## Run-time stage: Assemble the final patched image
+## Run-time stage: Final Assembly
 ################################################################################
 FROM base
 
-# Copy the newly compiled build artifacts and updated source from the builder
-COPY --from=builder /grist/_build /grist/_build
-COPY --from=builder /grist/static /grist/static
-COPY --from=builder /grist/app /grist/app
+# Copy the entire /grist directory from the builder.
+# This includes your custom code, the compiled _build folder, 
+# and the existing Enterprise 'ext' folder.
+COPY --from=builder /grist /grist
 
-# Ensure environment variables required for Enterprise are set
+# Set core environment variables for Enterprise operation.
 ENV GRIST_PRO=true \
     GRIST_ORG_IN_PATH=true \
     NODE_ENV=production
 
-# The entrypoint and supervisor remain inherited from the grist-ee base image.
+# Set the working directory for the final container.
 WORKDIR /grist
+
+# Inherit the entrypoint and command from the base grist-ee image.

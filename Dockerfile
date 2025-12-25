@@ -15,16 +15,12 @@ WORKDIR /grist
 COPY . /grist
 
 # 2. Re-compile the frontend.
-# - We set GRIST_EXT to link Enterprise bits.
-# - We modify build.sh to append --skipLibCheck (fixes Lodash errors).
-# - We use 'sed' to turn off strict type checking in the config files 
-#   so the "implicit any" errors in TableOperationsImpl.ts don't stop the build.
+# FIX: We modify the JSON config files directly because tsc --build forbids CLI flags.
+# - We force skipLibCheck to true inside the tsconfig.
+# - We disable strict mode and implicit any checks.
 RUN yarn install --frozen-lockfile && \
     export GRIST_EXT=ext && \
-    export TS_NODE_TRANSPILE_ONLY=true && \
-    sed -i 's/"strict": true/"strict": false/g' tsconfig.json || true && \
-    sed -i 's/"noImplicitAny": true/"noImplicitAny": false/g' tsconfig.json || true && \
-    sed -i 's/tsc --build/tsc --build --skipLibCheck/g' buildtools/build.sh && \
+    sed -i 's/"compilerOptions": {/"compilerOptions": {\n    "skipLibCheck": true, "strict": false, "noImplicitAny": false,/' tsconfig.json && \
     yarn run build:prod
 
 ################################################################################

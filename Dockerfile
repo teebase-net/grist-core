@@ -1,7 +1,7 @@
 ################################################################################
-## STAGE 1: The Builder (Full Node environment with all compilers)
+## STAGE 1: The Builder (Node 20 to satisfy modern engine requirements)
 ################################################################################
-FROM node:18-bookworm AS builder
+FROM node:20-bookworm AS builder
 
 USER root
 WORKDIR /grist
@@ -9,12 +9,12 @@ WORKDIR /grist
 # 1. Copy your branch source
 COPY . /grist
 
-# 2. Install EVERYTHING (including DevDependencies)
-# We do not use --production so that we get 'ts-interface-builder' and 'tsc'
-RUN yarn install --frozen-lockfile
+# 2. Install ALL dependencies (Dev + Prod)
+# We use --ignore-engines only as a secondary safety; Node 20 matches minimatch's needs.
+RUN yarn install --frozen-lockfile --ignore-engines
 
 # 3. Perform the build
-# We set GRIST_EXT=ext to ensure the build expects the enterprise hooks
+# This generates the compiled JS in _build/ and assets in static/
 RUN export GRIST_EXT=ext && \
     export NODE_ENV=production && \
     yarn run build:prod
@@ -24,12 +24,12 @@ RUN export GRIST_EXT=ext && \
 ################################################################################
 FROM gristlabs/grist-ee:latest
 
-# We replace the Enterprise 'app' and 'static' folders with your compiled ones
-# but we leave the Enterprise 'ext' folder alone.
+# Replace official frontend assets with your custom-built ones.
+# We preserve the Enterprise 'ext' and 'core' logic from the base image.
 COPY --from=builder /grist/_build /grist/_build
 COPY --from=builder /grist/static /grist/static
 
-# Update the version stamp if provided
+# Update the version stamp
 ARG DISPLAY_VERSION
 ENV GRIST_VERSION_TAG=$DISPLAY_VERSION \
     GRIST_PRO=true \

@@ -4,8 +4,8 @@
 ##   docker buildx build -t ... --build-context=ext=<path> .
 ## The code in <path> will then be built along with the rest of Grist.
 ################################################################################
-#FROM scratch AS ext
-FROM gristlabs/grist-ee:latest AS ext
+FROM scratch AS ext
+COPY ext /
 
 ################################################################################
 ## Javascript build stage
@@ -110,6 +110,7 @@ COPY --from=builder /grist/app/cli.sh /grist/cli
 # builder stage, otherwise matches nothing.
 # https://stackoverflow.com/a/70096420/11352427
 COPY --from=builder /grist/ext/asset[s] /grist/ext/assets
+COPY --from=builder /grist/ext /grist/ext
 
 # Copy python3 files.
 COPY --from=collector-py3 /usr/local/bin/python3.11 /usr/bin/python3.11

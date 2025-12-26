@@ -9,9 +9,10 @@ COPY . /grist
 
 RUN yarn install --frozen-lockfile --ignore-engines
 
-# We only care about the client-side build for the UI changes
+# FIX: We pass GRIST_PRO=true here so the UI compiler enables Enterprise components
 RUN FETCH_EXTERNAL_PLUGINS=false \
     NODE_ENV=production \
+    GRIST_PRO=true \
     yarn run build:prod
 
 ################################################################################

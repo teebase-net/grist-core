@@ -6,22 +6,20 @@ FROM node:20-bookworm AS builder
 USER root
 WORKDIR /grist
 
-# 1. Copy your grist-core branch
+# 1. Copy your grist-core branch source
 COPY . /grist
 
-# 2. Extract Enterprise logic properly
-# We use a temporary container to extract the EE files so we can use shell logic
-RUN mkdir -p /tmp/ee-files
+# 2. Extract Enterprise logic and OVERWRITE core stubs
+# We bring in /ext, but we also overwrite the server 'create' logic 
+# which is the gatekeeper for the login system.
 COPY --from=gristlabs/grist-ee:latest /grist/ext /grist/ext
-
-# Use a RUN command (not COPY) to move the internal EE hooks into your core source.
-# This replaces the "stubs" with the real Enterprise entry points.
-RUN cp -f /grist/ext/app/server/lib/create.js /grist/app/server/lib/create.ts 2>/dev/null || true
+COPY --from=gristlabs/grist-ee:latest /grist/_build/stubs/app/server/lib/create.js /grist/app/server/lib/create.js
 
 # 3. Install dependencies
 RUN yarn install --frozen-lockfile --ignore-engines
 
-# 4. Build the project as Enterprise
+# 4. Build the project
+# This compiles your UI changes while the 'create' hook points to Enterprise.
 RUN export GRIST_EXT=ext && \
     export NODE_ENV=production && \
     yarn run build:prod
@@ -31,10 +29,13 @@ RUN export GRIST_EXT=ext && \
 ################################################################################
 FROM gristlabs/grist-ee:latest
 
-# Overwrite the base EE build with your custom core build
+# Replace official build with our combined core+ee build
 COPY --from=builder /grist/_build /grist/_build
 COPY --from=builder /grist/static /grist/static
 COPY --from=builder /grist/ext /grist/ext
+
+# Ensure the Enterprise 'create' logic is the one being used in the final build
+COPY --from=builder /grist/app/server/lib/create.js /grist/_build/app/server/lib/create.js || true
 
 ARG DISPLAY_VERSION
 ENV GRIST_VERSION_TAG=$DISPLAY_VERSION \

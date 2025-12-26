@@ -1,25 +1,26 @@
 ################################################################################
-## STAGE 1: The Builder (Node 20)
+## STAGE 1: The Builder
 ################################################################################
 FROM node:20-bookworm AS builder
 
 USER root
 WORKDIR /grist
 
-# 1. Copy your grist-core branch source
+# 1. Start with your custom grist-core source
 COPY . /grist
 
-# 2. Extract Enterprise logic and OVERWRITE core stubs
-# We bring in /ext, but we also overwrite the server 'create' logic 
-# which is the gatekeeper for the login system.
+# 2. Extract ALL Enterprise compiled logic
+# We copy the entire _build folder from EE into a temporary location
+COPY --from=gristlabs/grist-ee:latest /grist/_build /tmp/ee_build
 COPY --from=gristlabs/grist-ee:latest /grist/ext /grist/ext
-COPY --from=gristlabs/grist-ee:latest /grist/_build/stubs/app/server/lib/create.js /grist/app/server/lib/create.js
 
-# 3. Install dependencies
+# 3. Graft: Overwrite your local "stubs" with the real EE compiled files
+# This fixes the 'getAppSettings' and 'getLoginSystem' errors by replacing
+# open-source placeholders with Enterprise logic.
+RUN cp -r /tmp/ee_build/stubs/app/server/lib/* /grist/app/server/lib/ 2>/dev/null || true
+
+# 4. Install dependencies and Build
 RUN yarn install --frozen-lockfile --ignore-engines
-
-# 4. Build the project
-# This compiles your UI changes while the 'create' hook points to Enterprise.
 RUN export GRIST_EXT=ext && \
     export NODE_ENV=production && \
     yarn run build:prod
@@ -29,13 +30,10 @@ RUN export GRIST_EXT=ext && \
 ################################################################################
 FROM gristlabs/grist-ee:latest
 
-# Replace official build with our combined core+ee build
+# Overwrite the base EE with your custom-built UI and merged logic
 COPY --from=builder /grist/_build /grist/_build
 COPY --from=builder /grist/static /grist/static
 COPY --from=builder /grist/ext /grist/ext
-
-# Ensure the Enterprise 'create' logic is the one being used in the final build
-COPY --from=builder /grist/app/server/lib/create.js /grist/_build/app/server/lib/create.js || true
 
 ARG DISPLAY_VERSION
 ENV GRIST_VERSION_TAG=$DISPLAY_VERSION \

@@ -9,7 +9,7 @@ COPY . /grist
 
 RUN yarn install --frozen-lockfile --ignore-engines
 
-# FIX: We pass GRIST_PRO=true here so the UI compiler enables Enterprise components
+# Build with PRO enabled so the UI generates the correct Enterprise routes
 RUN FETCH_EXTERNAL_PLUGINS=false \
     NODE_ENV=production \
     GRIST_PRO=true \
@@ -20,15 +20,17 @@ RUN FETCH_EXTERNAL_PLUGINS=false \
 ################################################################################
 FROM gristlabs/grist-ee:latest
 
-# 1. We keep the EE server logic (_build/app/server) UNTOUCHED.
-# 2. We only overwrite the Client UI and Static assets.
+# Surgical Overlay
 COPY --from=builder /grist/_build/app/client /grist/_build/app/client
 COPY --from=builder /grist/_build/app/common /grist/_build/app/common
 COPY --from=builder /grist/static /grist/static
 
+# Set correct runtime flags
+ENV GRIST_PRO=true \
+    GRIST_ORG_IN_PATH=true \
+    GRIST_UI_FEATURES="billing,multiSite,themes"
+
 ARG DISPLAY_VERSION
-ENV GRIST_VERSION_TAG=$DISPLAY_VERSION \
-    GRIST_PRO=true \
-    GRIST_ORG_IN_PATH=true
+ENV GRIST_VERSION_TAG=$DISPLAY_VERSION
 
 WORKDIR /grist

@@ -1,5 +1,10 @@
 ################################################################################
-## Stage 1: Build your custom Core from fork
+## Stage 1: Official Enterprise as the Source of Truth
+################################################################################
+FROM gristlabs/grist:latest AS enterprise-source
+
+################################################################################
+## Stage 2: Build your Custom Fork (The Skin)
 ################################################################################
 FROM node:22-trixie AS builder
 
@@ -7,45 +12,39 @@ WORKDIR /grist
 COPY package.json yarn.lock /grist/
 RUN yarn install --frozen-lockfile --network-timeout 600000
 
+# Copy source from your fork (/opt/grist/dev)
 COPY tsconfig.json tsconfig-ext.json tsconfig-prod.json /grist/
 COPY app /grist/app
 COPY stubs /grist/stubs
 COPY buildtools /grist/buildtools
 COPY static/locales /grist/static/locales
 
-# Build only your changes
+# Build the custom UI (The Layout Tray, etc.)
 RUN WEBPACK_EXTRA_MODULE_PATHS=/node_modules yarn run build:prod
 
-# Prepare the build artifacts for the swap
-RUN mkdir -p /grist/dist && \
-    cp -r _build/* /grist/dist/ 2>/dev/null || cp -r app /grist/dist/ && \
-    cp -r static/* /grist/dist/static/ 2>/dev/null || true
-
 ################################################################################
-## Stage 2: Final Run-time (The Inverted Graft)
+## Stage 3: Final Hybrid Enterprise Image
 ################################################################################
-# Start with the FULL official Enterprise image
 FROM gristlabs/grist:latest
 
-# We are now root briefly to perform the surgery
+# We return to the official image as the base to ensure all OS dependencies
+# and Enterprise node_modules are 100% correct.
 USER root
 
-# 1. Overlay YOUR custom compiled code over the Enterprise core.
-# This keeps the Enterprise 'ext' and 'node_modules' folders untouched.
+# 1. Overlay YOUR custom compiled core code
 COPY --from=builder /grist/_build /grist/_build
 COPY --from=builder /grist/static /grist/static
 
-# 2. Re-apply permissions for the standard Grist user
+# 2. CRITICAL: Restore the Enterprise Backend that Stage 2 would have wiped
+# This ensures /grist/_build/ext (Enterprise code) exists in the final image.
+COPY --from=enterprise-source /grist/_build/ext /grist/_build/ext
+
+# 3. Ensure permissions are set for the Grist user (1001)
 RUN chown -R 1001:1001 /grist/_build /grist/static
 
-# Switch back to the standard Grist user
 USER 1001
+ENV NODE_ENV=production
+ENV GRIST_ORG_IN_PATH=true
 
-# All Enterprise ENV variables are already set in the base image, 
-# but we ensure the ones you need are present.
-ENV \
-  GRIST_ORG_IN_PATH=true \
-  NODE_ENV=production
-
+# Grist default port
 EXPOSE 8484
-# Use the base image's existing ENTRYPOINT and CMD

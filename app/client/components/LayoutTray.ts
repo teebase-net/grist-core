@@ -1286,6 +1286,8 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
   flex-direction: column;
   overflow: hidden;
   height: 3px;
+  padding-top: 3px;                 /* ⬅️ CRITICAL FIX: Pushes buttons down so they don't cover the green line */
+  
   background-color: #16b378;        // ✅ Green line color
   transition: height 0.3s ease;
   position: absolute;
@@ -1303,7 +1305,7 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
     pointer-events: auto;
     height: 45px;
     background-color: #f7f7f7;
-    padding-top: 8px;                    /* ⬅️ THIS pushes the widgets down */
+    padding-top: 4px;                    /* ⬅️ THIS pushes the widgets down */
     padding-left: 20px;
     padding-right: 20px;
     border: none !important;             // ✅ Fixes grey border

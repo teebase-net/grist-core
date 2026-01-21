@@ -2,7 +2,7 @@
 
 "use strict";
 
-console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
+console.log("[Custom Patch] index.js loaded ✅ v1.6.4");
 
 (function () {
   let capturedDocId = null;
@@ -37,8 +37,8 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
   // === 3. Load current user's permissions from SysUsers table in the current document ===
   async function getCurrentUserPermissions(docId) {
     try {
-      const profile = await fetch('/api/profile/user', { credentials: 'include' }).then(r => r.json());
-      const res = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: 'include' });
+      const profile = await fetch("/api/profile/user", { credentials: "include" }).then(r => r.json());
+      const res = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: "include" });
       if (!res.ok) throw new Error("SysUsers fetch failed");
 
       const data = await res.json();
@@ -65,10 +65,10 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
     const apply = () => {
       const found = document.querySelectorAll(selector);
       if (!visible && found.length) {
-        found.forEach(el => el.style.display = 'none');
+        found.forEach(el => el.style.display = "none");
         console.log(`[Custom Patch] Hiding ${label} (${selector}) due to permission restriction.`);
       } else if (visible && found.length) {
-        found.forEach(el => el.style.display = '');
+        found.forEach(el => el.style.display = "");
         console.log(`[Custom Patch] Showing ${label} (${selector}) as user has permission.`);
       }
     };
@@ -79,16 +79,16 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
   // === 5. Show/Hide "Insert column to the left/right" in column menu based on canAlterStructure permission ===
   function hideInsertColumnOptions(canAlterStructure) {
     const hideIfNeeded = () => {
-      document.querySelectorAll('.test-cmd-name').forEach(span => {
+      document.querySelectorAll(".test-cmd-name").forEach(span => {
         const label = span.textContent?.trim();
-        if (label === 'Insert column to the left' || label === 'Insert column to the right') {
-          const li = span.closest('li');
+        if (label === "Insert column to the left" || label === "Insert column to the right") {
+          const li = span.closest("li");
           if (li) {
             if (!canAlterStructure) {
-              li.style.display = 'none';
+              li.style.display = "none";
               console.log(`[Custom Patch] Hiding column menu option: ${label} (no canAlterStructure permission)`);
             } else {
-              li.style.display = '';
+              li.style.display = "";
               console.log(`[Custom Patch] Showing column menu option: ${label} (has canAlterStructure permission)`);
             }
           }
@@ -101,9 +101,9 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
 
   // === 6. Add CSS rule for focus styling ===
   function addFocusStyle() {
-    if (!document.getElementById('custom-focus-style')) {
-      const style = document.createElement('style');
-      style.id = 'custom-focus-style';
+    if (!document.getElementById("custom-focus-style")) {
+      const style = document.createElement("style");
+      style.id = "custom-focus-style";
       style.textContent = `
         li:focus .test-cmd-name.custom-highlight,
         li:focus-within .test-cmd-name.custom-highlight {
@@ -117,11 +117,11 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
   // === 7. Highlight all "Delete widget" menu options across all widgets ===
   function highlightDeleteWidget() {
     const highlight = () => {
-      document.querySelectorAll('.test-cmd-name').forEach(span => {
-        if (span.textContent?.trim() === 'Delete widget') {
-          span.classList.add('custom-highlight');
-          span.style.color = 'red'; // Red in normal state
-          span.style.fontWeight = 'bold';
+      document.querySelectorAll(".test-cmd-name").forEach(span => {
+        if (span.textContent?.trim() === "Delete widget") {
+          span.classList.add("custom-highlight");
+          span.style.color = "red"; // Red in normal state
+          span.style.fontWeight = "bold";
         }
       });
     };
@@ -132,11 +132,11 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
   // === 8. Highlight "Delete" and "Delete record" menu options ===
   function highlightDeleteRecord() {
     const highlight = () => {
-      document.querySelectorAll('.test-cmd-name').forEach(span => {
+      document.querySelectorAll(".test-cmd-name").forEach(span => {
         const label = span.textContent?.trim();
-        if (label === 'Delete record' || label === 'Delete') {
-          span.classList.add('custom-highlight');
-          span.style.color = 'red'; // Red in normal state
+        if (label === "Delete record" || label === "Delete") {
+          span.classList.add("custom-highlight");
+          span.style.color = "red"; // Red in normal state
         }
       });
     };
@@ -151,9 +151,9 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
 
     const perms = await getCurrentUserPermissions(docId);
 
-    observeAndHide('.mod-add-column', perms.canAdd, 'Add Column Button');
-    observeAndHide('.test-tb-share', perms.canExport, 'Share Icon');
-    observeAndHide('.test-download-section', perms.canExport, 'Download/Export Option');
+    observeAndHide(".mod-add-column", perms.canAdd, "Add Column Button");
+    observeAndHide(".test-tb-share", perms.canExport, "Share Icon");
+    observeAndHide(".test-download-section", perms.canExport, "Download/Export Option");
     hideInsertColumnOptions(perms.canExport);
     highlightDeleteWidget();
     highlightDeleteRecord();
@@ -165,33 +165,33 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
     const docId = await getDocId();
     if (!docId) return;
     try {
-      const res = await fetch(`/api/docs/${docId}`, { credentials: 'include' });
+      const res = await fetch(`/api/docs/${docId}`, { credentials: "include" });
       if (!res.ok) return;
       const data = await res.json();
-      if (data.name && data.name.includes('- DEV')) {
-        if (!document.getElementById('custom-global-banner')) {
-          const banner = document.createElement('div');
-          banner.id = 'custom-global-banner';
-          banner.innerText = 'DEV ENVIRONMENT – This is a test document';
+      if (data.name && data.name.includes("- DEV")) {
+        if (!document.getElementById("custom-global-banner")) {
+          const banner = document.createElement("div");
+          banner.id = "custom-global-banner";
+          banner.innerText = "DEV ENVIRONMENT – This is a test document";
           Object.assign(banner.style, {
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            width: '100%',
-            height: '10px',
-            background: '#f48fb1',
-            color: '#333',
-            fontWeight: 'bold',
-            fontSize: '10px',
-            textAlign: 'center',
-            lineHeight: '10px',
-            letterSpacing: '1px',
-            zIndex: '9999',
-            overflow: 'hidden',
-            whiteSpace: 'nowrap'
+            position: "fixed",
+            top: "0",
+            left: "0",
+            width: "100%",
+            height: "10px",
+            background: "#f48fb1",
+            color: "#333",
+            fontWeight: "bold",
+            fontSize: "10px",
+            textAlign: "center",
+            lineHeight: "10px",
+            letterSpacing: "1px",
+            zIndex: "9999",
+            overflow: "hidden",
+            whiteSpace: "nowrap"
           });
           document.body.prepend(banner);
-          document.body.style.marginTop = '10px';
+          document.body.style.marginTop = "10px";
           console.log("[Custom Patch] DEV banner displayed (document name includes '- DEV').");
         }
       }
@@ -204,15 +204,15 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
  function setupIdleTimer() {
    const IDLE_TIMEOUT_MS = 3600000;    // 60 Minutes
    const WARNING_THRESHOLD_MS = 3480000; // 58 Minutes (Triggers 2 mins before logout)
-   const LOGOUT_URL = '/logout'; 
+   const LOGOUT_URL = "/logout"; 
    
    let idleTimer;
    let warningTimer;
    let countdownInterval;
 
    const hideWarning = () => {
-     const warningDiv = document.getElementById('logout-warning');
-     if (warningDiv) warningDiv.style.display = 'none';
+     const warningDiv = document.getElementById("logout-warning");
+     if (warningDiv) warningDiv.style.display = "none";
      clearInterval(countdownInterval);
    };
 
@@ -222,7 +222,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
    };
 
    const startCountdown = (secondsRemaining) => {
-     const countdownSpan = document.getElementById('logout-countdown');
+     const countdownSpan = document.getElementById("logout-countdown");
      
      clearInterval(countdownInterval);
      countdownInterval = setInterval(() => {
@@ -230,7 +230,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
        if (countdownSpan) {
          const mins = Math.floor(secondsRemaining / 60);
          const secs = secondsRemaining % 60;
-         countdownSpan.innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
+         countdownSpan.innerText = `${mins}:${secs.toString().padStart(2, "0")}`;
        }
        
        if (secondsRemaining <= 0) {
@@ -242,27 +242,27 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
 
    const showWarning = () => {
      console.log("⚠️ [Custom Patch] Showing centered inactivity warning.");
-     let warningDiv = document.getElementById('logout-warning');
+     let warningDiv = document.getElementById("logout-warning");
      
      if (!warningDiv) {
-       warningDiv = document.createElement('div');
-       warningDiv.id = 'logout-warning';
+       warningDiv = document.createElement("div");
+       warningDiv.id = "logout-warning";
        Object.assign(warningDiv.style, {
-         position: 'fixed',
-         top: '50%',
-         left: '50%',
-         transform: 'translate(-50%, -50%)',
-         background: 'rgba(255, 152, 0, 0.95)',
-         backdropFilter: 'blur(10px)',
-         color: 'white',
-         padding: '40px 60px',
-         borderRadius: '15px',
-         zIndex: '100000',
-         boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
-         fontFamily: 'sans-serif',
-         textAlign: 'center',
-         border: '2px solid rgba(255,255,255,0.3)',
-         pointerEvents: 'auto' // Set to auto so you could add a "Stay Logged In" button here later
+         position: "fixed",
+         top: "50%",
+         left: "50%",
+         transform: "translate(-50%, -50%)",
+         background: "rgba(255, 152, 0, 0.95)",
+         backdropFilter: "blur(10px)",
+         color: "white",
+         padding: "40px 60px",
+         borderRadius: "15px",
+         zIndex: "100000",
+         boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
+         fontFamily: "sans-serif",
+         textAlign: "center",
+         border: "2px solid rgba(255,255,255,0.3)",
+         pointerEvents: "auto" // Set to auto so you could add a "Stay Logged In" button here later
        });
        
        warningDiv.innerHTML = `
@@ -273,15 +273,15 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
        document.body.appendChild(warningDiv);
      }
      
-     warningDiv.style.display = 'block';
+     warningDiv.style.display = "block";
      startCountdown(120); // Start 2-minute countdown
    };
 
    const resetTimers = () => {
      // Only reset if we aren't currently showing the critical warning
      // (Optional: remove this check if you want any movement to clear the warning)
-     const warningDiv = document.getElementById('logout-warning');
-     if (warningDiv && warningDiv.style.display === 'block') {
+     const warningDiv = document.getElementById("logout-warning");
+     if (warningDiv && warningDiv.style.display === "block") {
        // If warning is visible, we hide it and restart the long timers
        hideWarning();
      }
@@ -293,7 +293,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
      idleTimer = setTimeout(logoutUser, IDLE_TIMEOUT_MS);
    };
 
-   const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+   const activityEvents = ["mousedown", "mousemove", "keypress", "scroll", "touchstart"];
    activityEvents.forEach(name => {
      document.addEventListener(name, resetTimers, { capture: true, passive: true });
    });
@@ -308,9 +308,9 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
    * Targets: .gridview_row_numbers, .gridview_corner_spacer, and related overlay offsets.
    */
   function injectGridViewStyles() {
-    if (document.getElementById('custom-gridview-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'custom-gridview-styles';
+    if (document.getElementById("custom-gridview-styles")) return;
+    const style = document.createElement("style");
+    style.id = "custom-gridview-styles";
     style.textContent = `
       /* MOD DMH: Define the 30px width variable */
       :root {
@@ -362,9 +362,9 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
    * Targets: .test-grist-doc (the class associated with cssViewContentPane)
    */
   function injectGristDocStyles() {
-    if (document.getElementById('custom-gristdoc-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'custom-gristdoc-styles';
+    if (document.getElementById("custom-gristdoc-styles")) return;
+    const style = document.createElement("style");
+    style.id = "custom-gristdoc-styles";
     style.textContent = `
       /* MOD DMH: Force padding to 0px to remove body borders and top gaps */
       .test-grist-doc {
@@ -396,9 +396,9 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
    * Targets the 52px to 30px reduction for row headers and frozen column offsets.
    */
   function injectGridViewConstantOverrides() {
-    if (document.getElementById('custom-gridview-ts-overrides')) return;
-    const style = document.createElement('style');
-    style.id = 'custom-gridview-ts-overrides';
+    if (document.getElementById("custom-gridview-ts-overrides")) return;
+    const style = document.createElement("style");
+    style.id = "custom-gridview-ts-overrides";
     style.textContent = `
       /* MOD DMH: Force row number width to 30px */
       .gridview_row_numbers, 
@@ -423,9 +423,9 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
    * Migrated from DetailView.css.
    */
   function injectDetailViewStyles() {
-    if (document.getElementById('custom-detailview-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'custom-detailview-styles';
+    if (document.getElementById("custom-detailview-styles")) return;
+    const style = document.createElement("style");
+    style.id = "custom-detailview-styles";
     style.textContent = `
       /* MOD DMH: Make Card widget padding uniform and remove horizontal gaps */
       .layout_box.layout_fill_window.layout_hbox,
@@ -447,7 +447,7 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.3");
    * Keep this at the very bottom of index.js.
    * Executes all surgical patches and logic once the DOM and resources are ready.
    */
-  window.addEventListener('load', () => {
+  window.addEventListener("load", () => {
     console.log("[Custom Patch] ⏳ window.onload triggered");
     
     // 1. Static UI & CSS Overrides (No dependencies)

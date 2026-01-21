@@ -1354,7 +1354,7 @@ const cssEmptyBox = styled("div", `
   border: 2px dashed ${theme.widgetBorder};
   border-radius: 3px;
 // MOD DMH - modify layout of collapsed widgets  
-  padding: 2px; /* MOD DMH ⬅️ Reduced padding from 8 to 2 */
+  padding: 8px; /* MOD DMH ⬅️ Reduced padding from 8 to 2 */
   width: 120px;
   min-height: 34px;
   &-can-accept {

@@ -1329,7 +1329,7 @@ const cssCollapsedTray = styled('div.collapsed_layout', `
 const cssRow = styled("div", `display: flex`);
 const cssLayout = styled(cssRow, `
 // MOD DMH - modify layout of collapsed widgets
-  padding: 4px 24px 4px 24px;  /* MOD DMH ⬅️ Reduced top padding */
+  padding: 8px 24px 4px 24px;  /* MOD DMH ⬅️ Reduced top padding */
   column-gap: 16px;
   row-gap: 8px;
   flex-wrap: wrap;
@@ -1354,7 +1354,7 @@ const cssEmptyBox = styled("div", `
   border: 2px dashed ${theme.widgetBorder};
   border-radius: 3px;
 // MOD DMH - modify layout of collapsed widgets  
-  padding: 2px; /* MOD DMH ⬅️ Reduced padding from 8 to 2 */
+  padding: 8px; /* MOD DMH ⬅️ Reduced padding from 8 to 2 */
   width: 120px;
   min-height: 34px;
   &-can-accept {

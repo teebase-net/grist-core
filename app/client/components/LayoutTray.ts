@@ -1,3 +1,28 @@
+/**
+ * LayoutTray.ts
+ *
+ * 📦 Patch: Floating Expand-on-Hover Layout Tray
+ * 📄 File: /app/client/components/LayoutTray.ts
+ * 📅 Applied: May 2025
+ * 👤 Author: You (DMH)
+ *
+ * Summary:
+ * - Replaces the standard LayoutTray bar with a small green bar that expands on hover.
+ * - Tray is hidden when empty, collapsed to 3px when containing widgets but not hovered.
+ * - Expands smoothly to 45px when hovered.
+ * - Special behavior: if tray contains a widget titled "🔍 SEARCH", the search input is auto-focused when expanded.
+ *
+ * Modified Blocks:
+ * - Import of `ViewSectionRec` for search detection
+ * - `buildPopup()` override for search auto-focus
+ * - `buildDom()` override for tray wrapper/float behavior
+ * - Custom tray + wrapper styles for hover and visibility
+ * - Layout padding tweaks for visual alignment
+ */
+
+// Make sure TypeScript treats this as a module
+export {};
+
 import BaseView from "app/client/components/BaseView";
 import { buildCollapsedSectionDom, buildViewSectionDom } from "app/client/components/buildViewSectionDom";
 import * as commands from "app/client/components/commands";
@@ -9,12 +34,17 @@ import { TransitionWatcher } from "app/client/ui/transitions";
 import { theme } from "app/client/ui2018/cssVars";
 import { DisposableWithEvents } from "app/common/DisposableWithEvents";
 import { isNonNullish } from "app/common/gutil";
-
 import { Computed, Disposable, dom, IDisposable, IDisposableOwner,
   makeTestId, obsArray, Observable, styled } from "grainjs";
 import isEqual from "lodash/isEqual";
-
 import type { ViewLayout } from "app/client/components/ViewLayout";
+
+// MOD DMH - Make search button open automatically
+import { ViewSectionRec } from 'app/client/models/DocModel';
+// end MOD DMH
+
+console.log("✅ [Custom Patch] Floating LayoutTray.ts v0.2");
+
 
 const testId = makeTestId("test-layoutTray-");
 
@@ -118,48 +148,91 @@ export class LayoutTray extends DisposableWithEvents {
   /**
    * Builds a popup for a maximized section.
    */
-  public buildPopup(owner: IDisposableOwner, selected: Observable<number | null>, close: () => void) {
-    const section = Observable.create<number | null>(owner, null);
-    owner.autoDispose(selected.addListener((cur, prev) => {
-      if (prev) {
-        this.layout.getBox(prev)?.attach();
-      }
-      if (cur) {
-        this.layout.getBox(cur)?.detach();
-      }
-      section.set(cur);
-    }));
-    return dom.domComputed(section, (id) => {
-      if (!id) { return null; }
-      return dom.update(
-        buildViewSectionDom({
-          gristDoc: this.viewLayout.gristDoc,
-          sectionRowId: id,
-          draggable: false,
-          focusable: false,
-        }),
-      );
-    });
-  }
+// MOD DMH
+public buildPopup(owner: IDisposableOwner, selected: Observable<number|null>, close: () => void) {
+  const section = Observable.create<number|null>(owner, null);
 
-  public buildDom() {
-    return this._rootElement = cssCollapsedTray(
-      testId("editor"),
-      // When drag is active we should show a dotted border around the tray.
-      cssCollapsedTray.cls("-is-active", this.active.state),
-      // If element is over the tray, we should indicate that we are ready by changing a color.
-      cssCollapsedTray.cls("-is-target", this.over.state),
-      // Synchronize the hovering state with the event.
-      syncHover(this.hovering),
-      // Create a drop zone (below actual sections)
-      dom.create(CollapsedDropZone, this),
-      // Build the layout.
-      this.layout.buildDom(),
-      // But show only if there are any sections in the tray (even if those are empty or drop target sections)
-      // or we can accept a drop.
-      dom.show(use => use(this.layout.count) > 0 || use(this.active.state)),
+  owner.autoDispose(selected.addListener((cur, prev) => {
+    if (prev) {
+      this.layout.getBox(prev)?.attach();
+    }
+    if (cur) {
+      this.layout.getBox(cur)?.detach();
+    }
+    section.set(cur);
+  }));
+
+  return dom.domComputed(section, (id) => {
+    if (!id) {
+      return null;
+    }
+
+    const viewSections = this.viewLayout.viewModel.viewSections.peek();
+    const vs = viewSections.all().find((s: ViewSectionRec) => s.getRowId() === id);
+    const title = vs?.title.peek()?.trim().toUpperCase();
+
+    if (title === "🔍 SEARCH") {
+      // 1. Log to the console so we can prove this version of the code is running
+      console.log("🚀 [Patch] Initializing Search Auto-Focus (V3)");
+
+      setTimeout(() => {
+        // 2. Find the icon. Grist's new search bar often needs a physical click to activate.
+        const icon = document.querySelector('.test-tb-search-icon') as HTMLElement;
+        
+        if (icon) {
+          icon.click();
+          
+          // 3. The search box might take 100-300ms to animate open. 
+          // We check every 50ms for up to 2 seconds.
+          let checkCount = 0;
+          const checkVisible = setInterval(() => {
+            const input = document.querySelector('.test-tb-search-input input') as HTMLInputElement;
+            
+            // Check if it exists AND is actually visible to the user
+            if (input && input.offsetWidth > 0) {
+              input.focus();
+              input.select();
+              console.log("✅ [Patch] Search box focused.");
+              clearInterval(checkVisible);
+            }
+
+            if (++checkCount > 40) clearInterval(checkVisible);
+          }, 50);
+        } else {
+          console.warn("⚠️ [Patch] Could not find the search icon.");
+        }
+      }, 500); // Wait for the tray popup itself to finish opening
+    }
+
+    return dom.update(
+      buildViewSectionDom({
+        gristDoc: this.viewLayout.gristDoc,
+        sectionRowId: id,
+        draggable: false,
+        focusable: false,
+      }),
     );
-  }
+  });
+}
+
+public buildDom() {
+  return this._rootElement = cssFullSizeWrapper( // 👈 Change cssVFull to cssFullSizeWrapper  
+    dom.maybe(use => use(this.layout.count) > 0, () =>
+      cssCollapsedTrayWrapper(
+        dom.cls('collapsed-tray-wrapper'),  // 👈 Required for hover effect to work
+        cssCollapsedTray(
+          testId('editor'),
+          cssCollapsedTray.cls('-is-active', this.active.state),
+          cssCollapsedTray.cls('-is-target', this.over.state),
+          syncHover(this.hovering),
+          dom.create(CollapsedDropZone, this),
+          this.layout.buildDom(),
+        )
+      )
+    )
+  );
+}
+// end MOD DMH
 
   public buildContentDom(id: string | number) {
     return buildCollapsedSectionDom({
@@ -1197,37 +1270,66 @@ const cssFloaterWrapper = styled("div", `
   }
 `);
 
-const cssCollapsedTray = styled("div.collapsed_layout", `
+// MOD DMH - Add wrapper around the collapsed tray to expand the hover-sensitive area
+const cssCollapsedTrayWrapper = styled('div', `
+  position: relative;
+  height: 14px;          // 4px green bar + 10px hover area
+  z-index: 100;
+`);
+// end MOD DMH
+
+
+// MOD DMH - Modify behaviour of Tray
+// The actual collapsed tray content (green line initially) that expands on mouse hover/focus
+const cssCollapsedTray = styled('div.collapsed_layout', `
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: height 0.2s;
-  position: relative;
-  margin: calc(-1 * var(--view-content-page-padding, 12px));
-  margin-bottom: 0;
-  user-select: none;
-  background-color: ${theme.pageBg};
-  border-bottom: 1px solid ${theme.pagePanelsBorder};
-  outline-offset: -1px;
+  height: 3px;
+  background-color: #16b378;        // ✅ Green line color
+  transition: height 0.3s ease;
+  position: absolute;
+  z-index: 101;  /* ⬅️ Just slightly higher, to ensure it's topmost */
+  top: 0;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+
+  .collapsed-tray-wrapper:hover &,
+  .collapsed-tray-wrapper:focus-within & {
+    pointer-events: auto;
+    height: 45px;
+    background-color: #f7f7f7;
+    padding-left: 20px;
+    padding-right: 20px;
+    border: none !important;             // ✅ Fixes grey border
+    border-radius: 0 !important;         // ✅ Removes rounded corners
+  }
 
   &-is-active {
     outline: 2px dashed ${theme.widgetBorder};
   }
+
   &-is-target {
     outline: 2px dashed #7B8CEA;
     background: rgba(123, 140, 234, 0.1);
   }
+
   @media print {
-    & {
-      display: none;
-    }
+    display: none;
+    
+    
   }
-`,
-);
+`);
+// end MOD DMH
 
 const cssRow = styled("div", `display: flex`);
 const cssLayout = styled(cssRow, `
-  padding: 8px 24px;
+// MOD DMH - modify layout of collapsed widgets
+  padding: 4px 24px 4px 24px;  /* MOD DMH ⬅️ Reduced top padding */
   column-gap: 16px;
   row-gap: 8px;
   flex-wrap: wrap;
@@ -1251,7 +1353,8 @@ const cssEmptyBox = styled("div", `
   letter-spacing: 1px;
   border: 2px dashed ${theme.widgetBorder};
   border-radius: 3px;
-  padding: 8px;
+// MOD DMH - modify layout of collapsed widgets  
+  padding: 2px; /* MOD DMH ⬅️ Reduced padding from 8 to 2 */
   width: 120px;
   min-height: 34px;
   &-can-accept {
@@ -1259,6 +1362,16 @@ const cssEmptyBox = styled("div", `
     background: rgba(123, 140, 234, 0.1);
   }
 `);
+// MOD DMH - replacement for missing cssVFull v1.7.8
+const cssFullSizeWrapper = styled('div', `
+  position: absolute;    /* ⬅️ Crucial: Floats the tray so it doesn't occupy space */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;              /* ⬅️ Height is 0 so the "page" starts at the top */
+  z-index: 1000;          /* ⬅️ Ensures it stays on top of data tables */
+`);
+// end DMH MOD
 
 const cssProbe = styled("div", `
   min-width: 0px;

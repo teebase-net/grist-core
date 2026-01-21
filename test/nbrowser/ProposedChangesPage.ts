@@ -67,11 +67,11 @@ describe("ProposedChangesPage", function() {
 
     // Go to the propose-changes page.
     assert.equal(await driver.find(".test-tools-proposals").getText(),
-      "Suggest Changes (1)");
+      "Suggest changes (1)");
     await driver.find(".test-tools-proposals").click();
 
     // Make sure the expected change is shown.
-    await driver.findContentWait(".test-main-content", /Suggest Changes/, 2000);
+    await driver.findContentWait(".test-main-content", /Suggest changes/, 2000);
     await driver.findWait(".test-actionlog-tabular-diffs .field_clip", 2000);
     assert.deepEqual(await getColumns("TABLE1"), ["A", "E"]);
     assert.deepEqual(await getRowValues("TABLE1", 0), ["test1test2", "TEST1TEST2"]);
@@ -287,7 +287,7 @@ describe("ProposedChangesPage", function() {
     await gu.enterCell("Bird");
 
     assert.equal(await driver.find(".test-tools-proposals").getText(),
-      "Suggest Changes (1)");
+      "Suggest changes (1)");
 
     // Make another change.
     await gu.getCell("A", 2).click();
@@ -295,25 +295,25 @@ describe("ProposedChangesPage", function() {
     await gu.enterCell("15");
 
     assert.equal(await driver.find(".test-tools-proposals").getText(),
-      "Suggest Changes (2)");
+      "Suggest changes (2)");
 
     await gu.undo();
     assert.equal(await driver.find(".test-tools-proposals").getText(),
-      "Suggest Changes (1)");
+      "Suggest changes (1)");
 
     await gu.redo();
     assert.equal(await driver.find(".test-tools-proposals").getText(),
-      "Suggest Changes (2)");
+      "Suggest changes (2)");
 
     await gu.refreshDismiss({ ignore: true });
     assert.equal(await driver.find(".test-tools-proposals").getText(),
-      "Suggest Changes (2)");
+      "Suggest changes (2)");
 
     assert.notInclude(await driver.find(".test-undo").getAttribute("class"), "-disable");
 
     await proposeChange();
     assert.equal(await driver.find(".test-tools-proposals").getText(),
-      "Suggest Changes");
+      "Suggest changes");
 
     assert.include(await driver.find(".test-undo").getAttribute("class"), "-disable");
 
@@ -322,11 +322,11 @@ describe("ProposedChangesPage", function() {
     await gu.waitAppFocus();
     await gu.enterCell("13");
     assert.equal(await driver.find(".test-tools-proposals").getText(),
-      "Suggest Changes (1)");
+      "Suggest changes (1)");
     assert.notInclude(await driver.find(".test-undo").getAttribute("class"), "-disable");
     await proposeChange();
     assert.equal(await driver.find(".test-tools-proposals").getText(),
-      "Suggest Changes");
+      "Suggest changes");
     assert.include(await driver.find(".test-undo").getAttribute("class"), "-disable");
 
     await driver.findContentWait("span", /original document/, 2000).click();
@@ -341,22 +341,89 @@ describe("ProposedChangesPage", function() {
     await gu.waitAppFocus();
     await gu.enterCell("99");
     assert.equal(await driver.find(".test-tools-proposals").getText(),
-      "Suggest Changes (1)");
+      "Suggest changes (1)");
     await proposeChange();
     assert.equal(await driver.find(".test-tools-proposals").getText(),
-      "Suggest Changes");
+      "Suggest changes");
     await gu.openPage("Life");
     await gu.getCell("A", 1).click();
     await gu.waitAppFocus();
     await gu.enterCell("999");
     assert.equal(await driver.find(".test-tools-proposals").getText(),
-      "Suggest Changes (1)");
+      "Suggest changes (1)");
     await proposeChange();
     assert.equal(await driver.find(".test-tools-proposals").getText(),
-      "Suggest Changes");
+      "Suggest changes");
+  });
+
+  it("can make and apply a proposed change affecting two tables", async function() {
+    const { api, doc } = await makeLifeDoc();
+    const url = await driver.getCurrentUrl();
+
+    // Add a second table
+    await gu.sendActions([
+      ["AddTable", "Plants", [{ id: "Name", type: "Text" }, { id: "Type", type: "Text" }]],
+      ["AddRecord", "Plants", 1, { Name: "Oak", Type: "Tree" }],
+      ["AddRecord", "Plants", 2, { Name: "Rose", Type: "Flower" }],
+    ]);
+
+    await workOnCopy(url);
+
+    // Make a change to the Life table.
+    await gu.getCell("B", 1).click();
+    await gu.waitAppFocus();
+    await gu.enterCell("Bird");
+
+    // Make a change to the Plants table.
+    await gu.openPage("Plants");
+    await gu.getCell("Type", 1).click();
+    await gu.waitAppFocus();
+    await gu.enterCell("Deciduous Tree");
+
+    // Check that the count shows 2 changes
+    assert.equal(await driver.find(".test-tools-proposals").getText(),
+      "Suggest changes (2)");
+
+    await proposeChange();
+
+    // Click on the "original document" to see the proposal.
+    await driver.findContentWait("span", /original document/, 2000).click();
+
+    // There should be exactly one proposal with changes to both tables.
+    await driver.findWait(".test-proposals-header", 2000);
+    assert.lengthOf(await driver.findAll(".test-proposals-header"), 1);
+
+    // Verify changes are shown for both tables
+    await driver.findWait(".test-actionlog-tabular-diffs .field_clip", 2000);
+
+    // Check Life table changes
+    assert.deepEqual(await getColumns("LIFE"), ["B"]);
+    assert.deepEqual(await getRowValues("LIFE", 0), ["FishBird"]);
+    assert.deepEqual(await getChangeType("LIFE", 0), "→");
+
+    // Check Plants table changes
+    assert.deepEqual(await getColumns("PLANTS"), ["Type"]);
+    assert.deepEqual(await getRowValues("PLANTS", 0), ["Deciduous Tree"]);
+    assert.deepEqual(await getChangeType("PLANTS", 0), "→");
+
+    // Apply the proposal
+    await driver.find(".test-proposals-apply").click();
+    await gu.waitForServer();
+
+    // Verify both changes were applied
+    assert.match(
+      await driver.findContent(".test-proposals-header", /#1/).getText(),
+      /Accepted/,
+    );
+    assert.deepEqual((await api.getDocAPI(doc.id).getRows("Life")).B,
+      ["Bird", "Primate"]);
+    assert.deepEqual((await api.getDocAPI(doc.id).getRows("Plants")).Type,
+      ["Deciduous Tree", "Flower"]);
   });
 
   async function makeLifeDoc() {
+    await driver.navigate().refresh();
+    await gu.acceptAlert({ ignore: true });
     // Load a test document.
     const session = await gu.session().teamSite.login();
     const doc = await session.tempDoc(cleanup, "Hello.grist");
@@ -395,7 +462,7 @@ describe("ProposedChangesPage", function() {
   // Propose a change.
   async function proposeChange() {
     assert.match(await driver.find(".test-tools-proposals").getText(),
-      /Suggest Changes/);
+      /Suggest changes/);
     await driver.find(".test-tools-proposals").click();
     await driver.findWait(".test-proposals-propose", 2000).click();
     await gu.waitForServer();

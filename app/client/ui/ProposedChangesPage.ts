@@ -288,7 +288,7 @@ export class ProposedChangesForkPage extends Disposable {
   }
 
   public title() {
-    return t("Suggest Changes");
+    return t("Suggest changes");
   }
 
   /**
@@ -388,7 +388,7 @@ export class ProposedChangesForkPage extends Disposable {
             this._getProposalRelativeToCurrent(),
             (isReadOnly || !maybeHasChanges) ? null : cssControlRow(
               (hasProposal && !outOfDate) ? null : bigPrimaryButton(
-                hasProposal ? t("Update Suggestion") : t("Suggest Change"),
+                hasProposal ? t("Update suggestion") : t("Suggest change"),
                 dom.on("click", async () => {
                   const urlId = this.gristDoc.docPageModel.currentDocId.get();
                   await this.gristDoc.appModel.api.getDocAPI(urlId!).makeProposal();
@@ -397,7 +397,7 @@ export class ProposedChangesForkPage extends Disposable {
                 testId("propose"),
               ),
               (proposal?.updatedAt && (proposal?.status.status !== "retracted")) ? bigBasicButton(
-                t("Retract Suggestion"),
+                t("Retract suggestion"),
                 dom.on("click", async () => {
                   const urlId = this.gristDoc.docPageModel.currentDocId.get();
                   await this.gristDoc.appModel.api.getDocAPI(urlId!).makeProposal({ retracted: true });
@@ -524,7 +524,6 @@ class ActionLogPartInProposal extends ActionLogPart {
       doc.refreshTableData(table).catch(reportError);
       return dom.create(VirtualSection, doc, {
         tableId: table,
-        sectionId: "list",
         hiddenColumns: ["_gristChangeType"],
         hideViewButtons: true,
         gridOptions: {
@@ -544,7 +543,7 @@ class ActionLogPartInProposal extends ActionLogPart {
               haveId ? testId("collapse") : testId("expand"),
               dom.on("click", () => toggleInfo(table)),
             ),
-          ] : () => ["aaa"],
+          ] : () => [""],
           rowIndexRenderer: (row) => {
             const changeType = row.cells._gristChangeType.peek();
             return dom("div", String(changeType || "?"),

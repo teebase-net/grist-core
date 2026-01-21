@@ -162,6 +162,9 @@ export const getCommonUrls = () => withAdminDefinedUrls({
 
   versionCheck: "https://api.getgrist.com/api/version",
   attachmentStorage: "https://support.getgrist.com/document-settings/#external-attachments",
+
+  signInWithGristRegister: "https://login.getgrist.com/oauth/register",
+  signInWithGristHelp: getHelpCenterUrl(),
 });
 
 export const commonUrls = getCommonUrls();
@@ -1003,6 +1006,8 @@ export interface GristLoadConfig {
 
   // Maximum users to display for user presence features (e.g. active user list)
   userPresenceMaxUsers?: number;
+
+  warnBeforeSharingPublicly?: boolean;
 }
 
 export const Features = StringUnion(

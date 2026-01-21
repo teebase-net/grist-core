@@ -2,7 +2,7 @@
 
 "use strict";
 
-console.log("[Custom Patch] index.js loaded ✅ v1.6.4");
+console.log("[Custom Patch] index.js loaded ✅ v1.7.10-TimeoutUpdate");
 
 (function () {
   let capturedDocId = null;
@@ -34,8 +34,9 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.4");
     return null;
   }
 
-  // === 3. Load current user's permissions from SysUsers table in the current document ===
+  // === 3. Load permissions AND Timeout from SysUsers table ===
   async function getCurrentUserPermissions(docId) {
+    const DEFAULT_TIMEOUT = 60; // Default minutes if not found
     try {
       const profile = await fetch("/api/profile/user", { credentials: "include" }).then(r => r.json());
       const res = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: "include" });
@@ -44,19 +45,24 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.4");
       const data = await res.json();
       const email = profile?.email?.toLowerCase();
       const userIndex = data.Email?.findIndex(e => e?.toLowerCase() === email);
+      
       if (userIndex === -1) {
-        console.log("[Custom Patch] User not found in SysUsers table. All permissions denied.");
-        return { canAdd: false, canExport: false };
+        console.log("[Custom Patch] User not found in SysUsers table. All permissions denied. Defaulting timeout.");
+        return { canAdd: false, canExport: false, timeoutMinutes: DEFAULT_TIMEOUT };
       }
 
       const canAdd = data.Unlock_Structure?.[userIndex] === true;
       const canExport = data.Export_Data?.[userIndex] === true;
+      
+      // NEW: Grab Timeout_Minutes (Column ID: Timeout_Minutes). Default to 60 if 0/null/undefined.
+      let rawTimeout = data.Timeout_Minutes?.[userIndex];
+      const timeoutMinutes = (rawTimeout && Number(rawTimeout) > 0) ? Number(rawTimeout) : DEFAULT_TIMEOUT;
 
-      console.log(`[Custom Patch] Permissions for ${email}: Add Column = ${canAdd}, Export = ${canExport}`);
-      return { canAdd, canExport };
+      console.log(`[Custom Patch] Config for ${email}: Add=${canAdd}, Export=${canExport}, Timeout=${timeoutMinutes}m`);
+      return { canAdd, canExport, timeoutMinutes };
     } catch (err) {
-      console.warn("[Custom Patch] ❌ Permission lookup failed", err);
-      return { canAdd: false, canExport: false };
+      console.warn("[Custom Patch] ❌ Permission/Config lookup failed", err);
+      return { canAdd: false, canExport: false, timeoutMinutes: DEFAULT_TIMEOUT };
     }
   }
 
@@ -147,14 +153,24 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.4");
   // === 9. Main logic: Apply all visibility controls after permissions are loaded ===
   async function applyVisibilityControls() {
     const docId = await getDocId();
-    if (!docId) return;
+    if (!docId) {
+      // Fallback: If no docId, ensure at least the default timer runs
+      setupIdleTimer(60); 
+      return;
+    }
 
     const perms = await getCurrentUserPermissions(docId);
 
+    // Apply Permissions
     observeAndHide(".mod-add-column", perms.canAdd, "Add Column Button");
     observeAndHide(".test-tb-share", perms.canExport, "Share Icon");
     observeAndHide(".test-download-section", perms.canExport, "Download/Export Option");
     hideInsertColumnOptions(perms.canExport);
+
+    // Initialize Timer with dynamic value
+    setupIdleTimer(perms.timeoutMinutes);
+
+    // Apply other visuals
     highlightDeleteWidget();
     highlightDeleteRecord();
     addFocusStyle();
@@ -200,15 +216,20 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.4");
     }
   }
 
- // === 11. Enhanced Idle Session Timeout: 60m Timeout, 58m Warning + Countdown ===
- function setupIdleTimer() {
-   const IDLE_TIMEOUT_MS = 3600000;    // 60 Minutes
-   const WARNING_THRESHOLD_MS = 3480000; // 58 Minutes (Triggers 2 mins before logout)
+ // === 11. Enhanced Idle Session Timeout: Dynamic Duration ===
+ function setupIdleTimer(timeoutMinutes) {
+   // Validate input (min 5 minutes), default to 60 if missing
+   if (!timeoutMinutes || timeoutMinutes < 5) timeoutMinutes = 60;
+
+   const IDLE_TIMEOUT_MS = timeoutMinutes * 60 * 1000;    
+   const WARNING_THRESHOLD_MS = IDLE_TIMEOUT_MS - (2 * 60 * 1000); // 2 mins before logout
    const LOGOUT_URL = "/logout"; 
    
    let idleTimer;
    let warningTimer;
    let countdownInterval;
+
+   console.log(`[Custom Patch] 🕒 Idle Timer set to ${timeoutMinutes} minutes.`);
 
    const hideWarning = () => {
      const warningDiv = document.getElementById("logout-warning");
@@ -279,7 +300,6 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.4");
 
    const resetTimers = () => {
      // Only reset if we aren't currently showing the critical warning
-     // (Optional: remove this check if you want any movement to clear the warning)
      const warningDiv = document.getElementById("logout-warning");
      if (warningDiv && warningDiv.style.display === "block") {
        // If warning is visible, we hide it and restart the long timers
@@ -299,7 +319,6 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.4");
    });
 
    resetTimers();
-   console.log("[Custom Patch] ✅ Idle Timer (60m) with Centered Countdown initialized.");
  }
 
 // === 12. GridView Overrides: Narrow Row Numbers (Migrated from GridView.css) ===
@@ -451,14 +470,15 @@ console.log("[Custom Patch] index.js loaded ✅ v1.6.4");
     console.log("[Custom Patch] ⏳ window.onload triggered");
     
     // 1. Static UI & CSS Overrides (No dependencies)
-    setupIdleTimer();
     injectGridViewStyles();           // Ported from GridView.css (30px UI)
     injectGristDocStyles();          // Ported from GristDoc.ts (0px Padding)
     injectGridViewConstantOverrides(); // Ported from GridView.ts (Width Overrides)
     injectDetailViewStyles();        // Ported from DetailView.css (Compact Cards)
     
     // 2. Data-Dependent Overrides (Requires docId/API access)
+    // IMPORTANT: This now handles Permissions AND the Timeout Config
     applyVisibilityControls();
+    
     maybeShowDevBanner();
   });
   

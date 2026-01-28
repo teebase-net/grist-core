@@ -250,14 +250,20 @@ function setupIdleTimer(timeoutMinutes) {
 
   log(`✅ Armed: timeout=${timeoutMinutes}m (Warning at ${WARNING_THRESHOLD_MS / 1000}s)`);
 
-  // === Debug overlay (floating countdown) ===
+  // === Debug overlay (Subtle floating countdown) ===
   const debugOverlay = document.createElement("div");
   debugOverlay.id = "idle-debug-overlay";
   Object.assign(debugOverlay.style, {
-    position: "fixed", bottom: "10px", right: "10px",
-    background: "rgba(0,0,0,0.8)", color: "#0f0",
-    padding: "6px 10px", fontFamily: "monospace",
-    fontSize: "12px", zIndex: "999999", borderRadius: "4px"
+    position: "fixed",
+    bottom: "2px",          // Absolute bottom
+    right: "5px",           // Absolute right
+    background: "transparent", // Transparent background
+    color: "#e8e8e8",       // Subtle light gray
+    fontFamily: "monospace",
+    fontSize: "10px",       // Slightly smaller
+    zIndex: "999999",
+    pointerEvents: "none",  // Ensures it doesn't block clicks on buttons behind it
+    opacity: "0.6"          // Adds an extra layer of "barely there" transparency
   });
   document.body.appendChild(debugOverlay);
 

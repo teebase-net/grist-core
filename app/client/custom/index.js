@@ -1,36 +1,34 @@
-/* eslint-env browser */
-"use strict";
-
 /**
  * ==============================================================================
- * GRIST ENTERPRISE HYBRID PATCH v1.7.12
- * ==============================================================================
- * * FEATURES INCLUDED:
- * 1.  [Layout] Row Number Width: Fixed at 30px (via GridView/GridView.ts patches).
- * 2.  [Layout] Document Padding: Set to 0px for edge-to-edge feel.
- * 3.  [UI] Highlight Deletions: Red/Bold styling for "Delete" menu items.
- * 4.  [UI] Palatable Dark Mode: Custom HEX overrides for canvases and grid backgrounds.
- * 5.  [UI] Display Density: 'Minimal' (23px) and 'Cozy' (28px) via SysUsers table.
- * 6.  [Security] SysUsers Integration: Dynamic Theme, Density, and Permissions.
- * 7.  [Security] Permissions: Hides Add-Column and Export icons based on user role.
- * 8.  [Session] Idle Timer: Visual countdown in footer with visibility fix (#929299).
- * 9.  [Dev] Banner: Detects "- DEV" in doc title and injects pink warning bar.
- * 10. [Render] Mermaid.js: Native support for diagrams in Markdown code blocks.
- * 11. [Render] Markdown+: Support for ☐/☑ checkboxes and [!INFO] style callouts.
- * * CORE ARCHITECTURE:
- * Uses a "Static-First, Data-Second" approach. Static CSS loads immediately on 
- * window.load, while User-Specific preferences are fetched via the Grist API 
- * once the docId is resolved.
+ * SYSTEM: Grist Custom Master Controller (index.js)
+ * VERSION: v2.2.0-Production (Merged & Hardened)
+ * OWNER: teebase-net (MOD DMH)
+ * * DESCRIPTION:
+ * This script serves as the global orchestrator for Grist. It combines surgical
+ * DOM/CSS overrides with dynamic user permissions and session management.
+ * * CORE FEATURES:
+ * 1. WEBSOCKET SNIFFING: Captures docId from Grist traffic for API fallbacks.
+ * 2. PERMISSION ENGINE: Loads Add/Export/Timeout settings from SysUsers table.
+ * 3. DYNAMIC UI: Hides/Shows buttons and menu items based on User Permissions.
+ * 4. CSS OVERRIDES: Compacts GridView row numbers (52px -> 30px) and removes gaps.
+ * 5. SESSION WATCHDOG: Dynamic idle timeout with countdown warning UI.
+ * 6. DEV BANNER: Visual environment indicator based on document naming.
  * ==============================================================================
  */
 
-console.log("[Custom Patch] index.js v1.7.12 initialized ✅");
+/* eslint-env browser */
+"use strict";
 
 (function () {
+  // --- PRIVATE STATE ---
   let capturedDocId = null;
+  const LOG_PREFIX = "[Custom Patch]";
+  const DEFAULT_TIMEOUT_MINS = 60;
 
   /**
-   * INTERCEPTORS & DISCOVERY
+   * 1. WEBSOCKET INTERCEPTION
+   * Sniffs the WebSocket 'openDoc' method to grab the docId before Grist 
+   * fully initializes. Crucial for early API calls.
    */
   const originalSend = WebSocket.prototype.send;
   WebSocket.prototype.send = function (data) {
@@ -38,175 +36,227 @@ console.log("[Custom Patch] index.js v1.7.12 initialized ✅");
       const msg = JSON.parse(data);
       if (msg?.method === "openDoc" && msg.args?.length) {
         capturedDocId = msg.args[0];
+        console.log(`${LOG_PREFIX} 📄 docId captured from openDoc: ${capturedDocId}`);
       }
-    } catch (err) {}
+    } catch (err) {
+      console.warn(`${LOG_PREFIX} ⚠️ WebSocket interception failed`, err);
+    }
     return originalSend.call(this, data);
   };
 
-  async function resolveDocId(timeout = 3000) {
+  /**
+   * 2. DOC ID RESOLUTION
+   * Attempts to retrieve docId from Grist global or intercepted WebSocket data.
+   */
+  async function getDocId(timeout = 3000) {
     const start = Date.now();
     while (Date.now() - start < timeout) {
-      const fromUrl = window.location.pathname.match(/\/doc\/([^/]+)/);
-      const id = window.gristDoc?.docId || capturedDocId || (fromUrl ? fromUrl[1] : null);
+      const id = window.gristDoc?.docId || capturedDocId;
       if (id) return id;
       await new Promise(r => setTimeout(r, 100));
     }
+    console.warn(`${LOG_PREFIX} ❌ Could not retrieve valid docId.`);
     return null;
   }
 
   /**
-   * STYLE INJECTION (Static Layout)
+   * 3. PERMISSION & CONFIG LOADER
+   * Fetches the SysUsers table to determine user-specific UI restrictions 
+   * and custom session timeout lengths.
    */
-  function injectStaticStyles() {
-    if (document.getElementById("grist-enterprise-static")) return;
-    const style = document.createElement("style");
-    style.id = "grist-enterprise-static";
-    style.textContent = `
-      /* --- 1. Layout Fixes (30px Row Numbers & 0px Padding) --- */
-      :root { --gridview-rownum-width: 30px !important; --timer-text-color: #929299; }
-      .test-grist-doc { padding: 0px !important; }
-      .gridview_corner_spacer, .gridview_data_row_num, .gridview_data_corner_overlay, .gridview_header_corner, .gridview_row_numbers {
-        width: 30px !important; min-width: 30px !important; max-width: 30px !important;
-      }
-      .scroll_shadow_left, .scroll_shadow_frozen { left: 30px !important; }
-      .gridview_row .record .field.frozen { left: calc(30px + (var(--frozen-width-prefix, 0) * 1px)) !important; }
-      .layout_box.layout_fill_window.layout_hbox, .flexvbox.view_data_pane_container { padding: 0 !important; margin: 0 !important; }
-
-      /* --- 2. UI Polish (Delete Highlights) --- */
-      .custom-delete-highlight { color: red !important; font-weight: bold !important; }
-      li:focus .custom-delete-highlight, li:focus-within .custom-delete-highlight { color: #fff !important; }
-
-      /* --- 3. Palatable Dark Mode (High Specificity Overrides) --- */
-      [data-theme='dark'] body, [data-theme='dark'] .theme-light, [data-theme='dark'] .test-grist-doc {
-        --bg-canvas: #1e1e1e !important; --gridview-bg: #1e1e1e !important;
-        --bg-light: #252525 !important; --color-primary: #5dade2 !important;
-        --timer-text-color: #e8e8e8 !important;
-        background-color: #1e1e1e !important; color: #e8e8e8 !important;
-      }
-
-      /* --- 4. Session Timer Overlay --- */
-      #idle-debug-overlay {
-        position: fixed; bottom: 2px; right: 5px; color: var(--timer-text-color) !important;
-        font-family: monospace; font-size: 10px; z-index: 999999; pointer-events: none;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  /**
-   * FEATURE ENGINES (Markdown & Mermaid)
-   */
-  function runFeatureEngines() {
-    // Mermaid.js
-    const script = document.createElement('script');
-    script.src = "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js";
-    script.onload = () => {
-      mermaid.initialize({ startOnLoad: false });
-      new MutationObserver(() => {
-        document.querySelectorAll('pre code.language-mermaid').forEach(code => {
-          const div = document.createElement('div');
-          div.className = 'mermaid'; div.textContent = code.textContent;
-          code.parentElement.replaceWith(div);
-          mermaid.run();
-        });
-      }).observe(document.body, { childList: true, subtree: true });
-    };
-    document.head.appendChild(script);
-
-    // Markdown Checkboxes & Callouts
-    new MutationObserver(() => {
-      document.querySelectorAll('.markdown-render').forEach(el => {
-        if (el.innerHTML.includes('[ ]') || el.innerHTML.includes('[x]')) {
-          el.innerHTML = el.innerHTML.replace(/\[ \]/g, '☐').replace(/\[x\]/g, '☑');
-        }
-        el.querySelectorAll('blockquote').forEach(bq => {
-          if (bq.textContent.includes('[!')) {
-            const type = bq.textContent.match(/\[!(\w+)\]/)?.[1] || "INFO";
-            bq.style = "border-left: 4px solid #3498db; background: rgba(52,152,219,0.1); padding: 8px; margin: 4px 0;";
-            bq.innerHTML = `<strong>${type.toUpperCase()}</strong><br>` + bq.innerHTML.replace(/\[!\w+\]/, '');
-          }
-        });
-      });
-      // Delete Highlighting
-      document.querySelectorAll(".test-cmd-name").forEach(span => {
-        if (["Delete record", "Delete", "Delete widget"].includes(span.textContent?.trim())) {
-          span.classList.add("custom-delete-highlight");
-        }
-      });
-    }).observe(document.body, { childList: true, subtree: true });
-  }
-
-  /**
-   * DYNAMIC LOGIC (SysUsers Integration)
-   */
-  async function applyEnterpriseConfig() {
-    const docId = await resolveDocId();
-    if (!docId) return setupTimer(60);
-
+  async function getCurrentUserConfig(docId) {
     try {
-      const profile = await fetch("/api/profile/user").then(r => r.json());
-      const res = await fetch(`/api/docs/${docId}/tables/SysUsers/data`);
+      const profile = await fetch("/api/profile/user", { credentials: "include" }).then(r => r.json());
+      const res = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: "include" });
+      if (!res.ok) throw new Error("SysUsers fetch failed");
+
       const data = await res.json();
       const email = profile?.email?.toLowerCase();
-      const idx = data.Email?.findIndex(e => e?.toLowerCase() === email);
-
-      if (idx !== -1 && idx !== undefined) {
-        // 1. Session & Theme
-        setupTimer(Number(data.Timeout_Minutes?.[idx]));
-        document.documentElement.setAttribute('data-theme', (data.Theme?.[idx] || 'light').toLowerCase());
-        
-        // 2. Display Density
-        const density = data.Display_Density?.[idx];
-        if (density === 'Minimal') document.documentElement.style.setProperty('--gridview-data-row-height', '23px', 'important');
-        else if (density === 'Cozy') document.documentElement.style.setProperty('--gridview-data-row-height', '28px', 'important');
-
-        // 3. Permissions (Structural Lockdown)
-        const canAdd = data.Unlock_Structure?.[idx] === true;
-        const canExport = data.Export_Data?.[idx] === true;
-        
-        const applyPerms = () => {
-          document.querySelectorAll(".mod-add-column").forEach(el => el.style.display = canAdd ? "" : "none");
-          document.querySelectorAll(".test-tb-share, .test-download-section").forEach(el => el.style.display = canExport ? "" : "none");
-        };
-        applyPerms();
-        new MutationObserver(applyPerms).observe(document.body, { childList: true, subtree: true });
+      const userIndex = data.Email?.findIndex(e => e?.toLowerCase() === email);
+      
+      if (userIndex === -1 || userIndex === undefined) {
+        console.log(`${LOG_PREFIX} User not found in SysUsers. Defaulting to RESTRICTED.`);
+        return { canAdd: false, canExport: false, timeoutMinutes: DEFAULT_TIMEOUT_MINS };
       }
 
-      // 4. Dev Banner Check
-      const docMeta = await fetch(`/api/docs/${docId}`).then(r => r.json());
-      if (docMeta.name?.includes("- DEV")) {
-        const b = document.createElement("div"); b.innerText = "DEV ENVIRONMENT – TEST DOCUMENT";
-        Object.assign(b.style, { position: "fixed", top: 0, width: "100%", height: "10px", background: "#f48fb1", fontSize: "10px", textAlign: "center", zIndex: 9999, lineHeight: "10px" });
-        document.body.prepend(b); document.body.style.marginTop = "10px";
-      }
-    } catch (e) { setupTimer(60); }
+      const rawTimeout = data.Timeout_Minutes?.[userIndex];
+      return {
+        canAdd: data.Unlock_Structure?.[userIndex] === true,
+        canExport: data.Export_Data?.[userIndex] === true,
+        timeoutMinutes: (rawTimeout && Number(rawTimeout) > 0) ? Number(rawTimeout) : DEFAULT_TIMEOUT_MINS
+      };
+    } catch (err) {
+      console.warn(`${LOG_PREFIX} ❌ Permission lookup failed`, err);
+      return { canAdd: false, canExport: false, timeoutMinutes: DEFAULT_TIMEOUT_MINS };
+    }
   }
 
-  function setupTimer(timeoutMins) {
-    if (window._idleInt) window._idleInt.forEach(clearInterval);
-    const old = document.getElementById("idle-debug-overlay"); if (old) old.remove();
-    
-    const IDLE_MS = (timeoutMins || 60) * 60 * 1000;
+  /**
+   * 4. DOM OBSERVERS (UI CLOAKING)
+   * These functions monitor Grist's highly dynamic DOM and remove elements 
+   * the user isn't permitted to see as they appear.
+   */
+  function observeAndHide(selector, visible, label) {
+    const apply = () => {
+      document.querySelectorAll(selector).forEach(el => {
+        el.style.display = visible ? "" : "none";
+      });
+    };
+    apply();
+    new MutationObserver(apply).observe(document.body, { childList: true, subtree: true });
+  }
+
+  function hideInsertColumnOptions(canAlterStructure) {
+    const hideIfNeeded = () => {
+      document.querySelectorAll(".test-cmd-name").forEach(span => {
+        const label = span.textContent?.trim();
+        if (label === "Insert column to the left" || label === "Insert column to the right") {
+          const li = span.closest("li");
+          if (li) li.style.display = canAlterStructure ? "" : "none";
+        }
+      });
+    };
+    hideIfNeeded();
+    new MutationObserver(hideIfNeeded).observe(document.body, { childList: true, subtree: true });
+  }
+
+  /**
+   * 5. VISUAL OVERRIDES (CSS INJECTION)
+   * Handles the GridView (30px row numbers) and GristDoc (0px padding) logic.
+   */
+  const injectSurgicalCSS = () => {
+    if (document.getElementById("teebase-surgical-css")) return;
+    const style = document.createElement("style");
+    style.id = "teebase-surgical-css";
+    style.textContent = `
+      /* MOD DMH: GridView Row Number Reductions (52px -> 30px) */
+      :root { --gridview-rownum-width: 30px !important; }
+      .gridview_corner_spacer, .gridview_data_row_num, .gridview_data_corner_overlay,
+      .gridview_row_numbers, .gridview_header_corner { 
+        width: 30px !important; min-width: 30px !important; max-width: 30px !important; 
+      }
+      .gridview_header_backdrop_left { width: 31px !important; }
+      .scroll_shadow_left, .scroll_shadow_frozen { left: 30px !important; }
+      .frozen_line { left: calc(30px + var(--frozen-width, 0) * 1px) !important; }
+
+      /* MOD DMH: Layout Padding & Card Compactness */
+      .test-grist-doc { padding: var(--view-content-page-padding, 0px) !important; }
+      .layout_box.layout_fill_window.layout_hbox, .flexvbox.view_data_pane_container, .flexvbox.detailview_single {
+        padding-left: 0 !important; padding-right: 0 !important; margin-left: 0 !important; margin-right: 0 !important;
+      }
+
+      /* MOD DMH: Highlighting */
+      li:focus .test-cmd-name.custom-highlight, li:focus-within .test-cmd-name.custom-highlight { color: #fff !important; }
+    `;
+    document.head.appendChild(style);
+    console.log(`${LOG_PREFIX} Surgical CSS Injected.`);
+  };
+
+  /**
+   * 6. ENHANCED IDLE SESSION TIMEOUT
+   * Dynamic timeout with Warning UI and Debug Countdown.
+   */
+  function setupIdleTimer(timeoutMinutes) {
+    if (!timeoutMinutes || timeoutMinutes < 3) timeoutMinutes = DEFAULT_TIMEOUT_MINS;
+    const MS = timeoutMinutes * 60 * 1000;
+    const WARNING_MS = 120000; // 2 Minutes
+    const THRESHOLD = MS - WARNING_MS;
     let lastReset = Date.now();
-    const overlay = document.createElement("div"); overlay.id = "idle-debug-overlay";
-    document.body.appendChild(overlay);
+    let idleTimer, warningTimer, debugOverlay;
 
-    window._idleInt = [setInterval(() => {
-      const rem = Math.max(0, Math.floor((IDLE_MS - (Date.now() - lastReset)) / 1000));
-      overlay.textContent = `Session: ${Math.floor(rem/60)}m ${rem%60}s`;
-    }, 1000)];
+    const updateDebug = () => {
+      if (!debugOverlay) {
+        debugOverlay = document.createElement("div");
+        Object.assign(debugOverlay.style, { position: "fixed", bottom: "10px", right: "10px", background: "rgba(0,0,0,0.8)", color: "#0f0", padding: "4px 8px", fontSize: "10px", zIndex: "999999", fontFamily: "monospace" });
+        document.body.appendChild(debugOverlay);
+      }
+      const rem = Math.max(0, Math.floor((MS - (Date.now() - lastReset)) / 1000));
+      debugOverlay.textContent = `Sess: ${rem}s`;
+    };
+    setInterval(updateDebug, 1000);
 
-    const reset = () => { lastReset = Date.now(); clearTimeout(window._idleTo); window._idleTo = setTimeout(() => window.location.href = "/logout", IDLE_MS); };
-    ["mousedown", "keydown"].forEach(e => document.addEventListener(e, reset, { capture: true }));
+    const showWarning = () => {
+      let warn = document.getElementById("logout-warning") || document.createElement("div");
+      warn.id = "logout-warning";
+      Object.assign(warn.style, { position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", background: "rgba(255, 87, 34, 0.95)", color: "white", padding: "30px", borderRadius: "10px", zIndex: "1000000", textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" });
+      warn.innerHTML = `<div style="font-size:24px; font-weight:bold">Session Expiring</div><div style="font-size:40px" id="warn-count">2:00</div>`;
+      document.body.appendChild(warn);
+      
+      let sec = 120;
+      const countInt = setInterval(() => {
+        sec--;
+        const m = Math.floor(sec/60), s = sec%60;
+        document.getElementById("warn-count").innerText = `${m}:${s < 10 ? '0'+s : s}`;
+        if (sec <= 0) window.location.href = "/logout";
+      }, 1000);
+      warn.dataset.interval = countInt;
+    };
+
+    const reset = () => {
+      lastReset = Date.now();
+      const warn = document.getElementById("logout-warning");
+      if (warn) { warn.style.display = "none"; clearInterval(warn.dataset.interval); }
+      clearTimeout(idleTimer); clearTimeout(warningTimer);
+      warningTimer = setTimeout(showWarning, THRESHOLD);
+      idleTimer = setTimeout(() => window.location.href = "/logout", MS);
+    };
+
+    ["mousedown", "keydown", "touchstart"].forEach(e => document.addEventListener(e, reset, { capture: true }));
     reset();
   }
 
   /**
-   * EXECUTION
+   * 7. DEPLOYMENT & BOOTSTRAP
+   * Orchestrates the startup sequence.
    */
-  window.addEventListener("load", () => {
-    injectStaticStyles();
-    runFeatureEngines();
-    applyEnterpriseConfig();
-  });
+  const bootSystem = async () => {
+    console.log(`${LOG_PREFIX} v2.2.0 Hardened Boot Initiated...`);
+    
+    // Static Overrides
+    injectSurgicalCSS();
+    
+    const docId = await getDocId();
+    if (docId) {
+      const config = await getCurrentUserConfig(docId);
+      
+      // Permission Based UI
+      observeAndHide(".mod-add-column", config.canAdd, "Add Column");
+      observeAndHide(".test-tb-share", config.canExport, "Share Icon");
+      observeAndHide(".test-download-section", config.canExport, "Export Menu");
+      hideInsertColumnOptions(config.canExport);
+
+      // Feature Highlighting
+      const highlight = (label, color = "red") => {
+        document.querySelectorAll(".test-cmd-name").forEach(span => {
+          if (span.textContent?.trim() === label) {
+            span.classList.add("custom-highlight");
+            span.style.color = color;
+            span.style.fontWeight = "bold";
+          }
+        });
+      };
+      const obs = new MutationObserver(() => {
+        highlight("Delete widget"); highlight("Delete record"); highlight("Delete");
+      });
+      obs.observe(document.body, { childList: true, subtree: true });
+
+      // Session Management
+      setupIdleTimer(config.timeoutMinutes);
+
+      // Dev Banner logic
+      const docMeta = await fetch(`/api/docs/${docId}`, { credentials: "include" }).then(r => r.json());
+      if (docMeta.name?.includes("- DEV")) {
+        const b = document.createElement("div");
+        b.innerText = "DEV ENVIRONMENT";
+        Object.assign(b.style, { position: "fixed", top: "0", left: "0", width: "100%", height: "10px", background: "#f48fb1", fontSize: "10px", textAlign: "center", zIndex: "99999", fontWeight: "bold" });
+        document.body.prepend(b);
+        document.body.style.marginTop = "10px";
+      }
+    } else {
+      setupIdleTimer(DEFAULT_TIMEOUT_MINS); // Fallback timer
+    }
+  };
+
+  window.addEventListener("load", bootSystem);
+
 })();

@@ -1,26 +1,19 @@
 /**
  * ==============================================================================
  * SYSTEM: Grist Custom Master Controller (index.js)
- * VERSION: v2.3.2-Stable-Production
+ * VERSION: v2.3.3-Stable
  * OWNER: teebase-net (MOD DMH)
  * LOCATION: /opt/grist/dev/index.js (Target: app/client/custom/index.js)
  * * 📄 PERMANENT FEATURE MANIFEST:
- * 1. WEBSOCKET SNIFFING: 
- * Intercepts 'openDoc' to extract docId before Grist UI initialization.
- * 2. THEME ENFORCEMENT: 
- * Forces 'dark' theme body class to prevent UI flash and ensure consistency.
- * 3. DISPLAY DENSITY (COMPACT): 
- * Surgically compresses grid rows to 22px and reduces global font/padding.
- * 4. DISCRETE DIAGNOSTIC TIMER: 
- * Muted GitHub-grey (#6a737d) session countdown in bottom-right corner.
- * 5. PERMISSION-BASED UI CLOAKING: 
- * Dynamically hides 'Add Column', 'Share', and 'Export' based on SysUsers table.
- * 6. SURGICAL CSS OVERRIDES: 
- * Forces 30px row-number width and 0px layout padding for maximum workspace.
- * 7. SESSION WATCHDOG: 
- * Activity-based idle timer with a 2-minute warning UI before /logout.
- * 8. DESTRUCTIVE ACTION HIGHLIGHTING: 
- * Forces 'Delete' commands to bold red (#f97583) for user safety.
+ * 1. VERSION LOGGING: Displays version number of index.js in console on load for patch verification.
+ * 2. WEBSOCKET SNIFFING: Intercepts docId before Grist UI initialization.
+ * 3. THEME ENFORCEMENT: Forces 'dark' theme body class.
+ * 4. DISPLAY DENSITY: Compact UI (22px rows, 11px font).
+ * 5. DISCRETE TIMER: Muted GitHub-grey (#6a737d) countdown in bottom-right.
+ * 6. PERMISSION CLOAKING: Hides Add/Share/Export based on SysUsers table.
+ * 7. SURGICAL CSS: 30px row-number fix and 0px layout padding.
+ * 8. SESSION WATCHDOG: Idle timer with 2-minute warning before /logout.
+ * 9. ACTION HIGHLIGHTING: Bold red (#f97583) for 'Delete' commands.
  * ==============================================================================
  */
 
@@ -28,13 +21,20 @@
 "use strict";
 
 (function () {
+  const VERSION = "2.3.3-Stable";
   const LOG_PREFIX = "[Custom Patch]";
   const DEFAULT_TIMEOUT_MINS = 60;
   let capturedDocId = null;
 
+  // Immediately log version for verification
+  console.log(
+    `%c ${LOG_PREFIX} SYSTEM BOOT %c v${VERSION} `,
+    "background: #24292e; color: #f97583; font-weight: bold; border-radius: 3px 0 0 3px;",
+    "background: #6a737d; color: #fff; font-weight: bold; border-radius: 0 3px 3px 0;"
+  );
+
   /**
    * SECTION 1: WEBSOCKET INTERCEPTION
-   * Low-level sniffer to capture docId for early-stage API calls.
    */
   const originalSend = WebSocket.prototype.send;
   WebSocket.prototype.send = function (data) {
@@ -49,7 +49,6 @@
 
   /**
    * SECTION 2: THEME & DENSITY (MOD DMH)
-   * Forces visual parameters. Row height set to 22px for extreme compactness.
    */
   function applyVisuals() {
     document.body.classList.add('theme-dark');
@@ -57,7 +56,6 @@
     const style = document.createElement("style");
     style.id = "teebase-visual-overrides";
     style.textContent = `
-      /* Global Density & Grid Variables */
       :root { 
         --grid-row-height: 22px !important; 
         --font-size: 11px !important; 
@@ -65,17 +63,11 @@
       }
       .gridview_data_row { height: 22px !important; }
       .gridview_data_cell { padding: 0 4px !important; line-height: 22px !important; }
-      
-      /* Row Number Compression (30px surgical fix) */
       .gridview_corner_spacer, .gridview_data_row_num, .gridview_row_numbers, .gridview_header_corner { 
         width: 30px !important; min-width: 30px !important; max-width: 30px !important; 
       }
       .scroll_shadow_left, .scroll_shadow_frozen { left: 30px !important; }
-
-      /* Layout Padding Removal (0px) */
       .test-grist-doc { padding: 0px !important; }
-      
-      /* Discrete Timer Styling (GitHub-Muted Grey) */
       #teebase-timer-node {
         position: fixed; bottom: 8px; right: 12px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
@@ -88,7 +80,6 @@
 
   /**
    * SECTION 3: SESSION IDLE TIMER (DISCRETE)
-   * Monitors mouse/keyboard and updates the discrete bottom-right countdown.
    */
   function setupWatchdog(mins) {
     const MS = mins * 60 * 1000;
@@ -146,7 +137,6 @@
 
   /**
    * SECTION 4: PERMISSIONS & UI CLOAKING
-   * Fetches SysUsers table and hides unauthorized DOM elements.
    */
   async function applyPermissions(docId) {
     try {
@@ -176,7 +166,6 @@
 
   /**
    * SECTION 5: BOOTSTRAP ORCHESTRATOR
-   * Runs the sequence on load with a 3s polling for docId stabilization.
    */
   const boot = async () => {
     applyVisuals();
@@ -194,7 +183,7 @@
         document.querySelectorAll(".test-cmd-name").forEach(s => {
           const txt = s.textContent?.trim();
           if (["Delete", "Delete record", "Delete widget"].includes(txt)) {
-            s.style.color = "#f97583"; /* GitHub Red */
+            s.style.color = "#f97583";
             s.style.fontWeight = "bold";
             s.classList.add("custom-highlight");
           }

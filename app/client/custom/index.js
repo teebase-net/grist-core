@@ -216,110 +216,156 @@ console.log("[Custom Patch] index.js loaded ✅ v1.7.10-TimeoutUpdate");
     }
   }
 
- // === 11. Enhanced Idle Session Timeout: Dynamic Duration ===
- function setupIdleTimer(timeoutMinutes) {
-   // Validate input (min 5 minutes), default to 60 if missing
-   if (!timeoutMinutes || timeoutMinutes < 5) timeoutMinutes = 60;
+// === 11. Enhanced Idle Session Timeout (Click-only + Diagnostics) ===
+function setupIdleTimer(timeoutMinutes) {
+  // Validate input (min 3 minutes), default to 60 if missing
+  if (!timeoutMinutes || timeoutMinutes < 3) timeoutMinutes = 60;
 
-   const IDLE_TIMEOUT_MS = timeoutMinutes * 60 * 1000;    
-   const WARNING_THRESHOLD_MS = IDLE_TIMEOUT_MS - (2 * 60 * 1000); // 2 mins before logout
-   const LOGOUT_URL = "/logout"; 
-   
-   let idleTimer;
-   let warningTimer;
-   let countdownInterval;
+  const IDLE_TIMEOUT_MS = timeoutMinutes * 60 * 1000;
+  const WARNING_DURATION_MS = 2 * 60 * 1000; // 2 minutes
+  const WARNING_THRESHOLD_MS = IDLE_TIMEOUT_MS - WARNING_DURATION_MS;
+  const LOGOUT_URL = "/logout";
 
-   console.log(`[Custom Patch] 🕒 Idle Timer set to ${timeoutMinutes} minutes.`);
+  let idleTimer;
+  let warningTimer;
+  let countdownInterval;
+  let lastReset = Date.now();
+  let debugOverlay;
 
-   const hideWarning = () => {
-     const warningDiv = document.getElementById("logout-warning");
-     if (warningDiv) warningDiv.style.display = "none";
-     clearInterval(countdownInterval);
-   };
+  const log = (...args) => console.log("[IdleTimer]", ...args);
 
-   const logoutUser = () => {
-     console.log("🚨 [Custom Patch] Idle timeout reached. Redirecting to logout.");
-     window.location.href = LOGOUT_URL;
-   };
+  log(`Initialized: timeout=${timeoutMinutes}m`);
 
-   const startCountdown = (secondsRemaining) => {
-     const countdownSpan = document.getElementById("logout-countdown");
-     
-     clearInterval(countdownInterval);
-     countdownInterval = setInterval(() => {
-       secondsRemaining--;
-       if (countdownSpan) {
-         const mins = Math.floor(secondsRemaining / 60);
-         const secs = secondsRemaining % 60;
-         countdownSpan.innerText = `${mins}:${secs.toString().padStart(2, "0")}`;
-       }
-       
-       if (secondsRemaining <= 0) {
-         clearInterval(countdownInterval);
-         logoutUser();
-       }
-     }, 1000);
-   };
+  // === Debug overlay (floating countdown) ===
+  const updateDebugOverlay = () => {
+    if (!debugOverlay) {
+      debugOverlay = document.createElement("div");
+      Object.assign(debugOverlay.style, {
+        position: "fixed",
+        bottom: "10px",
+        right: "10px",
+        background: "rgba(0,0,0,0.8)",
+        color: "#0f0",
+        padding: "6px 10px",
+        fontFamily: "monospace",
+        fontSize: "12px",
+        zIndex: 999999
+      });
+      document.body.appendChild(debugOverlay);
+    }
 
-   const showWarning = () => {
-     console.log("⚠️ [Custom Patch] Showing centered inactivity warning.");
-     let warningDiv = document.getElementById("logout-warning");
-     
-     if (!warningDiv) {
-       warningDiv = document.createElement("div");
-       warningDiv.id = "logout-warning";
-       Object.assign(warningDiv.style, {
-         position: "fixed",
-         top: "50%",
-         left: "50%",
-         transform: "translate(-50%, -50%)",
-         background: "rgba(255, 152, 0, 0.95)",
-         backdropFilter: "blur(10px)",
-         color: "white",
-         padding: "40px 60px",
-         borderRadius: "15px",
-         zIndex: "100000",
-         boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
-         fontFamily: "sans-serif",
-         textAlign: "center",
-         border: "2px solid rgba(255,255,255,0.3)",
-         pointerEvents: "auto" // Set to auto so you could add a "Stay Logged In" button here later
-       });
-       
-       warningDiv.innerHTML = `
-         <div style="font-size: 32px; font-weight: bold; margin-bottom: 15px;">Session Expiring</div>
-         <div style="font-size: 18px; opacity: 0.9; margin-bottom: 20px;">You will be logged out due to inactivity in:</div>
-         <div id="logout-countdown" style="font-size: 48px; font-weight: 800; font-family: monospace;">2:00</div>
-       `;
-       document.body.appendChild(warningDiv);
-     }
-     
-     warningDiv.style.display = "block";
-     startCountdown(120); // Start 2-minute countdown
-   };
+    const remaining =
+      Math.max(0, Math.floor((IDLE_TIMEOUT_MS - (Date.now() - lastReset)) / 1000));
 
-   const resetTimers = () => {
-     // Only reset if we aren't currently showing the critical warning
-     const warningDiv = document.getElementById("logout-warning");
-     if (warningDiv && warningDiv.style.display === "block") {
-       // If warning is visible, we hide it and restart the long timers
-       hideWarning();
-     }
+    debugOverlay.textContent = `Idle logout in: ${remaining}s`;
+  };
 
-     clearTimeout(idleTimer);
-     clearTimeout(warningTimer);
-     
-     warningTimer = setTimeout(showWarning, WARNING_THRESHOLD_MS);
-     idleTimer = setTimeout(logoutUser, IDLE_TIMEOUT_MS);
-   };
+  setInterval(updateDebugOverlay, 1000);
 
-   const activityEvents = ["mousedown", "mousemove", "keypress", "scroll", "touchstart"];
-   activityEvents.forEach(name => {
-     document.addEventListener(name, resetTimers, { capture: true, passive: true });
-   });
+  // === Warning UI ===
+  const hideWarning = () => {
+    const warningDiv = document.getElementById("logout-warning");
+    if (warningDiv) warningDiv.style.display = "none";
+    clearInterval(countdownInterval);
+  };
 
-   resetTimers();
- }
+  const logoutUser = () => {
+    log("⛔ Idle timeout reached → redirecting to logout");
+    window.location.href = LOGOUT_URL;
+  };
+
+  const startCountdown = (secondsRemaining) => {
+    const countdownSpan = document.getElementById("logout-countdown");
+    clearInterval(countdownInterval);
+
+    countdownInterval = setInterval(() => {
+      secondsRemaining--;
+
+      if (countdownSpan) {
+        const mins = Math.floor(secondsRemaining / 60);
+        const secs = secondsRemaining % 60;
+        countdownSpan.textContent =
+          `${mins}:${secs.toString().padStart(2, "0")}`;
+      }
+
+      if (secondsRemaining <= 0) {
+        clearInterval(countdownInterval);
+        logoutUser();
+      }
+    }, 1000);
+  };
+
+  const showWarning = () => {
+    log("⚠️ Showing inactivity warning");
+
+    let warningDiv = document.getElementById("logout-warning");
+    if (!warningDiv) {
+      warningDiv = document.createElement("div");
+      warningDiv.id = "logout-warning";
+      Object.assign(warningDiv.style, {
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        background: "rgba(255, 152, 0, 0.95)",
+        color: "white",
+        padding: "40px 60px",
+        borderRadius: "15px",
+        zIndex: 100000,
+        boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
+        fontFamily: "sans-serif",
+        textAlign: "center"
+      });
+
+      warningDiv.innerHTML = `
+        <div style="font-size:32px;font-weight:bold;margin-bottom:15px;">
+          Session Expiring
+        </div>
+        <div style="font-size:18px;margin-bottom:20px;">
+          You will be logged out due to inactivity in:
+        </div>
+        <div id="logout-countdown"
+             style="font-size:48px;font-weight:800;font-family:monospace;">
+          2:00
+        </div>
+      `;
+
+      document.body.appendChild(warningDiv);
+    }
+
+    warningDiv.style.display = "block";
+    startCountdown(WARNING_DURATION_MS / 1000);
+  };
+
+  // === Timer reset ===
+  const resetTimers = (e) => {
+    log("Activity:", e?.type);
+
+    lastReset = Date.now();
+
+    const warningDiv = document.getElementById("logout-warning");
+    if (warningDiv && warningDiv.style.display === "block") {
+      log("Warning dismissed due to activity");
+      hideWarning();
+    }
+
+    clearTimeout(idleTimer);
+    clearTimeout(warningTimer);
+
+    log("Timers armed");
+
+    warningTimer = setTimeout(showWarning, WARNING_THRESHOLD_MS);
+    idleTimer = setTimeout(logoutUser, IDLE_TIMEOUT_MS);
+  };
+
+  // === CLICK-ONLY activity tracking ===
+  ["mousedown", "keydown", "touchstart"].forEach(event =>
+    document.addEventListener(event, resetTimers, { capture: true })
+  );
+
+  resetTimers();
+}
+
 
 // === 12. GridView Overrides: Narrow Row Numbers (Migrated from GridView.css) ===
   /**

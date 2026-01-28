@@ -150,11 +150,12 @@ console.log("[Custom Patch] index.js loaded ✅ v1.7.10-TimeoutUpdate");
     new MutationObserver(highlight).observe(document.body, { childList: true, subtree: true });
   }
 
-  // === 9. Main logic: Apply all visibility controls after permissions are loaded ===
+// === 9. Main logic: Apply all visibility controls after permissions are loaded ===
   async function applyVisibilityControls() {
     const docId = await getDocId();
+    
     if (!docId) {
-      // Fallback: If no docId, ensure at least the default timer runs
+      console.warn("[Custom Patch] No docId found after waiting. Starting safe default timer.");
       setupIdleTimer(60); 
       return;
     }
@@ -167,10 +168,9 @@ console.log("[Custom Patch] index.js loaded ✅ v1.7.10-TimeoutUpdate");
     observeAndHide(".test-download-section", perms.canExport, "Download/Export Option");
     hideInsertColumnOptions(perms.canExport);
 
-    // Initialize Timer with dynamic value
+    // Initialize Timer with the value we just fetched from SysUsers
     setupIdleTimer(perms.timeoutMinutes);
 
-    // Apply other visuals
     highlightDeleteWidget();
     highlightDeleteRecord();
     addFocusStyle();
@@ -216,57 +216,63 @@ console.log("[Custom Patch] index.js loaded ✅ v1.7.10-TimeoutUpdate");
     }
   }
 
-// === 11. Enhanced Idle Session Timeout (Click-only + Diagnostics) ===
+// === 11. Enhanced Idle Session Timeout (Updated for Dynamic Updates) ===
 function setupIdleTimer(timeoutMinutes) {
-  // Validate input (min 3 minutes), default to 60 if missing
-  if (!timeoutMinutes || timeoutMinutes < 3) timeoutMinutes = 60;
+  const LOGOUT_URL = "/logout";
+  const log = (...args) => console.log("[IdleTimer]", ...args);
+
+  // 1. CLEANUP: If a timer is already running, kill it before starting the new one
+  if (window._idleIntervals) {
+    log("🔄 Updating existing timer to new duration:", timeoutMinutes, "m");
+    window._idleIntervals.forEach(id => clearInterval(id));
+    window._idleTimeouts.forEach(id => clearTimeout(id));
+  }
+  window._idleIntervals = [];
+  window._idleTimeouts = [];
+
+  // Remove existing debug overlay if present
+  const oldOverlay = document.getElementById("idle-debug-overlay");
+  if (oldOverlay) oldOverlay.remove();
+
+  // 2. VALIDATION
+  if (!timeoutMinutes || timeoutMinutes < 3) {
+    log("⚠️ Invalid timeout provided, defaulting to 60m");
+    timeoutMinutes = 60;
+  }
 
   const IDLE_TIMEOUT_MS = timeoutMinutes * 60 * 1000;
   const WARNING_DURATION_MS = 2 * 60 * 1000; // 2 minutes
-  const WARNING_THRESHOLD_MS = IDLE_TIMEOUT_MS - WARNING_DURATION_MS;
-  const LOGOUT_URL = "/logout";
+  const WARNING_THRESHOLD_MS = Math.max(0, IDLE_TIMEOUT_MS - WARNING_DURATION_MS);
 
   let idleTimer;
   let warningTimer;
-  let countdownInterval;
   let lastReset = Date.now();
-  let debugOverlay;
 
-  const log = (...args) => console.log("[IdleTimer]", ...args);
-
-  log(`Initialized: timeout=${timeoutMinutes}m`);
+  log(`✅ Armed: timeout=${timeoutMinutes}m (Warning at ${WARNING_THRESHOLD_MS / 1000}s)`);
 
   // === Debug overlay (floating countdown) ===
+  const debugOverlay = document.createElement("div");
+  debugOverlay.id = "idle-debug-overlay";
+  Object.assign(debugOverlay.style, {
+    position: "fixed", bottom: "10px", right: "10px",
+    background: "rgba(0,0,0,0.8)", color: "#0f0",
+    padding: "6px 10px", fontFamily: "monospace",
+    fontSize: "12px", zIndex: "999999", borderRadius: "4px"
+  });
+  document.body.appendChild(debugOverlay);
+
   const updateDebugOverlay = () => {
-    if (!debugOverlay) {
-      debugOverlay = document.createElement("div");
-      Object.assign(debugOverlay.style, {
-        position: "fixed",
-        bottom: "10px",
-        right: "10px",
-        background: "rgba(0,0,0,0.8)",
-        color: "#0f0",
-        padding: "6px 10px",
-        fontFamily: "monospace",
-        fontSize: "12px",
-        zIndex: 999999
-      });
-      document.body.appendChild(debugOverlay);
-    }
-
-    const remaining =
-      Math.max(0, Math.floor((IDLE_TIMEOUT_MS - (Date.now() - lastReset)) / 1000));
-
-    debugOverlay.textContent = `Idle logout in: ${remaining}s`;
+    const remaining = Math.max(0, Math.floor((IDLE_TIMEOUT_MS - (Date.now() - lastReset)) / 1000));
+    const mins = Math.floor(remaining / 60);
+    const secs = remaining % 60;
+    debugOverlay.textContent = `Idle logout in: ${mins}m ${secs}s`;
   };
-
-  setInterval(updateDebugOverlay, 1000);
+  window._idleIntervals.push(setInterval(updateDebugOverlay, 1000));
 
   // === Warning UI ===
   const hideWarning = () => {
     const warningDiv = document.getElementById("logout-warning");
     if (warningDiv) warningDiv.style.display = "none";
-    clearInterval(countdownInterval);
   };
 
   const logoutUser = () => {
@@ -274,91 +280,55 @@ function setupIdleTimer(timeoutMinutes) {
     window.location.href = LOGOUT_URL;
   };
 
-  const startCountdown = (secondsRemaining) => {
-    const countdownSpan = document.getElementById("logout-countdown");
-    clearInterval(countdownInterval);
-
-    countdownInterval = setInterval(() => {
-      secondsRemaining--;
-
-      if (countdownSpan) {
-        const mins = Math.floor(secondsRemaining / 60);
-        const secs = secondsRemaining % 60;
-        countdownSpan.textContent =
-          `${mins}:${secs.toString().padStart(2, "0")}`;
-      }
-
-      if (secondsRemaining <= 0) {
-        clearInterval(countdownInterval);
-        logoutUser();
-      }
-    }, 1000);
-  };
-
   const showWarning = () => {
     log("⚠️ Showing inactivity warning");
-
     let warningDiv = document.getElementById("logout-warning");
     if (!warningDiv) {
       warningDiv = document.createElement("div");
       warningDiv.id = "logout-warning";
       Object.assign(warningDiv.style, {
-        position: "fixed",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        background: "rgba(255, 152, 0, 0.95)",
-        color: "white",
-        padding: "40px 60px",
-        borderRadius: "15px",
-        zIndex: 100000,
-        boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
-        fontFamily: "sans-serif",
-        textAlign: "center"
+        position: "fixed", top: "50%", left: "50%",
+        transform: "translate(-50%, -50%)", background: "rgba(255, 152, 0, 0.95)",
+        color: "white", padding: "40px 60px", borderRadius: "15px",
+        zIndex: "100000", boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
+        fontFamily: "sans-serif", textAlign: "center"
       });
-
-      warningDiv.innerHTML = `
-        <div style="font-size:32px;font-weight:bold;margin-bottom:15px;">
-          Session Expiring
-        </div>
-        <div style="font-size:18px;margin-bottom:20px;">
-          You will be logged out due to inactivity in:
-        </div>
-        <div id="logout-countdown"
-             style="font-size:48px;font-weight:800;font-family:monospace;">
-          2:00
-        </div>
-      `;
-
       document.body.appendChild(warningDiv);
     }
 
+    const updateWarningCountdown = () => {
+      const remaining = Math.max(0, Math.floor((IDLE_TIMEOUT_MS - (Date.now() - lastReset)) / 1000));
+      warningDiv.innerHTML = `
+        <div style="font-size:32px;font-weight:bold;margin-bottom:15px;">Session Expiring</div>
+        <div style="font-size:18px;margin-bottom:20px;">You will be logged out due to inactivity in:</div>
+        <div style="font-size:48px;font-weight:800;font-family:monospace;">${Math.floor(remaining/60)}:${(remaining%60).toString().padStart(2, '0')}</div>
+        <div style="margin-top:20px; font-size:14px;">Move mouse or click to stay logged in</div>
+      `;
+    };
+    
     warningDiv.style.display = "block";
-    startCountdown(WARNING_DURATION_MS / 1000);
+    window._idleIntervals.push(setInterval(updateWarningCountdown, 1000));
+    updateWarningCountdown();
   };
 
   // === Timer reset ===
   const resetTimers = (e) => {
-    log("Activity:", e?.type);
-
+    // Only log once every 5 seconds to avoid console spam
+    if (Date.now() - lastReset > 5000) log("Activity detected:", e?.type);
+    
     lastReset = Date.now();
-
-    const warningDiv = document.getElementById("logout-warning");
-    if (warningDiv && warningDiv.style.display === "block") {
-      log("Warning dismissed due to activity");
-      hideWarning();
-    }
+    hideWarning();
 
     clearTimeout(idleTimer);
     clearTimeout(warningTimer);
 
-    log("Timers armed");
-
     warningTimer = setTimeout(showWarning, WARNING_THRESHOLD_MS);
     idleTimer = setTimeout(logoutUser, IDLE_TIMEOUT_MS);
+    
+    window._idleTimeouts = [idleTimer, warningTimer];
   };
 
-  // === CLICK-ONLY activity tracking ===
+  // Listen for activity
   ["mousedown", "keydown", "touchstart"].forEach(event =>
     document.addEventListener(event, resetTimers, { capture: true })
   );

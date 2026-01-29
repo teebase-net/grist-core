@@ -1,16 +1,16 @@
 /**
  * ==============================================================================
  * SYSTEM: Grist Custom Master Controller (index.js)
- * VERSION: v2.3.5-Stable (Hardened & Decoupled)
+ * VERSION: v2.3.6-Stable (Frozen Column Logic Overhaul)
  * OWNER: teebase-net (MOD DMH)
- * * 📄 PERMANENT FEATURE MANIFEST (INDEPENDENT MODULES):
+ * * 📄 PERMANENT FEATURE MANIFEST:
  * 1. VERSION LOGGING: Console verification on boot.
  * 2. WEBSOCKET SNIFFING: docId extraction.
  * 3. THEME ENFORCEMENT: Force dark mode.
  * 4. DISPLAY DENSITY: 22px Row / 11px Font.
  * 5. DISCRETE TIMER: GitHub-grey bottom-right countdown.
  * 6. PERMISSION CLOAKING: SysUsers-based UI hiding.
- * 7. HARDENED CSS: 30px Row Numbers & Frozen Column Alignment Fix.
+ * 7. HARDENED CSS: 30px Row Numbers & Deep Frozen-Column Re-alignment.
  * 8. SESSION WATCHDOG: Restored Large Orange Modal (Centered).
  * 9. ACTION HIGHLIGHTING: Red 'Delete' commands.
  * ==============================================================================
@@ -20,19 +20,15 @@
 "use strict";
 
 (function () {
-  const VERSION = "2.3.5-Stable";
+  const VERSION = "2.3.6-Stable";
   const LOG_PREFIX = "[Custom Patch]";
   const DEFAULT_TIMEOUT_MINS = 60;
   let capturedDocId = null;
 
   // --- 1. VERSION LOGGING ---
   try {
-    console.log(
-      `%c ${LOG_PREFIX} SYSTEM BOOT %c v${VERSION} `,
-      "background: #24292e; color: #f97583; font-weight: bold; border-radius: 3px 0 0 3px;",
-      "background: #6a737d; color: #fff; font-weight: bold; border-radius: 0 3px 3px 0;"
-    );
-  } catch (e) { /* Isolated Failure */ }
+    console.log(`%c ${LOG_PREFIX} BOOT %c v${VERSION} `, "background:#24292e;color:#f97583;font-weight:bold;", "background:#6a737d;color:#fff;font-weight:bold;");
+  } catch (e) { }
 
   // --- 2. WEBSOCKET SNIFFING ---
   (function() {
@@ -45,10 +41,10 @@
         } catch (err) { }
         return originalSend.call(this, data);
       };
-    } catch (e) { console.error(`${LOG_PREFIX} WS Sniffer Failed`, e); }
+    } catch (e) { }
   })();
 
-  // --- 3, 4, 7. THEME, DENSITY & HARDENED CSS (FROZEN FIX) ---
+  // --- 3, 4, 7. THEME, DENSITY & DEEP FROZEN FIX ---
   function applyVisuals() {
     try {
       document.body.classList.add('theme-dark');
@@ -71,21 +67,31 @@
           width: 30px !important; min-width: 30px !important; max-width: 30px !important; flex: 0 0 30px !important;
         }
 
-        /* FROZEN COLUMN ALIGNMENT FIX */
-        .scroll_shadow_left, .scroll_shadow_frozen, .gridview_stick_left, .gridview_frozen { 
+        /* DEEP FROZEN ALIGNMENT FIX 
+           We target the stick_left and frozen containers and force them back 22px (52px - 30px = 22px)
+        */
+        .gridview_stick_left, 
+        .gridview_frozen,
+        .gridview_row_numbers,
+        .scroll_shadow_left,
+        .scroll_shadow_frozen { 
           left: 30px !important; 
         }
+
+        /* If Grist uses inline transforms for frozen columns, this counteracts the offset */
+        div[style*="left: 52px"], div[style*="left: 51px"] {
+           left: 30px !important;
+        }
+
         .gridview_header_backdrop_left { width: 31px !important; }
-
         .test-grist-doc, .view_data_pane_container { padding: 0px !important; margin: 0px !important; }
-
         #teebase-timer-node { position: fixed; bottom: 8px; right: 12px; font-family: sans-serif; font-size: 11px; color: #6a737d; pointer-events: none; z-index: 9999; opacity: 0.8; }
       `;
       document.head.appendChild(style);
-    } catch (e) { console.error(`${LOG_PREFIX} Visuals Failed`, e); }
+    } catch (e) { }
   }
 
-  // --- 5, 8. WATCHDOG & TIMER (RESTORED ORANGE MODAL) ---
+  // --- 5, 8. WATCHDOG (LARGE ORANGE MODAL) ---
   function setupWatchdog(mins) {
     try {
       const MS = (mins || DEFAULT_TIMEOUT_MINS) * 60 * 1000;
@@ -93,23 +99,10 @@
       let lastReset = Date.now();
       let timer, warnTimer, countdownNode;
 
-      const updateDisplay = () => {
-        try {
-          if (!countdownNode) {
-            countdownNode = document.createElement("div");
-            countdownNode.id = "teebase-timer-node";
-            document.body.appendChild(countdownNode);
-          }
-          const rem = Math.max(0, Math.floor((MS - (Date.now() - lastReset)) / 1000));
-          countdownNode.innerText = `Sess: ${Math.floor(rem/60)}:${(rem%60).toString().padStart(2, '0')}`;
-        } catch (e) { }
-      };
-
       const showWarning = () => {
         try {
           let w = document.getElementById("logout-warning") || document.createElement("div");
           w.id = "logout-warning";
-          // MATCHING IMAGE: Large orange rounded modal
           Object.assign(w.style, {
             position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
             background: "#ffa500", color: "white", padding: "60px", width: "500px",
@@ -145,9 +138,17 @@
       };
 
       ["mousedown", "keydown", "touchstart"].forEach(ev => document.addEventListener(ev, reset, { capture: true }));
-      setInterval(updateDisplay, 1000);
+      setInterval(() => {
+        if (!countdownNode) {
+          countdownNode = document.createElement("div");
+          countdownNode.id = "teebase-timer-node";
+          document.body.appendChild(countdownNode);
+        }
+        const rem = Math.max(0, Math.floor((MS - (Date.now() - lastReset)) / 1000));
+        countdownNode.innerText = `Sess: ${Math.floor(rem/60)}:${(rem%60).toString().padStart(2, '0')}`;
+      }, 1000);
       reset();
-    } catch (e) { console.error(`${LOG_PREFIX} Watchdog Failed`, e); }
+    } catch (e) { }
   }
 
   // --- 6. PERMISSION CLOAKING ---

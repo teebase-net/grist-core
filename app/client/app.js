@@ -68,14 +68,14 @@ $(function() {
 // console.log("[Custom Patch] ✅ app.js loaded");
 // end MOD DMH
 
-// ==========================
-// MOD DMH: Load custom patch dynamically from static
+// MOD DMH: Load custom patch dynamically
 $(function() {
   const script = document.createElement('script');
-  // Load from the static directory to bypass the Webpack bundle
-  script.src = '/static/custom_index.js?v=' + Date.now();
+  // Removing 'static' prefix often helps Grist's Express router 
+  // correctly map to the internal static folder.
+  script.src = '/custom_index.js?v=' + Date.now();
   script.type = 'text/javascript';
-  script.onload = () => console.log("Custom - ✅ Dynamic index.js loaded from static");
+  script.onload = () => console.log("Custom - ✅ Dynamic index.js loaded");
+  script.onerror = () => console.error("Custom - ❌ Failed to load custom_index.js");
   document.head.appendChild(script);
 });
-// end MOD DMH

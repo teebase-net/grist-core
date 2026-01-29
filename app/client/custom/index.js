@@ -58,20 +58,32 @@
     };
 
 
+// ==========================================
+    // 4. GRIDVIEW ALIGNMENT (30px Snap)
     // ==========================================
-    // 4. GRIDVIEW ALIGNMENT (HEADER FIX)
-    // ==========================================
-    (function initHeaderAlignment() {
+    (function initGridviewAlignment() {
         const style = document.createElement('style');
+        style.id = 'grist-alignment-snap-30';
         style.innerHTML = `
-            /* Fix for Frozen Header Label/Button Offset */
+            /* Narrow the record selector / row number column to 30px */
+            .gridview_row_num, 
+            .gridview_row_num_header,
+            .record-selector-column {
+                width: 30px !important;
+                min-width: 30px !important;
+                max-width: 30px !important;
+                flex: 0 0 30px !important;
+            }
+
+            /* Adjust the frozen pane offset to match the new 30px width */
+            .gridview_data_pane_container {
+                --frozen-width-prefix: 30;
+            }
+
+            /* Fix Header Label Alignment within the now-narrower frozen context */
             .gridview_header.frozen .gridview_header_content {
                 padding-left: 8px !important;
                 margin-left: 0 !important;
-            }
-            .gridview_header.frozen .gridview_header_menu {
-                right: 2px !important;
-                left: auto !important;
             }
         `;
         document.head.appendChild(style);
@@ -167,20 +179,29 @@
     })();
 
 
-    // ==========================================
+// ==========================================
     // 9. ACTION HIGHLIGHTING
     // ==========================================
-    document.addEventListener('contextmenu', () => {
-        setTimeout(() => {
-            const menuItems = document.querySelectorAll('.dropdown-menu li, .context_menu li, .test-context-menu-item');
-            menuItems.forEach(item => {
-                if (item.innerText.toLowerCase().includes("delete")) {
-                    item.style.setProperty('color', '#f97583', 'important');
-                    item.style.setProperty('font-weight', 'bold', 'important');
-                }
-            });
-        }, 50);
-    });
+    (function initActionHighlighting() {
+        document.addEventListener('contextmenu', () => {
+            // Delay ensures the context menu is fully rendered in the DOM
+            setTimeout(() => {
+                const menuItems = document.querySelectorAll('.dropdown-menu li, .context_menu li, .test-context-menu-item, .v-menu__content li');
+                menuItems.forEach(item => {
+                    const text = item.innerText.toLowerCase();
+                    // Targets "Delete", "Delete Widget", "Delete Row", etc.
+                    if (text.includes("delete")) {
+                        item.style.setProperty('color', '#f97583', 'important');
+                        item.style.setProperty('font-weight', 'bold', 'important');
+                        
+                        // Ensure children (spans/divs) inherit the red color
+                        const children = item.querySelectorAll('*');
+                        children.forEach(child => child.style.setProperty('color', '#f97583', 'important'));
+                    }
+                });
+            }, 50);
+        });
+    })();
 
 
     // ==========================================

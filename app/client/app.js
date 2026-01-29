@@ -72,8 +72,8 @@ $(function() {
 // MOD DMH: Load custom patch dynamically
 $(function() {
   const script = document.createElement('script');
-  // We use a query string with a timestamp to bypass browser caching
-  script.src = '/custom/index.js?v=' + Date.now();
+  // We use the 'static' path which Grist exposes by default
+  script.src = '/static/custom_index.js?v=' + Date.now();
   script.type = 'text/javascript';
   script.onload = () => console.log("Custom - ✅ Dynamic index.js loaded");
   document.head.appendChild(script);

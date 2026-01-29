@@ -1,7 +1,7 @@
 /**
  * ==============================================================================
  * SYSTEM: Grist Custom Master Controller (index.js)
- * VERSION: v2.3.6-Stable (Frozen Column Logic Overhaul)
+ * VERSION: v2.3.7-Stable 
  * OWNER: teebase-net (MOD DMH)
  * * 📄 PERMANENT FEATURE MANIFEST:
  * 1. VERSION LOGGING: Console verification on boot.
@@ -20,7 +20,7 @@
 "use strict";
 
 (function () {
-  const VERSION = "2.3.6-Stable";
+  const VERSION = "2.3.7-Stable";
   const LOG_PREFIX = "[Custom Patch]";
   const DEFAULT_TIMEOUT_MINS = 60;
   let capturedDocId = null;
@@ -44,7 +44,7 @@
     } catch (e) { }
   })();
 
-  // --- 3, 4, 7. THEME, DENSITY & DEEP FROZEN FIX ---
+// --- 3, 4, 7. THEME, DENSITY & ATOMIC FROZEN CSS ---
   function applyVisuals() {
     try {
       document.body.classList.add('theme-dark');
@@ -58,32 +58,33 @@
           --grid-row-num-width: 30px !important; 
           --gridview-rownum-width: 30px !important; 
         }
+        
         .gridview_data_row { height: 22px !important; }
         .gridview_data_cell { padding: 0 4px !important; line-height: 22px !important; }
 
-        /* Unified 30px Selectors */
+        /* Force 30px on all possible record selector identifiers */
         .gridview_data_row_num, .gridview_row_numbers, .gridview_header_corner, 
-        .gridview_corner_spacer, .gridview_data_corner_overlay, .record_selector { 
+        .gridview_corner_spacer, .gridview_data_corner_overlay, .record_selector,
+        .gridview_header_backdrop_left { 
           width: 30px !important; min-width: 30px !important; max-width: 30px !important; flex: 0 0 30px !important;
         }
 
-        /* DEEP FROZEN ALIGNMENT FIX 
-           We target the stick_left and frozen containers and force them back 22px (52px - 30px = 22px)
+        /* NUCLEAR FROZEN SNAP
+           Grist applies 'left: 51px' or 'left: 52px' as an inline style.
+           This selector catches ANY div with a left value between 40 and 59 pixels
+           and anchors it to exactly 30px.
         */
         .gridview_stick_left, 
         .gridview_frozen,
-        .gridview_row_numbers,
         .scroll_shadow_left,
-        .scroll_shadow_frozen { 
+        .scroll_shadow_frozen,
+        [style*="left: 5"], [style*="left:5"], [style*="left: 4"] { 
           left: 30px !important; 
         }
 
-        /* If Grist uses inline transforms for frozen columns, this counteracts the offset */
-        div[style*="left: 52px"], div[style*="left: 51px"] {
-           left: 30px !important;
-        }
+        /* Ensure the 'Frozen' container itself doesn't have a ghost margin */
+        .gridview_frozen_pane { margin-left: 0px !important; }
 
-        .gridview_header_backdrop_left { width: 31px !important; }
         .test-grist-doc, .view_data_pane_container { padding: 0px !important; margin: 0px !important; }
         #teebase-timer-node { position: fixed; bottom: 8px; right: 12px; font-family: sans-serif; font-size: 11px; color: #6a737d; pointer-events: none; z-index: 9999; opacity: 0.8; }
       `;

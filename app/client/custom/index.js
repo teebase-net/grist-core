@@ -65,25 +65,43 @@
         const style = document.createElement('style');
         style.id = 'grist-alignment-snap-30';
         style.innerHTML = `
-            /* Narrow the record selector / row number column to 30px */
+            /* 1. Force Record Selector (Row Num) to 30px */
             .gridview_row_num, 
             .gridview_row_num_header,
-            .record-selector-column {
+            .record-selector-column,
+            .row_num {
                 width: 30px !important;
                 min-width: 30px !important;
                 max-width: 30px !important;
                 flex: 0 0 30px !important;
             }
 
-            /* Adjust the frozen pane offset to match the new 30px width */
-            .gridview_data_pane_container {
-                --frozen-width-prefix: 30;
+            /* 2. Fix Frozen Column Headers */
+            /* Resets the header label/menu so they don't drift right */
+            .gridview_header.frozen {
+                left: 30px !important; /* Positions header right against the 30px selector */
             }
 
-            /* Fix Header Label Alignment within the now-narrower frozen context */
             .gridview_header.frozen .gridview_header_content {
                 padding-left: 8px !important;
                 margin-left: 0 !important;
+            }
+
+            .gridview_header.frozen .gridview_header_menu {
+                right: 2px !important;
+                left: auto !important;
+            }
+
+            /* 3. Fix Frozen Data Cells */
+            /* Ensures cells in the table body follow the same 30px alignment */
+            .gridview_cell.frozen {
+                left: 30px !important;
+            }
+
+            /* 4. Update Grist's internal CSS variable for calculation */
+            :root {
+                --gridview-row-num-width: 30px;
+                --frozen-width-prefix: 30;
             }
         `;
         document.head.appendChild(style);

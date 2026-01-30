@@ -1,7 +1,7 @@
 /**
  * ==============================================================================
  * SYSTEM: Grist Custom Master Controller (index.js)
- * VERSION: v2.3.10
+ * VERSION: v2.3.11
  * OWNER: teebase-net (MOD DMH)
  * 📄 PERMANENT FEATURE MANIFEST & TECHNICAL DOCUMENTATION:
  * 1. VERSION LOGGING - Minimal console footprint. Identifies patch version on boot.
@@ -20,52 +20,82 @@
 /* eslint-env browser */
 "use strict";
 
-(function() {
+(function () {
 
     // ==========================================
     // 1. VERSION LOGGING
     // ==========================================
-    console.log("🚀 Custom - Grist Master Controller [v2.3.10");
+    console.log("🚀 Custom - Grist Master Controller [v2.3.11]");
+
+
+    // ==========================================
+    // STABLE SANDBOX UTILITIES
+    // ==========================================
+
+    // DOM GUARD: Waits for document.body to exist
+    const onBody = (fn) => {
+        if (document.body) return fn();
+        const observer = new MutationObserver(() => {
+            if (document.body) {
+                observer.disconnect();
+                fn();
+            }
+        });
+        observer.observe(document.documentElement, { childList: true });
+    };
+
+    // SAFE RUNNER: Isolates execution and handles errors
+    const safeRun = (name, fn, needsBody = false) => {
+        const run = () => {
+            try {
+                fn();
+            } catch (e) {
+                console.error(`❌ Feature [${name}] failed:`, e);
+            }
+        };
+        if (needsBody) onBody(run); else run();
+    };
 
 
     // ==========================================
     // 2. WEBSOCKET SNIFFING
     // ==========================================
-    (function initWebsocketSniffer() {
+    safeRun("WebSocket Sniffing", () => {
         const _originalSend = WebSocket.prototype.send;
-        WebSocket.prototype.send = function(data) {
+        WebSocket.prototype.send = function (data) {
             try {
                 const msg = JSON.parse(data);
                 if (msg.method === 'openDoc') {
                     window._gristDocId = msg.args[0];
                     window.dispatchEvent(new CustomEvent('gristDocIdCaptured', { detail: msg.args[0] }));
                 }
-            } catch (e) {}
+            } catch (e) { }
             return _originalSend.apply(this, arguments);
         };
-    })();
+    });
 
 
     // ==========================================
     // 3. THEME ENFORCEMENT
     // ==========================================
-    window.applyGristTheme = function(theme) {
-        if (theme === 'dark') {
-            document.body.classList.add('theme-dark');
-        } else {
-            document.body.classList.remove('theme-dark');
-        }
+    window.applyGristTheme = function (theme) {
+        safeRun("Theme Enforcement", () => {
+            if (theme === 'dark') {
+                document.body.classList.add('theme-dark');
+            } else {
+                document.body.classList.remove('theme-dark');
+            }
+        }, true);
     };
 
 
-// ==========================================
+    // ==========================================
     // 4. GRIDVIEW ALIGNMENT (30px Snap)
     // ==========================================
-    (function initGridviewAlignment() {
+    safeRun("Gridview Alignment", () => {
         const style = document.createElement('style');
         style.id = 'grist-alignment-snap-30';
         style.innerHTML = `
-            /* 1. Force Record Selector (Row Num) to 30px */
             .gridview_row_num, 
             .gridview_row_num_header,
             .record-selector-column,
@@ -76,10 +106,8 @@
                 flex: 0 0 30px !important;
             }
 
-            /* 2. Fix Frozen Column Headers */
-            /* Resets the header label/menu so they don't drift right */
             .gridview_header.frozen {
-                left: 30px !important; /* Positions header right against the 30px selector */
+                left: 30px !important;
             }
 
             .gridview_header.frozen .gridview_header_content {
@@ -92,80 +120,80 @@
                 left: auto !important;
             }
 
-            /* 3. Fix Frozen Data Cells */
-            /* Ensures cells in the table body follow the same 30px alignment */
             .gridview_cell.frozen {
                 left: 30px !important;
             }
 
-            /* 4. Update Grist's internal CSS variable for calculation */
             :root {
                 --gridview-row-num-width: 30px;
                 --frozen-width-prefix: 30;
             }
         `;
         document.head.appendChild(style);
-    })();
+    });
 
 
     // ==========================================
     // 5. DEV BANNER
     // ==========================================
-    (function initDevBanner() {
+    safeRun("Dev Banner", () => {
         const checkBanner = () => {
             if (document.title.includes("- DEV") && !document.getElementById('grist-dev-banner')) {
                 const banner = document.createElement('div');
                 banner.id = 'grist-dev-banner';
-                banner.style = "height:10px; background:#f48fb1; width:100%; position:fixed; top:0; z-index:10000; pointer-events:none;";
+                banner.style = "height:14px; background:#f48fb1; width:100%; position:fixed; top:0; z-index:10000; pointer-events:none; color:white; font-family:sans-serif; font-size:10px; font-weight:bold; display:flex; align-items:center; justify-content:center; text-transform:uppercase; letter-spacing:1px;";
+                banner.innerText = "DEVELOPMENT MODE";
                 document.body.prepend(banner);
             }
         };
         const bannerObserver = new MutationObserver(checkBanner);
         bannerObserver.observe(document.head, { childList: true, subtree: true });
         checkBanner();
-    })();
+    });
 
 
     // ==========================================
     // 6. DISCRETE TIMER
     // ==========================================
-    (function initDiscreteTimer() {
+    safeRun("Discrete Timer", () => {
         const timerDiv = document.createElement('div');
         timerDiv.id = 'grist-session-timer';
         timerDiv.style = "position:fixed; bottom:10px; right:10px; font-family:monospace; font-size:12px; pointer-events:none; opacity:0.7; z-index:9999; color:inherit;";
         document.body.appendChild(timerDiv);
 
-        window.updateGristTimer = function(secondsLeft) {
+        window.updateGristTimer = function (secondsLeft) {
             const mins = Math.floor(secondsLeft / 60);
             const secs = secondsLeft % 60;
             timerDiv.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         };
-    })();
+    }, true);
 
 
     // ==========================================
     // 7. PERMISSION & CONFIG CLOAKING
     // ==========================================
-    window.initPermissionCloaking = function(perms) {
-        const cloakStyle = document.createElement('style');
-        cloakStyle.id = 'grist-permission-cloak';
-        let css = '';
-        if (perms.Unlock_Structure === false) {
-            css += '.mod-add-column, .test-tb-share, .anc-btn, .test-ui-add-column { display: none !important; }';
-        }
-        if (perms.Export_Data === false) {
-            css += '.test-download-section, .mod-export, .test-ui-download { display: none !important; }';
-        }
-        cloakStyle.innerHTML = css;
-        document.head.appendChild(cloakStyle);
+    window.initPermissionCloaking = function (perms) {
+        safeRun("Permission Cloaking", () => {
+            const cloakStyle = document.createElement('style');
+            cloakStyle.id = 'grist-permission-cloak';
+            let css = '';
+            if (perms.Unlock_Structure === false) {
+                css += '.mod-add-column, .test-tb-share, .anc-btn, .test-ui-add-column { display: none !important; }';
+            }
+            if (perms.Export_Data === false) {
+                css += '.test-download-section, .mod-export, .test-ui-download { display: none !important; }';
+            }
+            cloakStyle.innerHTML = css;
+            document.head.appendChild(cloakStyle);
+        });
     };
 
 
     // ==========================================
     // 8. SESSION WATCHDOG
     // ==========================================
-    (function initSessionWatchdog() {
-        let timeoutSecs = 1800; // Default 30m
+    safeRun("Session Watchdog", () => {
+        let timeoutSecs = 1800;
         let warningThreshold = 120;
         let startTime = Date.now();
 
@@ -194,38 +222,34 @@
                 if (modal) modal.remove();
             }
         }, 1000);
-    })();
+    }, true);
 
 
-// ==========================================
+    // ==========================================
     // 9. ACTION HIGHLIGHTING
     // ==========================================
-    (function initActionHighlighting() {
+    safeRun("Action Highlighting", () => {
         document.addEventListener('contextmenu', () => {
-            // Delay ensures the context menu is fully rendered in the DOM
             setTimeout(() => {
                 const menuItems = document.querySelectorAll('.dropdown-menu li, .context_menu li, .test-context-menu-item, .v-menu__content li');
                 menuItems.forEach(item => {
                     const text = item.innerText.toLowerCase();
-                    // Targets "Delete", "Delete Widget", "Delete Row", etc.
                     if (text.includes("delete")) {
                         item.style.setProperty('color', '#f97583', 'important');
                         item.style.setProperty('font-weight', 'bold', 'important');
-                        
-                        // Ensure children (spans/divs) inherit the red color
                         const children = item.querySelectorAll('*');
                         children.forEach(child => child.style.setProperty('color', '#f97583', 'important'));
                     }
                 });
             }, 50);
         });
-    })();
+    });
 
 
     // ==========================================
     // 10. FOOTER ALIGNMENT PATCH
     // ==========================================
-    (function initFooterPatch() {
+    safeRun("Footer Alignment", () => {
         const style = document.createElement('style');
         style.innerHTML = `
             .gridview_footer_spacer {
@@ -251,6 +275,6 @@
             }
         });
         footerObserver.observe(document.body, { childList: true, subtree: true });
-    })();
+    }, true);
 
 })();

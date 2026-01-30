@@ -25,8 +25,9 @@
 ## Grist-Specific Operating Principles
 
 1. **Vibe First, Logic Second**: Maintain the "Master Controller" (`static/custom_index.js`) as the primary way to inject custom UI vibes.
-2. **Build Safety**: Grist requires a build step. Always use the execution scripts to ensure the environment is consistent.
-3. **Documentation**: Every major custom feature must be documented in `directives/feature_manifest.md`.
+2. **Stable Sandbox Architecture**: Every feature in `custom_index.js` MUST be isolated using a `safeRun` wrapper and `try...catch` blocks to prevent cross-feature failures. (See `directives/custom_ui_development.md`).
+3. **Build Safety**: Grist requires a build step. Always use the execution scripts to ensure the environment is consistent.
+4. **Documentation**: Every major custom feature must be documented in `directives/feature_manifest.md`.
 
 ## Directory Structure
 - `directives/` - Markdown SOPs.

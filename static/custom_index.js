@@ -235,10 +235,16 @@
                 menuItems.forEach(item => {
                     const text = item.innerText.toLowerCase();
                     if (text.includes("delete")) {
-                        item.style.setProperty('color', '#f97583', 'important');
-                        item.style.setProperty('font-weight', 'bold', 'important');
+                        item.style.setProperty('color', 'red', 'important');
+
+                        if (text.includes("delete widget")) {
+                            item.style.setProperty('font-weight', 'bold', 'important');
+                        } else {
+                            item.style.setProperty('font-weight', 'normal', 'important');
+                        }
+
                         const children = item.querySelectorAll('*');
-                        children.forEach(child => child.style.setProperty('color', '#f97583', 'important'));
+                        children.forEach(child => child.style.setProperty('color', 'red', 'important'));
                     }
                 });
             }, 50);

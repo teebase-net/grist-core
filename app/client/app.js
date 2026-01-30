@@ -20,25 +20,25 @@ if (window._gristAppLoaded) {
 }
 window._gristAppLoaded = true;
 
-const {setupLocale} = require("./lib/localization");
+const { setupLocale } = require("./lib/localization");
 
-const {AppImpl} = require("./ui/App");
+const { AppImpl } = require("./ui/App");
 
 // Disable longStackTraces, which seem to be enabled in the browser by default.
 var bluebird = require("bluebird");
 bluebird.config({ longStackTraces: false });
 
 // Set up integration between grainjs and knockout disposal.
-const {setupKoDisposal} = require("grainjs");
+const { setupKoDisposal } = require("grainjs");
 const ko = require("knockout");
 setupKoDisposal(ko);
 
-$(function() {
+$(function () {
   // Manually disable the bfcache. We dispose some components in App.ts on unload, and
   // leaving the cache on causes problems when the browser back/forward buttons are pressed.
   // Some browsers automatically disable it when the 'beforeunload' or 'unload' events
   // have listeners, but not all do (Safari).
-  window.onpageshow = function(event) {
+  window.onpageshow = function (event) {
     if (event.persisted) { window.location.reload(); }
   };
 
@@ -54,7 +54,7 @@ $(function() {
   window.loginTestSandbox = null;
 
   // These modules are exposed for the sake of browser tests.
-  window.exposeModulesForTests = function() {
+  window.exposeModulesForTests = function () {
     return (import("./exposeModulesForTests" /* webpackChunkName: "modulesForTests" */));
   };
   window.exposedModules = {};
@@ -69,13 +69,13 @@ $(function() {
 // end MOD DMH
 
 // MOD DMH: Load custom patch dynamically
-$(function() {
-  const script = document.createElement('script');
-  // Removing 'static' prefix often helps Grist's Express router 
-  // correctly map to the internal static folder.
-  script.src = '/custom_index.js?v=' + Date.now();
-  script.type = 'text/javascript';
-  script.onload = () => console.log("Custom - ✅ Dynamic index.js loaded");
-  script.onerror = () => console.error("Custom - ❌ Failed to load custom_index.js");
-  document.head.appendChild(script);
-});
+// $(function() {
+//   const script = document.createElement('script');
+//   // Removing 'static' prefix often helps Grist's Express router
+//   // correctly map to the internal static folder.
+//   script.src = '/v/boot/custom_index.js?v=' + Date.now();
+//   script.type = 'text/javascript';
+//   script.onload = () => console.log("Custom - ✅ Dynamic index.js loaded");
+//   script.onerror = () => console.error("Custom - ❌ Failed to load custom_index.js");
+//   document.head.appendChild(script);
+// });

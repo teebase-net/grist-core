@@ -74,21 +74,33 @@
             console.log(`🔍 [Master Controller] Configuring doc: ${docId}`);
             const profile = await fetch("/api/profile/user", { credentials: "include" }).then(r => r.json());
             let email = profile?.email?.toLowerCase();
+            console.log(`👤 [Debug] User Email identified: ${email}`);
 
             if ((!email || email === 'unknown') &&
                 (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
                 email = "you@example.com";
+                console.warn("⚠️ [Debug] Localhost detected, defaulting email to you@example.com");
             }
 
-            if (!email) throw new Error("Could not identify user email.");
+            if (!email) {
+                console.error("❌ [Debug] Could not identify user email. Aborting config.");
+                throw new Error("Could not identify user email.");
+            }
 
             const res = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: "include" });
-            if (!res.ok) throw new Error("SysUsers table not found.");
+            if (!res.ok) {
+                console.error("❌ [Debug] SysUsers table fetch failed (404/500).");
+                throw new Error("SysUsers table not found.");
+            }
 
             const data = await res.json();
+            console.log("📊 [Debug] SysUsers Data:", data);
+
             const userIndex = data.Email?.findIndex(e => e?.toLowerCase() === email);
+            console.log(`🎯 [Debug] User Index for ${email}: ${userIndex}`);
 
             if (userIndex === -1) {
+                console.warn(`⚠️ [Debug] User ${email} not found in SysUsers. Using Defaults.`);
                 window.initPermissionCloaking({ Unlock_Structure: false, Export_Data: false, Timeout_Minutes: DEFAULT_TIMEOUT });
                 return;
             }
@@ -98,9 +110,11 @@
                 Export_Data: data.Export_Data?.[userIndex] === true,
                 Timeout_Minutes: Number(data.Timeout_Minutes?.[userIndex]) || DEFAULT_TIMEOUT
             };
+            console.log("✅ [Debug] Applying Permissions:", perms);
 
             window.initPermissionCloaking(perms);
         } catch (err) {
+            console.error("🔥 [Debug] Config Exception:", err);
             window.initPermissionCloaking({ Unlock_Structure: false, Export_Data: false, Timeout_Minutes: DEFAULT_TIMEOUT });
         }
     }
@@ -259,7 +273,7 @@
     // 8. SESSION WATCHDOG
     // ==========================================
     safeRun("Session Watchdog", () => {
-        let timeoutSecs = 1800;
+        let timeoutSecs = 3600; // Default 60 mins
         let warningThreshold = 120;
         let startTime = Date.now();
 

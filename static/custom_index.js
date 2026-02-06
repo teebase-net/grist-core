@@ -272,7 +272,9 @@
         window.addEventListener('click', resetTimer, true);
         window.addEventListener('keydown', resetTimer, true);
 
-        setInterval(() => {
+        if (window._gristSessionInterval) clearInterval(window._gristSessionInterval);
+
+        window._gristSessionInterval = setInterval(() => {
             const elapsed = Math.floor((Date.now() - startTime) / 1000);
             const remaining = timeoutSecs - elapsed;
             if (typeof window.updateGristTimer === 'function') window.updateGristTimer(remaining);

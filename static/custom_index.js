@@ -23,6 +23,15 @@
 (function () {
 
     // ==========================================
+    // 0. SINGLETON GUARD
+    // ==========================================
+    if (window._gristCustomIndexLoaded) {
+        console.warn("⚠️ Custom Master Controller already loaded. Skipping duplicate execution.");
+        return;
+    }
+    window._gristCustomIndexLoaded = true;
+
+    // ==========================================
     // 1. VERSION LOGGING
     // ==========================================
     console.log("🚀 Custom - Grist Master Controller [v2.5.6]");

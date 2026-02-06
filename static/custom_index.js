@@ -183,10 +183,11 @@
                 width: 31px !important; /* width + 1px border */
             }
 
-            /* FIXED: Suppress distracting shadow lines and frozen divider lines */
+            /* FIXED: Suppress distracting shadow lines, frozen divider lines, and phantom borders */
             .scroll_shadow_left,
             .scroll_shadow_frozen,
-            .frozen_line {
+            .frozen_line,
+            .gridview_left_border {
                 display: none !important;
             }
 

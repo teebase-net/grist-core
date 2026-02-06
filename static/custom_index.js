@@ -1,18 +1,18 @@
 /**
  * ==============================================================================
  * SYSTEM: Grist Custom Master Controller (index.js)
- * VERSION: v2.3.11
+ * VERSION: v2.5.6
  * OWNER: teebase-net (MOD DMH)
  * 📄 PERMANENT FEATURE MANIFEST & TECHNICAL DOCUMENTATION:
  * 1. VERSION LOGGING - Minimal console footprint. Identifies patch version on boot.
  * 2. WEBSOCKET SNIFFING - Proxies WebSocket.prototype.send to capture 'docId'.
  * 3. THEME ENFORCEMENT - Controlled by 'SysUsers.Theme'.
- * 4. GRIDVIEW ALIGNMENT - FIXED: Resets frozen header label/button offsets.
+ * 4. GRIDVIEW ALIGNMENT - FIXED: 30px Precision Selector & Shadow Removal (v2.5.6).
  * 5. DEV BANNER - Injects pink (#f48fb1) safety banner for "- DEV" docs.
  * 6. DISCRETE TIMER - Sub-overlay showing real-time session remaining.
  * 7. PERMISSION & CONFIG CLOAKING - Hides UI based on 'SysUsers' permissions.
  * 8. SESSION WATCHDOG - 120s warning modal + forced logout.
- * 9. ACTION HIGHLIGHTING - Forces "Delete" menu items to bold red (#f97583).
+ * 9. ACTION HIGHLIGHTING - Forces "Delete" menu items to pure red (#ff0000).
  * 10. FOOTER ALIGNMENT PATCH - FIXED: Removes spacer gap when frozenCount is 0.
  * ==============================================================================
  */
@@ -25,14 +25,13 @@
     // ==========================================
     // 1. VERSION LOGGING
     // ==========================================
-    console.log("🚀 Custom - Grist Master Controller [v2.3.11]");
+    console.log("🚀 Custom - Grist Master Controller [v2.5.6]");
 
 
     // ==========================================
     // STABLE SANDBOX UTILITIES
     // ==========================================
 
-    // DOM GUARD: Waits for document.body to exist
     const onBody = (fn) => {
         if (document.body) return fn();
         const observer = new MutationObserver(() => {
@@ -44,7 +43,6 @@
         observer.observe(document.documentElement, { childList: true });
     };
 
-    // SAFE RUNNER: Isolates execution and handles errors
     const safeRun = (name, fn, needsBody = false) => {
         const run = () => {
             try {
@@ -58,16 +56,55 @@
 
 
     // ==========================================
-    // 2. WEBSOCKET SNIFFING
+    // 2. WEBSOCKET SNIFFING & AUTO-LOOKUP
     // ==========================================
+    const DEFAULT_TIMEOUT = 60;
+
+    async function autoConfigurePermissions(docId) {
+        try {
+            console.log(`🔍 [Master Controller] Configuring doc: ${docId}`);
+            const profile = await fetch("/api/profile/user", { credentials: "include" }).then(r => r.json());
+            let email = profile?.email?.toLowerCase();
+
+            if ((!email || email === 'unknown') &&
+                (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+                email = "you@example.com";
+            }
+
+            if (!email) throw new Error("Could not identify user email.");
+
+            const res = await fetch(`/api/docs/${docId}/tables/SysUsers/data`, { credentials: "include" });
+            if (!res.ok) throw new Error("SysUsers table not found.");
+
+            const data = await res.json();
+            const userIndex = data.Email?.findIndex(e => e?.toLowerCase() === email);
+
+            if (userIndex === -1) {
+                window.initPermissionCloaking({ Unlock_Structure: false, Export_Data: false, Timeout_Minutes: DEFAULT_TIMEOUT });
+                return;
+            }
+
+            const perms = {
+                Unlock_Structure: data.Unlock_Structure?.[userIndex] === true,
+                Export_Data: data.Export_Data?.[userIndex] === true,
+                Timeout_Minutes: Number(data.Timeout_Minutes?.[userIndex]) || DEFAULT_TIMEOUT
+            };
+
+            window.initPermissionCloaking(perms);
+        } catch (err) {
+            window.initPermissionCloaking({ Unlock_Structure: false, Export_Data: false, Timeout_Minutes: DEFAULT_TIMEOUT });
+        }
+    }
+
     safeRun("WebSocket Sniffing", () => {
         const _originalSend = WebSocket.prototype.send;
         WebSocket.prototype.send = function (data) {
             try {
                 const msg = JSON.parse(data);
                 if (msg.method === 'openDoc') {
-                    window._gristDocId = msg.args[0];
-                    window.dispatchEvent(new CustomEvent('gristDocIdCaptured', { detail: msg.args[0] }));
+                    const docId = msg.args[0];
+                    window._gristDocId = docId;
+                    autoConfigurePermissions(docId);
                 }
             } catch (e) { }
             return _originalSend.apply(this, arguments);
@@ -90,46 +127,59 @@
 
 
     // ==========================================
-    // 4. GRIDVIEW ALIGNMENT (30px Snap)
+    // 4. GRIDVIEW ALIGNMENT (v2.5.6 Final)
     // ==========================================
     safeRun("Gridview Alignment", () => {
-        const style = document.createElement('style');
-        style.id = 'grist-alignment-snap-30';
-        style.innerHTML = `
-            .gridview_row_num, 
-            .gridview_row_num_header,
-            .record-selector-column,
-            .row_num {
+        const id = "custom-gridview-styles";
+        let style = document.getElementById(id);
+        if (!style) {
+            style = document.createElement("style");
+            style.id = id;
+            document.head.appendChild(style);
+        }
+        style.textContent = `
+            /* MOD DMH: 30px Narrow Selector - Final Preference */
+            :root {
+                --gridview-rownum-width: 30px !important;
+            }
+
+            /* 1. Corner Spacers and Row Numbers */
+            .gridview_corner_spacer,
+            .gridview_data_row_num,
+            .gridview_data_corner_overlay,
+            .gridview_header_corner {
                 width: 30px !important;
                 min-width: 30px !important;
-                max-width: 30px !important;
-                flex: 0 0 30px !important;
+                /* Invasion Fix: Opaque background and z-index to stay above scrolling fields */
+                background-color: var(--grist-theme-table-header-bg, #f0f0f0) !important;
+                z-index: 100 !important;
             }
 
-            .gridview_header.frozen {
-                left: 30px !important;
+            /* 2. Backdrop and Offset calculations */
+            .gridview_header_backdrop_left {
+                width: 31px !important; /* width + 1px border */
             }
 
-            .gridview_header.frozen .gridview_header_content {
-                padding-left: 8px !important;
-                margin-left: 0 !important;
+            /* FIXED: Suppress distracting shadow lines and frozen divider lines */
+            .scroll_shadow_left,
+            .scroll_shadow_frozen,
+            .frozen_line {
+                display: none !important;
             }
 
-            .gridview_header.frozen .gridview_header_menu {
-                right: 2px !important;
-                left: auto !important;
+            /* 3. Printing adjustments */
+            @media print {
+                .print-widget .gridview_data_header {
+                    padding-left: 30px !important;
+                }
             }
 
-            .gridview_cell.frozen {
-                left: 30px !important;
-            }
-
-            :root {
-                --gridview-row-num-width: 30px;
-                --frozen-width-prefix: 30;
+            /* 4. Sticky positioning for frozen columns */
+            .record .field.frozen {
+                left: calc(30px + 1px + (var(--frozen-position, 0) - var(--frozen-offset, 0)) * 1px) !important;
             }
         `;
-        document.head.appendChild(style);
+        console.log("[Custom Patch] GridView Alignment v2.5.6: 30px Final + Shadow/Line Removal.");
     });
 
 
@@ -158,10 +208,11 @@
     safeRun("Discrete Timer", () => {
         const timerDiv = document.createElement('div');
         timerDiv.id = 'grist-session-timer';
-        timerDiv.style = "position:fixed; bottom:10px; right:10px; font-family:monospace; font-size:12px; pointer-events:none; opacity:0.7; z-index:9999; color:inherit;";
+        timerDiv.style = "position:fixed; bottom:4px; right:20px; font-family:inherit; font-size:11px; font-weight:500; pointer-events:none; z-index:9999; color:#8f8f8f; opacity:0.9;";
         document.body.appendChild(timerDiv);
 
         window.updateGristTimer = function (secondsLeft) {
+            if (secondsLeft < 0) secondsLeft = 0;
             const mins = Math.floor(secondsLeft / 60);
             const secs = secondsLeft % 60;
             timerDiv.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -174,6 +225,8 @@
     // ==========================================
     window.initPermissionCloaking = function (perms) {
         safeRun("Permission Cloaking", () => {
+            const oldCloak = document.getElementById('grist-permission-cloak');
+            if (oldCloak) oldCloak.remove();
             const cloakStyle = document.createElement('style');
             cloakStyle.id = 'grist-permission-cloak';
             let css = '';
@@ -185,6 +238,10 @@
             }
             cloakStyle.innerHTML = css;
             document.head.appendChild(cloakStyle);
+
+            if (perms.Timeout_Minutes && window.updateGristTimeout) {
+                window.updateGristTimeout(perms.Timeout_Minutes);
+            }
         });
     };
 
@@ -197,13 +254,18 @@
         let warningThreshold = 120;
         let startTime = Date.now();
 
+        window.updateGristTimeout = (mins) => {
+            const newTimeout = parseInt(mins) * 60;
+            if (!isNaN(newTimeout) && newTimeout > 0) timeoutSecs = newTimeout;
+        };
+
         const resetTimer = () => { startTime = Date.now(); };
-        ['mousedown', 'keydown', 'touchstart'].forEach(e => window.addEventListener(e, resetTimer));
+        window.addEventListener('click', resetTimer, true);
+        window.addEventListener('keydown', resetTimer, true);
 
         setInterval(() => {
             const elapsed = Math.floor((Date.now() - startTime) / 1000);
             const remaining = timeoutSecs - elapsed;
-
             if (typeof window.updateGristTimer === 'function') window.updateGristTimer(remaining);
 
             if (remaining <= warningThreshold && remaining > 0) {
@@ -211,9 +273,20 @@
                 if (!modal) {
                     modal = document.createElement('div');
                     modal.id = 'watchdog-modal';
-                    modal.style = "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:500px; background:orange; color:white; padding:40px; text-align:center; z-index:20000; font-weight:bold; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.5);";
-                    modal.innerText = "SESSION EXPIRING SOON - MOVE MOUSE TO EXTEND";
+                    modal.style = "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:520px; background:#ff9800; color:white; padding:40px 20px; text-align:center; z-index:20000; font-family:sans-serif; border-radius:24px; box-shadow:0 20px 60px rgba(0,0,0,0.4); display:flex; flex-direction:column; align-items:center; justify-content:center; letter-spacing: 0.5px; pointer-events: auto;";
+                    modal.innerHTML = `
+                        <div style="font-size: 48px; font-weight: bold; margin-bottom: 20px;">Session Expiring</div>
+                        <div style="font-size: 22px; font-weight: 500; opacity: 0.9;">You will be logged out due to inactivity in:</div>
+                        <div id="watchdog-display" style="font-size: 80px; font-weight: 500; margin: 10px 0;">0:00</div>
+                        <div style="font-size: 22px; font-weight: 500; opacity: 0.9;">Click to stay logged in</div>
+                    `;
                     document.body.appendChild(modal);
+                }
+                const display = document.getElementById('watchdog-display');
+                if (display) {
+                    const m = Math.floor(remaining / 60);
+                    const s = remaining % 60;
+                    display.innerText = `${m}:${s.toString().padStart(2, '0')}`;
                 }
             } else if (remaining <= 0) {
                 window.location.href = '/logout';
@@ -229,27 +302,34 @@
     // 9. ACTION HIGHLIGHTING
     // ==========================================
     safeRun("Action Highlighting", () => {
-        document.addEventListener('contextmenu', () => {
-            setTimeout(() => {
-                const menuItems = document.querySelectorAll('.dropdown-menu li, .context_menu li, .test-context-menu-item, .v-menu__content li');
-                menuItems.forEach(item => {
-                    const text = item.innerText.toLowerCase();
-                    if (text.includes("delete")) {
-                        item.style.setProperty('color', 'red', 'important');
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .grist-delete-active, 
+            .grist-delete-active *,
+            .test-cmd-name[class*="delete"],
+            .test-menu-item-delete-record,
+            .test-menu-item-delete-widget { 
+                color: #ff0000 !important; 
+            }
+            .grist-delete-active-bold { font-weight: bold !important; }
+        `;
+        document.head.appendChild(style);
 
-                        if (text.includes("delete widget")) {
-                            item.style.setProperty('font-weight', 'bold', 'important');
-                        } else {
-                            item.style.setProperty('font-weight', 'normal', 'important');
-                        }
-
-                        const children = item.querySelectorAll('*');
-                        children.forEach(child => child.style.setProperty('color', 'red', 'important'));
+        const highlightDelete = () => {
+            document.querySelectorAll('.test-cmd-name').forEach(span => {
+                if (span.innerText.trim().toLowerCase().includes("delete")) {
+                    const item = span.closest('.weasel-menu-item, [role="menuitem"], li');
+                    if (item) {
+                        item.classList.add('grist-delete-active');
+                        if (span.innerText.toLowerCase().includes("widget")) item.classList.add('grist-delete-active-bold');
                     }
-                });
-            }, 50);
-        });
-    });
+                }
+            });
+        };
+        const observer = new MutationObserver(highlightDelete);
+        observer.observe(document.body, { childList: true, subtree: true });
+        ['mousedown', 'contextmenu', 'click'].forEach(e => document.addEventListener(e, () => setTimeout(highlightDelete, 20)));
+    }, true);
 
 
     // ==========================================
@@ -258,26 +338,15 @@
     safeRun("Footer Alignment", () => {
         const style = document.createElement('style');
         style.innerHTML = `
-            .gridview_footer_spacer {
-                display: none !important;
-                width: 0px !important;
-            }
-            .has-frozen-pane .gridview_footer_spacer {
-                display: block !important;
-                width: 30px !important;
-            }
+            .gridview_footer_spacer { display: none !important; width: 0px !important; }
+            .has-frozen-pane .gridview_footer_spacer { display: block !important; width: 30px !important; }
         `;
         document.head.appendChild(style);
-
         const footerObserver = new MutationObserver(() => {
-            const frozenHeader = document.querySelector('.gridview_header.frozen');
             const footer = document.querySelector('.gridview_footer');
             if (footer) {
-                if (frozenHeader) {
-                    footer.classList.add('has-frozen-pane');
-                } else {
-                    footer.classList.remove('has-frozen-pane');
-                }
+                if (document.querySelector('.gridview_header.frozen')) footer.classList.add('has-frozen-pane');
+                else footer.classList.remove('has-frozen-pane');
             }
         });
         footerObserver.observe(document.body, { childList: true, subtree: true });

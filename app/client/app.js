@@ -69,13 +69,46 @@ $(function () {
 // end MOD DMH
 
 // MOD DMH: Load custom patch dynamically
+//$(function () {
+//  const script = document.createElement('script');
+//  script.src = '/v/boot/custom_index.js?v=' + Date.now();
+//  script.type = 'text/javascript';
+//  script.onload = () => console.log("Custom - ✅ Dynamic index.js loaded");
+//  script.onerror = () => console.error("Custom - ❌ Failed to load custom_index.js");
+//  document.head.appendChild(script);
+//});
+// MOD DMH: Load custom patch dynamically (Universal Discovery)
 $(function () {
-  const script = document.createElement('script');
-  // Removing 'static' prefix often helps Grist's Express router
-  // correctly map to the internal static folder.
-  script.src = '/v/boot/custom_index.js?v=' + Date.now();
-  script.type = 'text/javascript';
-  script.onload = () => console.log("Custom - ✅ Dynamic index.js loaded");
-  script.onerror = () => console.error("Custom - ❌ Failed to load custom_index.js");
-  document.head.appendChild(script);
+  const modName = 'custom_index.js';
+  const scriptsToTry = [
+    `/${modName}`,               // Strategy 1: Root (Standard Grist)
+    `/v/boot/${modName}`,        // Strategy 2: Enterprise Boot Path
+    `./${modName}`,              // Strategy 3: Relative to app.js
+    `/custom/${modName}`         // Strategy 4: Subfolder fallback
+  ];
+
+  let found = false;
+  const tryLoad = (index) => {
+    if (index >= scriptsToTry.length || found) return;
+
+    const script = document.createElement('script');
+    const url = scriptsToTry[index] + '?v=' + Date.now();
+    
+    script.src = url;
+    script.type = 'text/javascript';
+
+    script.onload = () => {
+      found = true;
+      console.log(`Custom - ✅ Dynamic index.js loaded via: ${url}`);
+    };
+
+    script.onerror = () => {
+      // Silently try the next path if this one fails
+      tryLoad(index + 1);
+    };
+
+    document.head.appendChild(script);
+  };
+
+  tryLoad(0);
 });

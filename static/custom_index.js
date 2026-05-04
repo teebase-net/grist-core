@@ -1,7 +1,7 @@
 /**
  * ==============================================================================
  * SYSTEM: Grist Custom Master Controller (index.js)
- * VERSION: v2.5.6
+ * VERSION: v2.5.7
  * OWNER: teebase-net (MOD DMH)
  * 📄 PERMANENT FEATURE MANIFEST & TECHNICAL DOCUMENTATION:
  * 1. VERSION LOGGING - Minimal console footprint. Identifies patch version on boot.
@@ -35,7 +35,7 @@
     // ==========================================
     // 1. VERSION LOGGING
     // ==========================================
-    console.log("🚀 Custom - Grist Master Controller [v2.5.6]");
+    console.log("🚀 Custom - Grist Master Controller [v2.5.7]");
 
 
     // ==========================================

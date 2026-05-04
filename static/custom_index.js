@@ -383,27 +383,16 @@
     // 11. PATCH ENTERPRISE (ENT ONLY)
     // ==========================================
     safeRun("Enterprise Patch Loader", () => {
-        const isEnterprise = window.gristConfig && 
-                             window.gristConfig.edition === 'enterprise';
+        // Use optional chaining to safely check edition
+        const isEnterprise = window.gristConfig?.edition === 'enterprise';
 
-        if (!isEnterprise) {
-            // Quietly exit if not Enterprise
-            return;
-        }
+        if (!isEnterprise) return;
 
         console.log("🚀 Custom - Enterprise detected. Initializing LayoutTray patch...");
 
-        const patchGrist = () => {
-            if (window.gristConfig) {
-                const script = document.createElement('script');
-                // Ensure this filename matches your actual compiled file in /static/
-                script.src = '/static/your_compiled_layout_tray.js';
-                script.onerror = () => console.error("❌ Custom - Failed to load LayoutTray patch.");
-                document.head.appendChild(script);
-            } else {
-                setTimeout(patchGrist, 100);
-            }
-        };
-        patchGrist();
+        const script = document.createElement('script');
+        script.src = '/static/your_compiled_layout_tray.js'; 
+        script.onerror = () => console.error("❌ Custom - Failed to load LayoutTray patch.");
+        document.head.appendChild(script);
     });
  

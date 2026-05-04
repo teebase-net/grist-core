@@ -14,6 +14,7 @@
  * 8. SESSION WATCHDOG - 120s warning modal + forced logout.
  * 9. ACTION HIGHLIGHTING - Forces "Delete" menu items to pure red (#ff0000).
  * 10. FOOTER ALIGNMENT PATCH - FIXED: Removes spacer gap when frozenCount is 0.
+ * 11. PATCH ENTERPRISE (ENT ONLY)
  * ==============================================================================
  */
 
@@ -378,4 +379,31 @@
         footerObserver.observe(document.body, { childList: true, subtree: true });
     }, true);
 
-})();
+    // ==========================================
+    // 11. PATCH ENTERPRISE (ENT ONLY)
+    // ==========================================
+    safeRun("Enterprise Patch Loader", () => {
+        const isEnterprise = window.gristConfig && 
+                             window.gristConfig.edition === 'enterprise';
+
+        if (!isEnterprise) {
+            // Quietly exit if not Enterprise
+            return;
+        }
+
+        console.log("🚀 Custom - Enterprise detected. Initializing LayoutTray patch...");
+
+        const patchGrist = () => {
+            if (window.gristConfig) {
+                const script = document.createElement('script');
+                // Ensure this filename matches your actual compiled file in /static/
+                script.src = '/static/your_compiled_layout_tray.js';
+                script.onerror = () => console.error("❌ Custom - Failed to load LayoutTray patch.");
+                document.head.appendChild(script);
+            } else {
+                setTimeout(patchGrist, 100);
+            }
+        };
+        patchGrist();
+    });
+ 
